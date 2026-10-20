@@ -1,0 +1,131 @@
+/* SNS Creator Search: テーマの見た目を大きく崩さない控えめなスタイル */
+
+.snscs-form {
+	display: grid;
+	gap: 12px;
+	padding: 16px;
+	margin-bottom: 24px;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	background: #fafafa;
+}
+
+.snscs-form__row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+.snscs-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 0.9em;
+}
+
+.snscs-field input,
+.snscs-field select {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.snscs-button {
+	justify-self: start;
+	padding: 8px 24px;
+	cursor: pointer;
+}
+
+.snscs-results__count {
+	font-weight: bold;
+}
+
+.snscs-cards {
+	display: grid;
+	gap: 16px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-card {
+	display: flex;
+	gap: 16px;
+	padding: 16px;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+}
+
+.snscs-card__image {
+	flex: 0 0 64px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-card__body {
+	min-width: 0;
+}
+
+.snscs-card__name {
+	margin: 0 0 4px;
+	font-size: 1.1em;
+}
+
+.snscs-card__tags,
+.snscs-card__excerpt {
+	margin: 0 0 8px;
+}
+
+.snscs-tag {
+	display: inline-block;
+	margin: 0 4px 4px 0;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #eef2f7;
+	font-size: 0.8em;
+}
+
+.snscs-accounts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.9em;
+}
+
+.snscs-account {
+	display: inline-flex;
+	flex-wrap: wrap;
+	max-width: 100%;
+	box-sizing: border-box;
+	gap: 0 6px;
+	align-items: baseline;
+	padding: 4px 10px;
+	border: 1px solid #e3e3e3;
+	border-radius: 6px;
+	overflow-wrap: anywhere;
+}
+
+.snscs-account__platform {
+	font-weight: bold;
+}
+
+.snscs-account__followers {
+	color: #555;
+}
+
+.snscs-pagination {
+	margin-top: 24px;
+}
+
+.snscs-pagination .page-numbers {
+	display: inline-block;
+	padding: 4px 10px;
+}
+
+@media (max-width: 480px) {
+	.snscs-card {
+		flex-direction: column;
+	}
+}

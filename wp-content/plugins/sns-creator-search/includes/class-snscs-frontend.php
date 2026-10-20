@@ -1,0 +1,254 @@
+<?php
+/**
+ * サイト表側: 検索フォームと結果一覧（ショートコード）、発信者ページのアカウント表示。
+ *
+ * 固定ページに [sns_creator_search] と書くと検索画面が表示される。
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class SNSCS_Frontend {
+
+	/**
+	 * URLのパラメーター名 => 検索条件のキー。
+	 * WordPress 本体の `s` や `page` とぶつからないよう接頭辞を付ける。
+	 */
+	const PARAMS = array(
+		'snscs_q'        => 'q',
+		'snscs_platform' => 'platform',
+		'snscs_genre'    => 'genre',
+		'snscs_region'   => 'region',
+		'snscs_min'      => 'min_followers',
+		'snscs_max'      => 'max_followers',
+		'snscs_sort'     => 'sort',
+		'snscs_page'     => 'page',
+	);
+
+	public static function init() {
+		add_shortcode( 'sns_creator_search', array( __CLASS__, 'shortcode' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_assets' ) );
+		add_filter( 'the_content', array( __CLASS__, 'append_accounts' ) );
+	}
+
+	public static function register_assets() {
+		wp_register_style( 'snscs', SNSCS_URL . 'assets/css/snscs.css', array(), SNSCS_VERSION );
+		if ( is_singular( SNSCS_Post_Types::POST_TYPE ) ) {
+			wp_enqueue_style( 'snscs' );
+		}
+	}
+
+	/**
+	 * @return array<int,string> フォロワー数の選択肢（値 => 表示名）。
+	 */
+	private static function follower_options() {
+		return array(
+			1000    => '1,000人',
+			10000   => '1万人',
+			50000   => '5万人',
+			100000  => '10万人',
+			500000  => '50万人',
+			1000000 => '100万人',
+		);
+	}
+
+	public static function shortcode( $atts ) {
+		$atts = shortcode_atts( array( 'per_page' => 20 ), $atts, 'sns_creator_search' );
+		wp_enqueue_style( 'snscs' );
+
+		$raw = array( 'per_page' => $atts['per_page'] );
+		foreach ( self::PARAMS as $param => $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 閲覧用の検索フォームのため不要。
+			if ( isset( $_GET[ $param ] ) ) {
+				$raw[ $key ] = wp_unslash( $_GET[ $param ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			}
+		}
+
+		$result = SNSCS_Search::run( $raw );
+
+		ob_start();
+		self::render_form( $result['args'] );
+		self::render_results( $result );
+		return ob_get_clean();
+	}
+
+	private static function render_form( array $args ) {
+		?>
+		<form class="snscs-form" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
+			<div class="snscs-form__row">
+				<label class="snscs-field snscs-field--wide">
+					<span>キーワード</span>
+					<input type="search" name="snscs_q" value="<?php echo esc_attr( $args['q'] ); ?>" placeholder="名前・紹介文・ハンドルで探す">
+				</label>
+			</div>
+			<div class="snscs-form__row">
+				<label class="snscs-field">
+					<span>SNS</span>
+					<select name="snscs_platform">
+						<option value="">すべて</option>
+						<?php foreach ( snscs_platforms() as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $args['platform'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<label class="snscs-field">
+					<span>ジャンル</span>
+					<?php self::term_dropdown( 'snscs_genre', SNSCS_Post_Types::TAX_GENRE, $args['genre'] ); ?>
+				</label>
+				<label class="snscs-field">
+					<span>地域</span>
+					<?php self::term_dropdown( 'snscs_region', SNSCS_Post_Types::TAX_REGION, $args['region'] ); ?>
+				</label>
+			</div>
+			<div class="snscs-form__row">
+				<label class="snscs-field">
+					<span>フォロワー数（以上）</span>
+					<?php self::follower_dropdown( 'snscs_min', $args['min_followers'] ); ?>
+				</label>
+				<label class="snscs-field">
+					<span>フォロワー数（以下）</span>
+					<?php self::follower_dropdown( 'snscs_max', $args['max_followers'] ); ?>
+				</label>
+				<label class="snscs-field">
+					<span>並び順</span>
+					<select name="snscs_sort">
+						<?php foreach ( SNSCS_Search::sort_options() as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $args['sort'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+			</div>
+			<button type="submit" class="snscs-button">検索する</button>
+		</form>
+		<?php
+	}
+
+	private static function term_dropdown( $name, $taxonomy, $selected ) {
+		wp_dropdown_categories(
+			array(
+				'taxonomy'        => $taxonomy,
+				'name'            => $name,
+				'id'              => $name,
+				'value_field'     => 'slug',
+				'selected'        => $selected,
+				'show_option_all' => 'すべて',
+				'option_none_value' => '',
+				'hierarchical'    => true,
+				'hide_empty'      => false,
+				'orderby'         => 'name',
+			)
+		);
+	}
+
+	private static function follower_dropdown( $name, $selected ) {
+		?>
+		<select name="<?php echo esc_attr( $name ); ?>">
+			<option value="">指定なし</option>
+			<?php foreach ( self::follower_options() as $value => $label ) : ?>
+				<option value="<?php echo esc_attr( $value ); ?>" <?php selected( (int) $selected, $value ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<?php
+	}
+
+	private static function render_results( array $result ) {
+		?>
+		<div class="snscs-results">
+			<p class="snscs-results__count">
+				<?php echo esc_html( sprintf( '%s人の発信者が見つかりました', number_format_i18n( $result['total'] ) ) ); ?>
+			</p>
+
+			<?php if ( empty( $result['items'] ) ) : ?>
+				<p class="snscs-results__empty">条件に合う発信者がいません。条件をゆるめて探してみてください。</p>
+			<?php else : ?>
+				<ul class="snscs-cards">
+					<?php foreach ( $result['items'] as $item ) : ?>
+						<li class="snscs-card">
+							<?php if ( $item['thumbnail'] ) : ?>
+								<img class="snscs-card__image" src="<?php echo esc_url( $item['thumbnail'] ); ?>" alt="" loading="lazy" width="64" height="64">
+							<?php endif; ?>
+							<div class="snscs-card__body">
+								<h3 class="snscs-card__name"><a href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['name'] ); ?></a></h3>
+								<?php if ( $item['genres'] || $item['regions'] ) : ?>
+									<p class="snscs-card__tags">
+										<?php foreach ( array_merge( $item['genres'], $item['regions'] ) as $tag ) : ?>
+											<span class="snscs-tag"><?php echo esc_html( $tag ); ?></span>
+										<?php endforeach; ?>
+									</p>
+								<?php endif; ?>
+								<?php if ( $item['excerpt'] ) : ?>
+									<p class="snscs-card__excerpt"><?php echo esc_html( wp_trim_words( $item['excerpt'], 60, '…' ) ); ?></p>
+								<?php endif; ?>
+								<?php self::render_accounts( $item['accounts'] ); ?>
+							</div>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<?php self::render_pagination( $result ); ?>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @param array $accounts SNSCS_Search::format_creator() の accounts。
+	 */
+	private static function render_accounts( array $accounts ) {
+		if ( empty( $accounts ) ) {
+			return;
+		}
+		?>
+		<ul class="snscs-accounts">
+			<?php foreach ( $accounts as $account ) : ?>
+				<li class="snscs-account snscs-account--<?php echo esc_attr( $account['platform'] ); ?>">
+					<span class="snscs-account__platform"><?php echo esc_html( $account['platform_label'] ); ?></span>
+					<?php if ( $account['url'] ) : ?>
+						<a href="<?php echo esc_url( $account['url'] ); ?>" target="_blank" rel="noopener nofollow">@<?php echo esc_html( $account['handle'] ); ?></a>
+					<?php else : ?>
+						<span>@<?php echo esc_html( $account['handle'] ); ?></span>
+					<?php endif; ?>
+					<span class="snscs-account__followers"><?php echo esc_html( $account['followers_label'] ); ?></span>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+		<?php
+	}
+
+	private static function render_pagination( array $result ) {
+		if ( $result['total_pages'] < 2 ) {
+			return;
+		}
+
+		$links = paginate_links(
+			array(
+				'base'      => add_query_arg( 'snscs_page', '%#%' ),
+				'format'    => '',
+				'current'   => $result['page'],
+				'total'     => $result['total_pages'],
+				'prev_text' => '前へ',
+				'next_text' => '次へ',
+			)
+		);
+
+		if ( $links ) {
+			echo '<nav class="snscs-pagination">' . wp_kses_post( $links ) . '</nav>';
+		}
+	}
+
+	/**
+	 * 発信者の個別ページの本文の下に、SNSアカウント一覧を表示する。
+	 */
+	public static function append_accounts( $content ) {
+		if ( ! is_singular( SNSCS_Post_Types::POST_TYPE ) || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
+		}
+
+		$creator = SNSCS_Search::format_creator( get_post(), SNSCS_Accounts::get_for_creator( get_the_ID() ) );
+
+		ob_start();
+		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
+		self::render_accounts( $creator['accounts'] );
+		return $content . ob_get_clean();
+	}
+}
