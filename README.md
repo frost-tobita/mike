@@ -5,8 +5,9 @@ WordPress のプラグイン **SNS Creator Search** として作っています�
 
 > 全体の設計と今後の計画は [docs/design.md](docs/design.md) を見てください。
 
-## できること（現在のバージョン 0.2.0）
+## できること（現在のバージョン 0.3.0）
 
+- **紹介リンクとおすすめ順**: 掲載中の発信者に専用の紹介リンク（`/r/コード/`）を発行し、リンク経由の流入人数を数える。検索結果の「おすすめ順」は、①紹介流入と②フォロワー数の順位を1:1で合わせた総合点で並ぶ（管理画面「発信者 → 表示順の設定」で重みを変更可）
 - **発信者本人による登録・変更**: 発信者が会員登録し、マイページから掲載内容を申請。新規登録も変更も **運営の審査を通ったものだけ** が公開される
 - **審査画面**（管理画面「発信者 → 審査」）: 申請の一覧、現在の内容と申請内容の比較（変わった項目は黄色）、承認／差し戻し（理由つき）
 - **お知らせメール**: 申請が届いたら運営へ、承認・差し戻しの結果は発信者へ
@@ -78,7 +79,7 @@ GET /wp-json/snscs/v1/creators?q=料理&platform=instagram&min_followers=10000&s
 | `platform` | `x` `youtube` `instagram` `threads` `tiktok` `substack` |
 | `genre` / `region` | ジャンル・地域のスラッグ（親を指定すると子も含む） |
 | `min_followers` / `max_followers` | フォロワー数の範囲 |
-| `sort` | `followers`（多い順） / `newest`（新着順） / `name`（名前順） |
+| `sort` | `recommended`（おすすめ順・初期値） / `followers`（多い順） / `newest`（新着順） / `name`（名前順） |
 | `page` / `per_page` | ページ番号 / 1ページの件数（最大100） |
 
 全体の件数は、応答のヘッダー `X-WP-Total` で分かります。
@@ -102,6 +103,9 @@ wp-content/plugins/sns-creator-search/
 │   ├── class-snscs-submissions.php 申請の保存と、承認時の反映
 │   ├── class-snscs-review-admin.php 運営の審査画面
 │   ├── class-snscs-notify.php      お知らせメール
+│   ├── class-snscs-referrals.php   紹介リンクと流入の記録
+│   ├── class-snscs-scores.php      おすすめ順の点数計算
+│   ├── class-snscs-ranking-admin.php 表示順の設定画面
 │   └── functions.php               対応SNSの一覧など
 └── assets/css/snscs.css            見た目
 ```

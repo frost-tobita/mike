@@ -532,3 +532,56 @@
 		grid-column: 1 / -1;
 	}
 }
+
+/* ---------- 紹介リンク ---------- */
+
+.snscs-referral p {
+	margin: 0 0 12px;
+}
+
+.snscs-referral__link {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.snscs-referral__link input {
+	flex: 1 1 240px;
+	min-width: 0;
+	padding: 8px;
+	font: inherit;
+	background: #f9fafb;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+}
+
+.snscs-referral__stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 10px;
+	margin: 0 0 12px;
+}
+
+.snscs-referral__stats div {
+	padding: 10px 12px;
+	border-radius: 8px;
+	background: #f9fafb;
+}
+
+.snscs-referral__stats dt {
+	color: #555;
+	font-size: 0.8em;
+}
+
+.snscs-referral__stats dd {
+	margin: 0;
+	font-size: 1.3em;
+	font-weight: bold;
+}
+
+.snscs-referral__stats small {
+	color: #555;
+	font-size: 0.6em;
+	font-weight: normal;
+}

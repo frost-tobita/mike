@@ -265,11 +265,12 @@ class SNSCS_Frontend {
 			return $content;
 		}
 
-		$creator = SNSCS_Search::format_creator( get_post(), SNSCS_Accounts::get_for_creator( get_the_ID() ) );
+		// format_creator() は抜粋を作るときに the_content を呼ぶため、ここでは使わない（無限に呼び合ってしまう）。
+		$accounts = SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( get_the_ID() ) );
 
 		ob_start();
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
-		self::render_accounts( $creator['accounts'] );
+		self::render_accounts( $accounts );
 		return $content . ob_get_clean();
 	}
 }

@@ -5,6 +5,7 @@
  *   wp snscs import creators.csv     CSVから発信者を一括登録
  *   wp snscs seed --count=10000      動作・速度確認用のダミー発信者を作成
  *   wp snscs delete-dummy            ダミー発信者を削除
+ *   wp snscs recalc                  おすすめ順の点数を今すぐ計算し直す
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -205,5 +206,13 @@ class SNSCS_CLI {
 		if ( $names ) {
 			wp_set_object_terms( $post_id, array_values( $names ), $taxonomy );
 		}
+	}
+
+	/**
+	 * おすすめ順の点数を今すぐ計算し直す（普段は1時間ごとに自動）。
+	 */
+	public function recalc() {
+		$count = SNSCS_Scores::recalculate();
+		WP_CLI::success( "{$count}人の点数を計算し直しました。" );
 	}
 }

@@ -17,7 +17,8 @@ class SNSCS_Search {
 	 */
 	public static function sort_options() {
 		return array(
-			'followers' => 'フォロワーが多い順',
+			'recommended' => 'おすすめ順',
+			'followers'   => 'フォロワーが多い順',
 			'newest'    => '新着順',
 			'name'      => '名前順',
 		);
@@ -51,7 +52,7 @@ class SNSCS_Search {
 			'region'        => $term_slug( 'region' ),
 			'min_followers' => absint( $get( 'min_followers' ) ),
 			'max_followers' => absint( $get( 'max_followers' ) ),
-			'sort'          => array_key_exists( $sort, self::sort_options() ) ? $sort : 'followers',
+			'sort'          => array_key_exists( $sort, self::sort_options() ) ? $sort : 'recommended',
 			'page'          => max( 1, absint( $get( 'page' ) ) ),
 			'per_page'      => $per_page > 0 ? min( $per_page, self::MAX_PER_PAGE ) : 20,
 		);
@@ -114,6 +115,25 @@ class SNSCS_Search {
 			return ( $terms && ! is_wp_error( $terms ) ) ? wp_list_pluck( $terms, 'name' ) : array();
 		};
 
+		return array(
+			'id'        => (int) $post->ID,
+			'name'      => get_the_title( $post ),
+			'url'       => get_permalink( $post ),
+			'excerpt'   => wp_strip_all_tags( get_the_excerpt( $post ) ),
+			'thumbnail' => get_the_post_thumbnail_url( $post, 'thumbnail' ) ? get_the_post_thumbnail_url( $post, 'thumbnail' ) : '',
+			'genres'    => $term_names( SNSCS_Post_Types::TAX_GENRE ),
+			'regions'   => $term_names( SNSCS_Post_Types::TAX_REGION ),
+			'accounts'  => self::format_accounts( $accounts ),
+		);
+	}
+
+	/**
+	 * アカウントの表示用データを作る（対応していないSNSは除く）。
+	 *
+	 * @param array $accounts SNSCS_Accounts の行。
+	 * @return array
+	 */
+	public static function format_accounts( array $accounts ) {
 		$formatted = array();
 		foreach ( $accounts as $account ) {
 			if ( ! array_key_exists( $account['platform'], snscs_platforms() ) ) {
@@ -129,15 +149,6 @@ class SNSCS_Search {
 			);
 		}
 
-		return array(
-			'id'        => (int) $post->ID,
-			'name'      => get_the_title( $post ),
-			'url'       => get_permalink( $post ),
-			'excerpt'   => wp_strip_all_tags( get_the_excerpt( $post ) ),
-			'thumbnail' => get_the_post_thumbnail_url( $post, 'thumbnail' ) ? get_the_post_thumbnail_url( $post, 'thumbnail' ) : '',
-			'genres'    => $term_names( SNSCS_Post_Types::TAX_GENRE ),
-			'regions'   => $term_names( SNSCS_Post_Types::TAX_REGION ),
-			'accounts'  => $formatted,
-		);
+		return $formatted;
 	}
 }

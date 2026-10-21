@@ -14,6 +14,9 @@ class SNSCS_Admin {
 	/** @var array<int,array>|null 一覧画面用に先読みしたアカウント。 */
 	private static $list_accounts = null;
 
+	/** @var array<int,array>|null 一覧画面用に先読みした点数。 */
+	private static $list_scores = null;
+
 	public static function init() {
 		add_filter( 'use_block_editor_for_post_type', array( __CLASS__, 'disable_block_editor' ), 10, 2 );
 		add_action( 'add_meta_boxes_' . SNSCS_Post_Types::POST_TYPE, array( __CLASS__, 'add_meta_box' ) );
@@ -146,12 +149,17 @@ class SNSCS_Admin {
 			$new[ $key ] = $label;
 			if ( 'title' === $key ) {
 				$new['snscs_accounts'] = 'SNS / フォロワー';
+				$new['snscs_score']    = '紹介流入 / 総合点';
 			}
 		}
 		return $new;
 	}
 
 	public static function column_content( $column, $post_id ) {
+		if ( 'snscs_score' === $column ) {
+			self::score_column( $post_id );
+			return;
+		}
 		if ( 'snscs_accounts' !== $column ) {
 			return;
 		}
@@ -173,5 +181,36 @@ class SNSCS_Admin {
 			$parts[] = esc_html( snscs_platform_label( $account['platform'] ) . ' ' . snscs_format_count( $account['followers'] ) );
 		}
 		echo implode( '<br>', $parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	/**
+	 * 「紹介流入 / 総合点」の欄。点数は1時間ごとの計算結果。
+	 */
+	private static function score_column( $post_id ) {
+		global $wpdb;
+
+		// 一覧の全行分を最初の1回でまとめて読み込む。
+		if ( null === self::$list_scores ) {
+			global $wp_query;
+			$ids                = array_map( 'intval', wp_list_pluck( (array) $wp_query->posts, 'ID' ) );
+			self::$list_scores = array();
+			if ( $ids ) {
+				$table = SNSCS_Scores::table();
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				$rows              = $wpdb->get_results( "SELECT creator_id, inflow, score FROM {$table} WHERE scored_at IS NOT NULL AND creator_id IN (" . implode( ',', $ids ) . ')', ARRAY_A );
+				self::$list_scores = array_column( $rows, null, 'creator_id' );
+			}
+		}
+
+		if ( ! isset( self::$list_scores[ $post_id ] ) ) {
+			echo '—';
+			return;
+		}
+		$row = self::$list_scores[ $post_id ];
+		printf(
+			'%s人 / <strong>%s点</strong>',
+			esc_html( number_format_i18n( $row['inflow'] ) ),
+			esc_html( number_format_i18n( $row['score'], 1 ) )
+		);
 	}
 }

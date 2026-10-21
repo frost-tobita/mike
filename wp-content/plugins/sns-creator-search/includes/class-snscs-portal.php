@@ -230,6 +230,10 @@ class SNSCS_Portal {
 			<?php endif; ?>
 		</section>
 
+		<?php if ( $published ) : ?>
+			<?php self::render_referral( $creator_id ); ?>
+		<?php endif; ?>
+
 		<?php self::render_form( $data, $errors, $creator_id, (bool) $pending ); ?>
 
 		<?php if ( $published ) : ?>
@@ -243,6 +247,56 @@ class SNSCS_Portal {
 				</form>
 			</section>
 		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * 発信者専用の紹介リンクと、表示順位の状況。
+	 */
+	private static function render_referral( $creator_id ) {
+		$link     = SNSCS_Referrals::link_for( $creator_id );
+		$days     = SNSCS_Scores::inflow_days();
+		$inflow   = SNSCS_Referrals::count_for( $creator_id, $days );
+		$standing = SNSCS_Scores::standing( $creator_id );
+		?>
+		<section class="snscs-panel snscs-referral">
+			<h2 class="snscs-panel__title">あなた専用の紹介リンク</h2>
+			<p>このリンクをSNSのプロフィール欄や投稿に貼ってください。リンクから来た人が多いほど、検索結果の「おすすめ順」で上に表示されやすくなります。</p>
+			<div class="snscs-referral__link">
+				<label for="snscs-ref-link" class="screen-reader-text">紹介リンク</label>
+				<input id="snscs-ref-link" type="text" readonly value="<?php echo esc_url( $link ); ?>" onclick="this.select();">
+				<button type="button" class="snscs-button snscs-button--primary" onclick="var i=document.getElementById('snscs-ref-link');i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);this.textContent='コピーしました';">コピー</button>
+			</div>
+
+			<dl class="snscs-referral__stats">
+				<div>
+					<dt>紹介リンクから来た人（直近<?php echo (int) $days; ?>日）</dt>
+					<dd><?php echo esc_html( number_format_i18n( $inflow ) ); ?>人</dd>
+				</div>
+				<?php if ( $standing ) : ?>
+					<div>
+						<dt>おすすめ順での順位</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['rank'] ) ); ?>位 <small>／ <?php echo esc_html( number_format_i18n( $standing['total'] ) ); ?>人中</small></dd>
+					</div>
+					<div>
+						<dt>① 紹介流入の順位</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['inflow_rank'] ) ); ?>位</dd>
+					</div>
+					<div>
+						<dt>② フォロワー数の順位</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['followers_rank'] ) ); ?>位</dd>
+					</div>
+				<?php endif; ?>
+			</dl>
+			<p class="snscs-help">
+				<?php if ( $standing ) : ?>
+					順位は1時間ごとに更新されます。
+				<?php else : ?>
+					順位は1時間以内に表示されます。
+				<?php endif; ?>
+				同じ人が同じ日に何度クリックしても1人として数え、ご自身のクリックは数えません。
+			</p>
+		</section>
 		<?php
 	}
 

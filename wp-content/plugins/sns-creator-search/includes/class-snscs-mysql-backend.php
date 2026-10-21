@@ -25,8 +25,12 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 			case 'name':
 				$order = 'p.post_title ASC, p.ID ASC';
 				break;
-			default:
+			case 'followers':
 				$order = 'top_followers DESC, p.ID DESC';
+				break;
+			default:
+				// おすすめ順: ①紹介流入と②フォロワー数を合わせた総合点（SNSCS_Scores）の高い順。
+				$order = 'top_score DESC, total_followers DESC, p.ID DESC';
 		}
 
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
@@ -38,7 +42,7 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 		if ( $total > $offset ) {
 			$ids = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT p.ID, MAX(a.followers) AS top_followers {$from} GROUP BY p.ID ORDER BY {$order} LIMIT %d, %d",
+					"SELECT p.ID, MAX(a.followers) AS top_followers, MAX(COALESCE(st.score, 0)) AS top_score, MAX(COALESCE(st.followers, 0)) AS total_followers {$from} GROUP BY p.ID ORDER BY {$order} LIMIT %d, %d",
 					array_merge( $params, array( $offset, $args['per_page'] ) )
 				)
 			);
@@ -128,7 +132,8 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 			$params[] = $like;
 		}
 
-		$from = "FROM {$wpdb->posts} p INNER JOIN {$accounts} a ON a.creator_id = p.ID WHERE " . implode( ' AND ', $where );
+		$stats = SNSCS_Scores::table();
+		$from  = "FROM {$wpdb->posts} p INNER JOIN {$accounts} a ON a.creator_id = p.ID LEFT JOIN {$stats} st ON st.creator_id = p.ID WHERE " . implode( ' AND ', $where );
 
 		return array( $from, $params );
 	}
