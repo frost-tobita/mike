@@ -585,3 +585,53 @@
 	font-size: 0.6em;
 	font-weight: normal;
 }
+
+/* ---------- 広告枠（控えめに、でも広告とはっきり分かるように） ---------- */
+
+.snscs-ad {
+	position: relative;
+	box-sizing: border-box;
+	max-width: 100%;
+	margin: 16px 0;
+	padding: 22px 12px 12px;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+	background: #fafafa;
+	text-align: center;
+	overflow: hidden;
+}
+
+.snscs-ad__label {
+	position: absolute;
+	top: 4px;
+	left: 8px;
+	color: #666;
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.snscs-ad__body img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 0 auto;
+}
+
+.snscs-ad__body a {
+	display: inline-block;
+	max-width: 100%;
+}
+
+.snscs-ad--top_side {
+	max-width: 336px;
+}
+
+.snscs-card--ad {
+	display: block;
+	padding: 0;
+	border: 0;
+}
+
+.snscs-card--ad .snscs-ad {
+	margin: 0;
+}

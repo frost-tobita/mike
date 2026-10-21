@@ -174,17 +174,21 @@ class SNSCS_Frontend {
 	}
 
 	private static function render_results( array $result ) {
+		// 一覧の途中の広告は、指定した人数のあとに1回だけ（その人数より少ないページには出さない）。
+		$infeed_after = (int) SNSCS_Ads::settings()['infeed_after'];
 		?>
 		<div class="snscs-results">
 			<p class="snscs-results__count">
 				<?php echo esc_html( sprintf( '%s人の発信者が見つかりました', number_format_i18n( $result['total'] ) ) ); ?>
 			</p>
 
+			<?php echo SNSCS_Ads::render( 'search_top' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?>
+
 			<?php if ( empty( $result['items'] ) ) : ?>
 				<p class="snscs-results__empty">条件に合う発信者がいません。条件をゆるめて探してみてください。</p>
 			<?php else : ?>
 				<ul class="snscs-cards">
-					<?php foreach ( $result['items'] as $item ) : ?>
+					<?php foreach ( $result['items'] as $index => $item ) : ?>
 						<li class="snscs-card">
 							<?php if ( $item['thumbnail'] ) : ?>
 								<img class="snscs-card__image" src="<?php echo esc_url( $item['thumbnail'] ); ?>" alt="" loading="lazy" width="64" height="64">
@@ -204,9 +208,16 @@ class SNSCS_Frontend {
 								<?php self::render_accounts( $item['accounts'] ); ?>
 							</div>
 						</li>
+						<?php if ( $index + 1 === $infeed_after && $index + 1 < count( $result['items'] ) ) : ?>
+							<?php $ad = SNSCS_Ads::render( 'search_infeed' ); ?>
+							<?php if ( '' !== $ad ) : ?>
+								<li class="snscs-card snscs-card--ad"><?php echo $ad; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?></li>
+							<?php endif; ?>
+						<?php endif; ?>
 					<?php endforeach; ?>
 				</ul>
 				<?php self::render_pagination( $result ); ?>
+				<?php echo SNSCS_Ads::render( 'search_bottom' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?>
 			<?php endif; ?>
 		</div>
 		<?php
