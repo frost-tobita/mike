@@ -85,6 +85,7 @@ class SNSCS_Portal {
 			self::render_dashboard();
 		}
 
+		echo SNSCS_Legal::links_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '</div>';
 		return ob_get_clean();
 	}
@@ -154,7 +155,13 @@ class SNSCS_Portal {
 					</label>
 					<label class="snscs-check">
 						<input type="checkbox" name="agree" value="1" required>
-						<span>掲載内容は運営の審査後に公開されること、内容を変更するたびに審査があることに同意します。</span>
+						<span>
+							<?php
+							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- link_or_text() でエスケープ済み。
+							echo SNSCS_Legal::link_or_text( 'terms' ) . 'と' . SNSCS_Legal::link_or_text( 'privacy' );
+							?>
+							に同意します。掲載内容は運営の審査後に公開され、内容を変更するたびに審査があります。
+						</span>
 					</label>
 					<button type="submit" class="snscs-button snscs-button--primary">登録する</button>
 				</form>

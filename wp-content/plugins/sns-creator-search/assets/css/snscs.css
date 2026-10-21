@@ -635,3 +635,12 @@
 .snscs-card--ad .snscs-ad {
 	margin: 0;
 }
+
+/* ---------- 規約ページへのリンク ---------- */
+
+.snscs-legal-links {
+	margin-top: 24px;
+	color: #666;
+	font-size: 0.8em;
+	text-align: center;
+}

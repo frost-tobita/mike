@@ -71,6 +71,7 @@ class SNSCS_Frontend {
 		self::render_index( $result );
 		self::render_form( $result['args'] );
 		self::render_results( $result );
+		echo SNSCS_Legal::links_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return ob_get_clean();
 	}
 
