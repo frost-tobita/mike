@@ -65,17 +65,47 @@ class SNSCS_Frontend {
 			}
 		}
 
-		$result = SNSCS_Search::run( $raw );
+		$result = SNSCS_Search::run( $raw, true );
 
 		ob_start();
+		self::render_index( $result );
 		self::render_form( $result['args'] );
 		self::render_results( $result );
 		return ob_get_clean();
 	}
 
+	/**
+	 * SNSごとのインデックス（タブ）。各タブに、今の条件での該当人数を表示する。
+	 */
+	private static function render_index( array $result ) {
+		$current = $result['args']['platform'];
+		$tabs    = array_merge( array( '' => 'すべて' ), snscs_platforms() );
+		?>
+		<nav class="snscs-index" aria-label="SNSで切り替え">
+			<ul class="snscs-index__list">
+				<?php foreach ( $tabs as $key => $label ) : ?>
+					<?php
+					$url   = remove_query_arg( 'snscs_page', add_query_arg( 'snscs_platform', $key ) );
+					$count = isset( $result['counts'][ $key ] ) ? $result['counts'][ $key ] : 0;
+					$class = 'snscs-index__tab snscs-index__tab--' . ( '' === $key ? 'all' : $key );
+					?>
+					<li>
+						<a class="<?php echo esc_attr( $class ); ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $key === $current ? ' aria-current="page"' : ''; ?>>
+							<span class="snscs-index__label"><?php echo esc_html( $label ); ?></span>
+							<span class="snscs-index__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+						</a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</nav>
+		<?php
+	}
+
 	private static function render_form( array $args ) {
 		?>
 		<form class="snscs-form" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
+			<?php // SNSはインデックス（タブ）で選ぶ。絞り込み直しても選んだタブを保つ。 ?>
+			<input type="hidden" name="snscs_platform" value="<?php echo esc_attr( $args['platform'] ); ?>">
 			<div class="snscs-form__row">
 				<label class="snscs-field snscs-field--wide">
 					<span>キーワード</span>
@@ -83,15 +113,6 @@ class SNSCS_Frontend {
 				</label>
 			</div>
 			<div class="snscs-form__row">
-				<label class="snscs-field">
-					<span>SNS</span>
-					<select name="snscs_platform">
-						<option value="">すべて</option>
-						<?php foreach ( snscs_platforms() as $key => $label ) : ?>
-							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $args['platform'], $key ); ?>><?php echo esc_html( $label ); ?></option>
-						<?php endforeach; ?>
-					</select>
-				</label>
 				<label class="snscs-field">
 					<span>ジャンル</span>
 					<?php self::term_dropdown( 'snscs_genre', SNSCS_Post_Types::TAX_GENRE, $args['genre'] ); ?>

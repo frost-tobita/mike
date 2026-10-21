@@ -14,16 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,string>
  */
 function snscs_platforms() {
+	// この並び順のまま、検索画面のインデックス（タブ）に表示される。
 	$platforms = array(
-		'x'         => 'X (Twitter)',
-		'instagram' => 'Instagram',
-		'tiktok'    => 'TikTok',
+		'x'         => 'X',
 		'youtube'   => 'YouTube',
+		'instagram' => 'Instagram',
 		'threads'   => 'Threads',
-		'bluesky'   => 'Bluesky',
-		'facebook'  => 'Facebook',
-		'twitch'    => 'Twitch',
-		'note'      => 'note',
+		'tiktok'    => 'TikTok',
+		'substack'  => 'Substack',
 	);
 
 	return apply_filters( 'snscs_platforms', $platforms );

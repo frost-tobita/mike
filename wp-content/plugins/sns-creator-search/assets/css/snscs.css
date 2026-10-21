@@ -1,5 +1,87 @@
 /* SNS Creator Search: テーマの見た目を大きく崩さない控えめなスタイル */
 
+/* SNSごとのインデックス（見出しタブ）。下の検索フォームとつながって見える。 */
+.snscs-index {
+	margin-bottom: 0;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.snscs-index__list > li {
+	flex: 1 0 auto;
+	margin: 0;
+}
+
+.snscs-index__list {
+	display: flex;
+	align-items: flex-end;
+	gap: 4px;
+	margin: 0;
+	padding: 0 8px;
+	border-bottom: 1px solid #ddd;
+	list-style: none;
+}
+
+.snscs-index__tab {
+	--snscs-accent: #666;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 8px 10px 6px;
+	border: 1px solid #ddd;
+	border-top: 3px solid var(--snscs-accent);
+	border-bottom: none;
+	border-radius: 8px 8px 0 0;
+	background: #f0f0f0;
+	color: inherit;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.snscs-index__tab:hover,
+.snscs-index__tab:focus-visible {
+	background: #e6e6e6;
+}
+
+.snscs-index__tab[aria-current="page"] {
+	position: relative;
+	z-index: 1;
+	margin-bottom: -1px;
+	padding-bottom: 7px;
+	background: #fafafa;
+	font-weight: bold;
+}
+
+.snscs-index__label {
+	font-size: 0.9em;
+}
+
+.snscs-index__count {
+	color: #666;
+	font-size: 0.75em;
+}
+
+.snscs-index__tab--x,
+.snscs-index__tab--threads {
+	--snscs-accent: #111;
+}
+
+.snscs-index__tab--youtube {
+	--snscs-accent: #e00;
+}
+
+.snscs-index__tab--instagram {
+	--snscs-accent: #d62976;
+}
+
+.snscs-index__tab--tiktok {
+	--snscs-accent: #fe2c55;
+}
+
+.snscs-index__tab--substack {
+	--snscs-accent: #ff6719;
+}
+
 .snscs-form {
 	display: grid;
 	gap: 12px;
@@ -8,6 +90,12 @@
 	border: 1px solid #ddd;
 	border-radius: 8px;
 	background: #fafafa;
+}
+
+.snscs-index + .snscs-form {
+	margin-top: 0;
+	border-top: none;
+	border-radius: 0 0 8px 8px;
 }
 
 .snscs-form__row {

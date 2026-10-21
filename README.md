@@ -8,7 +8,8 @@ WordPress のプラグイン **SNS Creator Search** として作っています�
 ## できること（現在のバージョン 0.1.0）
 
 - **発信者の登録**（管理画面）: 名前・紹介文・写真・ジャンル・地域と、複数のSNSアカウント（SNSの種類 / ハンドル / URL / フォロワー数）
-- **検索画面**: キーワード、SNSの種類、ジャンル、地域、フォロワー数の範囲で絞り込み。フォロワー順・新着順・名前順に並べ替え
+- **対応SNS**: X / YouTube / Instagram / Threads / TikTok / Substack
+- **検索画面**: SNSごとの **インデックス（見出しタブ）** で切り替え。各タブに該当人数を表示。キーワード、ジャンル、地域、フォロワー数の範囲で絞り込み。フォロワー順・新着順・名前順に並べ替え
 - **発信者ごとの紹介ページ**: SNSアカウントの一覧を自動で表示
 - **CSV一括登録**: たくさんの発信者をまとめて登録
 - **検索API**: 将来アプリなどから使える `/wp-json/snscs/v1/creators`
@@ -57,7 +58,7 @@ GET /wp-json/snscs/v1/creators?q=料理&platform=instagram&min_followers=10000&s
 | パラメーター | 意味 |
 |---|---|
 | `q` | キーワード（空白区切りで、すべての語を含むものを探す） |
-| `platform` | `x` `instagram` `tiktok` `youtube` `threads` `bluesky` `facebook` `twitch` `note` |
+| `platform` | `x` `youtube` `instagram` `threads` `tiktok` `substack` |
 | `genre` / `region` | ジャンル・地域のスラッグ（親を指定すると子も含む） |
 | `min_followers` / `max_followers` | フォロワー数の範囲 |
 | `sort` | `followers`（多い順） / `newest`（新着順） / `name`（名前順） |

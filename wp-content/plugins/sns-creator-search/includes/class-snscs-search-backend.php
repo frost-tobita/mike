@@ -20,4 +20,13 @@ interface SNSCS_Search_Backend {
 	 * @return array{ids:int[],total:int} 現在ページの発信者IDと、全体の件数。
 	 */
 	public function search( array $args );
+
+	/**
+	 * SNSごとの該当人数を数える（インデックスのタブに表示する数）。
+	 * $args['platform'] は無視し、それ以外の条件で数える。
+	 *
+	 * @param array $args SNSCS_Search::normalize_args() で整えた検索条件。
+	 * @return array<string,int> SNSのキー => 人数。キー '' は全SNS合計の人数（重複なし）。
+	 */
+	public function count_by_platform( array $args );
 }

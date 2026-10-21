@@ -68,12 +68,14 @@ class SNSCS_Search {
 	/**
 	 * 検索を実行する。
 	 *
-	 * @param array $raw 入力値（未整形でよい）。
-	 * @return array{items:array,total:int,page:int,per_page:int,total_pages:int,args:array}
+	 * @param array $raw         入力値（未整形でよい）。
+	 * @param bool  $with_counts SNSごとの人数（インデックス用）も数えるか。
+	 * @return array{items:array,total:int,page:int,per_page:int,total_pages:int,args:array,counts:array}
 	 */
-	public static function run( array $raw ) {
-		$args   = self::normalize_args( $raw );
-		$result = self::backend()->search( $args );
+	public static function run( array $raw, $with_counts = false ) {
+		$args    = self::normalize_args( $raw );
+		$backend = self::backend();
+		$result  = $backend->search( $args );
 		$ids    = $result['ids'];
 
 		_prime_post_caches( $ids );
@@ -95,6 +97,7 @@ class SNSCS_Search {
 			'per_page'    => $args['per_page'],
 			'total_pages' => (int) ceil( $result['total'] / $args['per_page'] ),
 			'args'        => $args,
+			'counts'      => $with_counts ? $backend->count_by_platform( $args ) : array(),
 		);
 	}
 
@@ -113,6 +116,9 @@ class SNSCS_Search {
 
 		$formatted = array();
 		foreach ( $accounts as $account ) {
+			if ( ! array_key_exists( $account['platform'], snscs_platforms() ) ) {
+				continue;
+			}
 			$formatted[] = array(
 				'platform'        => $account['platform'],
 				'platform_label'  => snscs_platform_label( $account['platform'] ),
