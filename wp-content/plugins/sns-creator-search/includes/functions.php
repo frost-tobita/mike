@@ -67,3 +67,61 @@ function snscs_trim_decimal( $value ) {
 	$value = floor( $value * 10 ) / 10;
 	return rtrim( rtrim( number_format( $value, 1, '.', '' ), '0' ), '.' );
 }
+
+/**
+ * ハンドル名からプロフィールURLを作る。
+ *
+ * @param string $platform SNSのキー。
+ * @param string $handle   ハンドル名（@なし）。
+ * @return string
+ */
+function snscs_profile_url( $platform, $handle ) {
+	$patterns = array(
+		'x'         => 'https://x.com/%s',
+		'youtube'   => 'https://www.youtube.com/@%s',
+		'instagram' => 'https://www.instagram.com/%s/',
+		'threads'   => 'https://www.threads.net/@%s',
+		'tiktok'    => 'https://www.tiktok.com/@%s',
+		'substack'  => 'https://%s.substack.com/',
+	);
+	$patterns = apply_filters( 'snscs_profile_url_patterns', $patterns );
+
+	if ( ! isset( $patterns[ $platform ] ) || '' === $handle ) {
+		return '';
+	}
+
+	return sprintf( $patterns[ $platform ], rawurlencode( $handle ) );
+}
+
+/**
+ * 発信者ポータル（登録・編集ページ）のURL。
+ *
+ * @return string
+ */
+function snscs_portal_url() {
+	$page_id = (int) get_option( 'snscs_portal_page_id' );
+	$url     = $page_id ? get_permalink( $page_id ) : '';
+	return $url ? $url : home_url( '/' );
+}
+
+/**
+ * ユーザーが発信者（一般の登録者）かどうか。
+ *
+ * @param WP_User|int|null $user ユーザー。省略時は現在のユーザー。
+ * @return bool
+ */
+function snscs_is_creator_user( $user = null ) {
+	$user = $user ? ( $user instanceof WP_User ? $user : get_userdata( $user ) ) : wp_get_current_user();
+	return $user && $user->exists() && in_array( SNSCS_Portal::ROLE, (array) $user->roles, true ) && ! user_can( $user, 'edit_posts' );
+}
+
+/**
+ * 画面に出すハンドル名。Substack は「名前.substack.com」、それ以外は「@名前」。
+ *
+ * @param string $platform SNSのキー。
+ * @param string $handle   ハンドル名（@なし）。
+ * @return string
+ */
+function snscs_display_handle( $platform, $handle ) {
+	return 'substack' === $platform ? $handle . '.substack.com' : '@' . $handle;
+}

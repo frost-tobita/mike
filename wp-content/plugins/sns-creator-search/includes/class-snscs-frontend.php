@@ -225,9 +225,9 @@ class SNSCS_Frontend {
 				<li class="snscs-account snscs-account--<?php echo esc_attr( $account['platform'] ); ?>">
 					<span class="snscs-account__platform"><?php echo esc_html( $account['platform_label'] ); ?></span>
 					<?php if ( $account['url'] ) : ?>
-						<a href="<?php echo esc_url( $account['url'] ); ?>" target="_blank" rel="noopener nofollow">@<?php echo esc_html( $account['handle'] ); ?></a>
+						<a href="<?php echo esc_url( $account['url'] ); ?>" target="_blank" rel="noopener nofollow"><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></a>
 					<?php else : ?>
-						<span>@<?php echo esc_html( $account['handle'] ); ?></span>
+						<span><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></span>
 					<?php endif; ?>
 					<span class="snscs-account__followers"><?php echo esc_html( $account['followers_label'] ); ?></span>
 				</li>

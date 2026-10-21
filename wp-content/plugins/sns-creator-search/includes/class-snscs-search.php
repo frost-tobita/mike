@@ -123,7 +123,7 @@ class SNSCS_Search {
 				'platform'        => $account['platform'],
 				'platform_label'  => snscs_platform_label( $account['platform'] ),
 				'handle'          => $account['handle'],
-				'url'             => $account['url'],
+				'url'             => $account['url'] ? $account['url'] : snscs_profile_url( $account['platform'], $account['handle'] ),
 				'followers'       => (int) $account['followers'],
 				'followers_label' => snscs_format_count( $account['followers'] ),
 			);

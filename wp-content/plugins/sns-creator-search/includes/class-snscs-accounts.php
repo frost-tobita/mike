@@ -46,16 +46,6 @@ class SNSCS_Accounts {
 ) {$charset};";
 
 		dbDelta( $sql );
-		update_option( 'snscs_db_version', SNSCS_DB_VERSION );
-	}
-
-	/**
-	 * プラグイン更新でテーブル定義が変わったときに作り直す。
-	 */
-	public static function maybe_upgrade() {
-		if ( get_option( 'snscs_db_version' ) !== SNSCS_DB_VERSION ) {
-			self::install();
-		}
 	}
 
 	/**

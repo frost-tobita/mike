@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '0.1.0' );
-define( 'SNSCS_DB_VERSION', '1' );
+define( 'SNSCS_VERSION', '0.2.0' );
+define( 'SNSCS_DB_VERSION', '2' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,10 @@ require_once SNSCS_DIR . 'includes/class-snscs-search.php';
 require_once SNSCS_DIR . 'includes/class-snscs-admin.php';
 require_once SNSCS_DIR . 'includes/class-snscs-frontend.php';
 require_once SNSCS_DIR . 'includes/class-snscs-rest.php';
+require_once SNSCS_DIR . 'includes/class-snscs-submissions.php';
+require_once SNSCS_DIR . 'includes/class-snscs-notify.php';
+require_once SNSCS_DIR . 'includes/class-snscs-portal.php';
+require_once SNSCS_DIR . 'includes/class-snscs-review-admin.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -41,14 +45,36 @@ register_activation_hook( __FILE__, 'snscs_activate' );
  * 有効化時: テーブル作成とパーマリンク更新。
  */
 function snscs_activate() {
-	SNSCS_Accounts::install();
+	snscs_install();
 	SNSCS_Post_Types::register();
 	flush_rewrite_rules();
 }
 
-add_action( 'plugins_loaded', array( 'SNSCS_Accounts', 'maybe_upgrade' ) );
+/**
+ * テーブルと「発信者」権限を用意する。何度実行しても安全。
+ */
+function snscs_install() {
+	SNSCS_Accounts::install();
+	SNSCS_Submissions::install();
+	SNSCS_Portal::add_role();
+	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
+}
+
+/**
+ * プラグイン更新でテーブル定義が変わったときに作り直す。
+ */
+function snscs_maybe_upgrade() {
+	if ( get_option( 'snscs_db_version' ) !== SNSCS_DB_VERSION ) {
+		snscs_install();
+	}
+}
+
+add_action( 'plugins_loaded', 'snscs_maybe_upgrade' );
 add_action( 'init', array( 'SNSCS_Post_Types', 'register' ) );
 
 SNSCS_Admin::init();
 SNSCS_Frontend::init();
 SNSCS_Rest::init();
+SNSCS_Notify::init();
+SNSCS_Portal::init();
+SNSCS_Review_Admin::init();
