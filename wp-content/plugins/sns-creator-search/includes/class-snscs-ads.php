@@ -1,6 +1,7 @@
 <?php
 /**
- * 広告枠: 画像＋リンク／HTMLコード（アフィリエイト）／Googleアドセンスのコードを、
+ * 広告枠: 画像＋リンク／HTMLコード（アフィリエイト）／Googleアドセンス／
+ * コンテンツ販売（Brain・Tips などの商品カード）を、
  * 決まった場所（広告枠）に控えめに表示する。
  *
  * - 1つの枠に出す広告は、1回の表示につき1つだけ。複数登録すると「表示の割合」に応じて入れ替わる。
@@ -27,6 +28,7 @@ class SNSCS_Ads {
 	const TYPE_IMAGE   = 'image';
 	const TYPE_HTML    = 'html';
 	const TYPE_ADSENSE = 'adsense';
+	const TYPE_CONTENT = 'content';
 
 	/** @var int[] このページですでに表示した広告。 */
 	private static $shown = array();
@@ -57,6 +59,7 @@ class SNSCS_Ads {
 				'search_top'    => array( 'label' => '検索結果：一覧の上', 'size' => '728×90 または横幅いっぱい', 'default' => true ),
 				'search_infeed' => array( 'label' => '検索結果：一覧の途中', 'size' => '発信者カードと同じ横幅', 'default' => true ),
 				'search_bottom' => array( 'label' => '検索結果：一覧の下', 'size' => '728×90 または横幅いっぱい', 'default' => false ),
+				'column_bottom' => array( 'label' => 'コラム：記事の下', 'size' => '横幅いっぱい（コンテンツ販売のカードがおすすめ）', 'default' => true ),
 			)
 		);
 	}
@@ -66,7 +69,29 @@ class SNSCS_Ads {
 			self::TYPE_IMAGE   => '画像＋リンク',
 			self::TYPE_HTML    => 'HTMLコード（アフィリエイトなど）',
 			self::TYPE_ADSENSE => 'Googleアドセンス',
+			self::TYPE_CONTENT => 'コンテンツ販売（Brain・Tips など）',
 		);
+	}
+
+	/**
+	 * コンテンツ販売プラットフォーム（キー => 表示名）。
+	 */
+	public static function content_platforms() {
+		return apply_filters(
+			'snscs_content_platforms',
+			array(
+				'brain' => 'Brain',
+				'tips'  => 'Tips',
+				'other' => 'その他',
+			)
+		);
+	}
+
+	/**
+	 * クリック数を数える（リンク先へ中継する）種類か。
+	 */
+	public static function is_linked_type( $type ) {
+		return in_array( $type, array( self::TYPE_IMAGE, self::TYPE_CONTENT ), true );
 	}
 
 	/* --------------------------------------------------------------------
@@ -82,7 +107,19 @@ class SNSCS_Ads {
 			'head_code'     => '',
 		);
 		$saved = get_option( 'snscs_ads_settings', array() );
-		return array_merge( $defaults, is_array( $saved ) ? $saved : array() );
+		$saved = is_array( $saved ) ? $saved : array();
+
+		// 設定を保存したあとに増えた枠は、その枠の初期設定（オン・オフ）に従う。
+		if ( isset( $saved['enabled_slots'] ) ) {
+			$known = isset( $saved['known_slots'] ) ? (array) $saved['known_slots'] : array( 'top_side', 'top_infeed', 'search_top', 'search_infeed', 'search_bottom' );
+			foreach ( self::slots() as $key => $slot ) {
+				if ( $slot['default'] && ! in_array( $key, $known, true ) && ! in_array( $key, (array) $saved['enabled_slots'], true ) ) {
+					$saved['enabled_slots'][] = $key;
+				}
+			}
+		}
+
+		return array_merge( $defaults, $saved );
 	}
 
 	public static function slot_enabled( $slot ) {
@@ -191,6 +228,11 @@ class SNSCS_Ads {
 			'start'    => (string) get_post_meta( $id, '_snscs_ad_start', true ),
 			'end'      => (string) get_post_meta( $id, '_snscs_ad_end', true ),
 			'weight'   => max( 1, (int) get_post_meta( $id, '_snscs_ad_weight', true ) ),
+			// コンテンツ販売のカード用。
+			'platform' => (string) get_post_meta( $id, '_snscs_ad_platform', true ),
+			'title'    => (string) get_post_meta( $id, '_snscs_ad_title', true ),
+			'desc'     => (string) get_post_meta( $id, '_snscs_ad_desc', true ),
+			'price'    => (string) get_post_meta( $id, '_snscs_ad_price', true ),
 		);
 	}
 
@@ -306,8 +348,43 @@ class SNSCS_Ads {
 			);
 		}
 
+		if ( self::TYPE_CONTENT === $ad['type'] ) {
+			return self::content_card( $ad );
+		}
+
 		// HTMLコード・アドセンスは、サイト管理者が貼り付けたコードをそのまま出す（保存時に権限を確認済み）。
 		return trim( $ad['code'] );
+	}
+
+	/**
+	 * コンテンツ販売（Brain・Tips など）の商品カード。
+	 */
+	private static function content_card( array $ad ) {
+		if ( ! $ad['link'] || '' === $ad['title'] ) {
+			return '';
+		}
+		$platforms = self::content_platforms();
+		$image     = $ad['image_id'] ? wp_get_attachment_image_src( $ad['image_id'], 'medium' ) : null;
+
+		$html  = '<a class="snscs-ad-content" href="' . esc_url( self::click_url( $ad['id'] ) ) . '" target="_blank" rel="sponsored noopener nofollow">';
+		if ( $image ) {
+			$html .= sprintf( '<img class="snscs-ad-content__image" src="%s" width="%d" height="%d" alt="" loading="lazy" decoding="async">', esc_url( $image[0] ), (int) $image[1], (int) $image[2] );
+		}
+		$html .= '<span class="snscs-ad-content__body">';
+		if ( isset( $platforms[ $ad['platform'] ] ) && 'other' !== $ad['platform'] ) {
+			$html .= '<span class="snscs-ad-content__platform">' . esc_html( $platforms[ $ad['platform'] ] ) . '</span>';
+		}
+		$html .= '<strong class="snscs-ad-content__title">' . esc_html( $ad['title'] ) . '</strong>';
+		if ( '' !== $ad['desc'] ) {
+			$html .= '<span class="snscs-ad-content__desc">' . esc_html( $ad['desc'] ) . '</span>';
+		}
+		$html .= '<span class="snscs-ad-content__foot">';
+		if ( '' !== $ad['price'] ) {
+			$html .= '<span class="snscs-ad-content__price">' . esc_html( $ad['price'] ) . '</span>';
+		}
+		$html .= '<span class="snscs-ad-content__button">詳しく見る</span></span></span></a>';
+
+		return $html;
 	}
 
 	public static function shortcode( $atts ) {
@@ -352,7 +429,7 @@ class SNSCS_Ads {
 		}
 
 		$ad = self::POST_TYPE === get_post_type( $id ) && 'publish' === get_post_status( $id ) ? self::get( $id ) : null;
-		if ( ! $ad || self::TYPE_IMAGE !== $ad['type'] || ! $ad['link'] ) {
+		if ( ! $ad || ! self::is_linked_type( $ad['type'] ) || ! $ad['link'] ) {
 			wp_safe_redirect( home_url( '/' ) );
 			exit;
 		}

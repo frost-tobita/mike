@@ -71,7 +71,34 @@ class SNSCS_Ads_Admin {
 				</td>
 			</tr>
 
-			<tr class="snscs-ad-field" data-types="image">
+			<tr class="snscs-ad-field" data-types="content">
+				<th scope="row">販売サイト</th>
+				<td>
+					<select name="snscs_ad[platform]">
+						<?php foreach ( SNSCS_Ads::content_platforms() as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $ad['platform'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">Brain・Tips などで商品ページを開き、アフィリエイト（紹介）用のリンクをコピーして、下の「リンク先URL」に貼ってください。</p>
+				</td>
+			</tr>
+			<tr class="snscs-ad-field" data-types="content">
+				<th scope="row"><label for="snscs-ad-title">商品名</label></th>
+				<td><input type="text" id="snscs-ad-title" name="snscs_ad[title]" class="large-text" value="<?php echo esc_attr( $ad['title'] ); ?>" placeholder="例: ゼロから始めるInstagram運用の教科書"></td>
+			</tr>
+			<tr class="snscs-ad-field" data-types="content">
+				<th scope="row"><label for="snscs-ad-desc">ひとこと説明</label></th>
+				<td>
+					<input type="text" id="snscs-ad-desc" name="snscs_ad[desc]" class="large-text" value="<?php echo esc_attr( $ad['desc'] ); ?>" placeholder="例: プロフィール作りから投稿の型まで、運用の基本をまとめた一冊">
+					<p class="description">「必ず稼げる」など、誇大な表現は避けてください（景品表示法などに触れるおそれがあります）。</p>
+				</td>
+			</tr>
+			<tr class="snscs-ad-field" data-types="content">
+				<th scope="row"><label for="snscs-ad-price">価格</label></th>
+				<td><input type="text" id="snscs-ad-price" name="snscs_ad[price]" class="regular-text" value="<?php echo esc_attr( $ad['price'] ); ?>" placeholder="例: 2,980円"></td>
+			</tr>
+
+			<tr class="snscs-ad-field" data-types="image content">
 				<th scope="row">画像</th>
 				<td>
 					<input type="hidden" name="snscs_ad[image_id]" id="snscs-ad-image-id" value="<?php echo (int) $ad['image_id']; ?>">
@@ -85,7 +112,7 @@ class SNSCS_Ads_Admin {
 					<p class="description">表示する場所に合った大きさの画像を選んでください（下の「表示する場所」に推奨サイズがあります）。</p>
 				</td>
 			</tr>
-			<tr class="snscs-ad-field" data-types="image">
+			<tr class="snscs-ad-field" data-types="image content">
 				<th scope="row"><label for="snscs-ad-link">リンク先URL</label></th>
 				<td><input type="url" id="snscs-ad-link" name="snscs_ad[link]" class="large-text" value="<?php echo esc_attr( $ad['link'] ); ?>" placeholder="https://"></td>
 			</tr>
@@ -185,7 +212,7 @@ class SNSCS_Ads_Admin {
 	public static function render_help() {
 		?>
 		<ol style="padding-left: 1.2em; margin: 0">
-			<li>種類を選んで、画像とリンク、またはコードを入れる</li>
+			<li>種類を選んで、画像とリンク、商品の情報、またはコードを入れる</li>
 			<li>表示する場所を選ぶ</li>
 			<li>「公開」を押すと掲載が始まる</li>
 		</ol>
@@ -226,6 +253,10 @@ class SNSCS_Ads_Admin {
 		update_post_meta( $post_id, '_snscs_ad_start', $date( 'start' ) );
 		update_post_meta( $post_id, '_snscs_ad_end', $date( 'end' ) );
 		update_post_meta( $post_id, '_snscs_ad_weight', min( 10, max( 1, isset( $in['weight'] ) ? (int) $in['weight'] : 1 ) ) );
+		update_post_meta( $post_id, '_snscs_ad_platform', isset( $in['platform'] ) && array_key_exists( $in['platform'], SNSCS_Ads::content_platforms() ) ? $in['platform'] : 'other' );
+		update_post_meta( $post_id, '_snscs_ad_title', isset( $in['title'] ) ? sanitize_text_field( $in['title'] ) : '' );
+		update_post_meta( $post_id, '_snscs_ad_desc', isset( $in['desc'] ) ? sanitize_text_field( $in['desc'] ) : '' );
+		update_post_meta( $post_id, '_snscs_ad_price', isset( $in['price'] ) ? sanitize_text_field( $in['price'] ) : '' );
 
 		SNSCS_Ads::flush_cache();
 	}
@@ -273,7 +304,7 @@ class SNSCS_Ads_Admin {
 					$stats = SNSCS_Ads::stats( 30 );
 				}
 				$s = isset( $stats[ $post_id ] ) ? $stats[ $post_id ] : array( 'impressions' => 0, 'clicks' => 0 );
-				if ( SNSCS_Ads::TYPE_IMAGE === $ad['type'] ) {
+				if ( SNSCS_Ads::is_linked_type( $ad['type'] ) ) {
 					$rate = $s['impressions'] ? $s['clicks'] / $s['impressions'] * 100 : 0;
 					printf( '%s回 / %s回（%s%%）', esc_html( number_format_i18n( $s['impressions'] ) ), esc_html( number_format_i18n( $s['clicks'] ) ), esc_html( number_format_i18n( $rate, 1 ) ) );
 				} else {
@@ -323,6 +354,8 @@ class SNSCS_Ads_Admin {
 										<?php echo esc_html( $slot['label'] ); ?>
 										<?php if ( 0 === strpos( $key, 'top_' ) ) : ?>
 											<code>[sns_ad slot="<?php echo esc_html( $key ); ?>"]</code>
+										<?php elseif ( 0 === strpos( $key, 'column_' ) ) : ?>
+											<span class="description">（コラム記事の下に自動で表示）</span>
 										<?php else : ?>
 											<span class="description">（検索結果に自動で表示）</span>
 										<?php endif; ?>
@@ -380,6 +413,7 @@ class SNSCS_Ads_Admin {
 			array(
 				'label'         => '' !== $label ? $label : '広告',
 				'enabled_slots' => array_values( array_intersect( isset( $_POST['enabled_slots'] ) ? (array) wp_unslash( $_POST['enabled_slots'] ) : array(), array_keys( SNSCS_Ads::slots() ) ) ),
+				'known_slots'   => array_keys( SNSCS_Ads::slots() ),
 				'infeed_after'  => min( 20, max( 1, isset( $_POST['infeed_after'] ) ? (int) $_POST['infeed_after'] : 5 ) ),
 				'ads_txt'       => isset( $_POST['ads_txt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['ads_txt'] ) ) : '',
 				'head_code'     => $head_code,

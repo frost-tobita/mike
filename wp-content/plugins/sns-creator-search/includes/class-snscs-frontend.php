@@ -57,6 +57,11 @@ class SNSCS_Frontend {
 		$atts = shortcode_atts( array( 'per_page' => 20 ), $atts, 'sns_creator_search' );
 		wp_enqueue_style( 'snscs' );
 
+		// このページを「検索ページ」として覚える（コラムから検索へ案内するときに使う）。
+		if ( is_singular() && (int) get_option( 'snscs_search_page_id' ) !== get_the_ID() ) {
+			update_option( 'snscs_search_page_id', get_the_ID() );
+		}
+
 		$raw = array( 'per_page' => $atts['per_page'] );
 		foreach ( self::PARAMS as $param => $key ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 閲覧用の検索フォームのため不要。
@@ -71,6 +76,7 @@ class SNSCS_Frontend {
 		self::render_index( $result );
 		self::render_form( $result['args'] );
 		self::render_results( $result );
+		echo SNSCS_Columns::for_search( $result['args'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Legal::links_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return ob_get_clean();
 	}
@@ -283,6 +289,7 @@ class SNSCS_Frontend {
 		ob_start();
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts );
+		echo SNSCS_Columns::for_creator( get_the_ID(), $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return $content . ob_get_clean();
 	}
 }

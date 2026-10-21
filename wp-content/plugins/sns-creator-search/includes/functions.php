@@ -125,3 +125,14 @@ function snscs_is_creator_user( $user = null ) {
 function snscs_display_handle( $platform, $handle ) {
 	return 'substack' === $platform ? $handle . '.substack.com' : '@' . $handle;
 }
+
+/**
+ * 検索ページ（[sns_creator_search] を置いた固定ページ）のURL。
+ *
+ * @return string
+ */
+function snscs_search_url() {
+	$page_id = (int) get_option( 'snscs_search_page_id' );
+	$url     = $page_id ? get_permalink( $page_id ) : '';
+	return $url ? $url : home_url( '/' );
+}

@@ -651,3 +651,189 @@
 	margin: 0 0 12px;
 	padding-left: 1.4em;
 }
+
+/* ---------- SNS運用コラム ---------- */
+
+.snscs-columns {
+	margin: 32px 0 0;
+}
+
+.snscs-columns__head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.snscs-columns__title {
+	margin: 0;
+	font-size: 1.15em;
+}
+
+.snscs-columns__more {
+	font-size: 0.85em;
+}
+
+.snscs-columns__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-column-card a {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	box-sizing: border-box;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+	overflow: hidden;
+	color: inherit;
+	text-decoration: none;
+	background: #fff;
+}
+
+.snscs-column-card a:hover .snscs-column-card__name,
+.snscs-column-card a:focus-visible .snscs-column-card__name {
+	text-decoration: underline;
+}
+
+.snscs-column-card__image {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+}
+
+.snscs-column-card__body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px;
+}
+
+.snscs-column-card__sns {
+	color: #1e3a8a;
+	font-size: 0.75em;
+	font-weight: bold;
+}
+
+.snscs-column-card__name {
+	font-size: 0.95em;
+	line-height: 1.5;
+}
+
+.snscs-column-card__date {
+	color: #666;
+	font-size: 0.75em;
+}
+
+.snscs-column-cta {
+	margin: 32px 0 16px;
+	padding: 20px;
+	border-radius: 8px;
+	background: #eef2fb;
+	text-align: center;
+}
+
+.snscs-column-cta__text {
+	margin: 0 0 12px;
+}
+
+.snscs-column-cta__button {
+	display: inline-block;
+	text-decoration: none;
+}
+
+/* ---------- コンテンツ販売（Brain・Tips）の広告カード ---------- */
+
+.snscs-ad-content {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 16px;
+	align-items: center;
+	color: inherit;
+	text-align: left;
+	text-decoration: none;
+}
+
+.snscs-ad-content__image {
+	flex: 0 0 160px;
+	max-width: 100%;
+	height: auto;
+	border-radius: 6px;
+}
+
+.snscs-ad-content__body {
+	flex: 1 1 240px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snscs-ad-content__platform {
+	align-self: flex-start;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #eee;
+	color: #333;
+	font-size: 0.75em;
+}
+
+.snscs-ad-content__title {
+	font-size: 1em;
+}
+
+.snscs-ad-content__desc {
+	color: #444;
+	font-size: 0.85em;
+}
+
+.snscs-ad-content__foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-top: 4px;
+}
+
+.snscs-ad-content__price {
+	font-weight: bold;
+}
+
+.snscs-ad-content__button {
+	padding: 6px 16px;
+	border-radius: 6px;
+	background: #c2410c;
+	color: #fff;
+	font-size: 0.85em;
+	font-weight: bold;
+}
+
+.snscs-ad-content:hover .snscs-ad-content__title,
+.snscs-ad-content:focus-visible .snscs-ad-content__title {
+	text-decoration: underline;
+}
+
+/* 広告枠の共通スタイル（.snscs-ad__body a / img）より優先させる。 */
+.snscs-ad__body .snscs-ad-content {
+	display: flex;
+}
+
+.snscs-ad__body .snscs-ad-content__image {
+	width: 160px;
+	margin: 0;
+}
+
+@media (max-width: 480px) {
+	.snscs-ad__body .snscs-ad-content__image {
+		width: 100%;
+	}
+}

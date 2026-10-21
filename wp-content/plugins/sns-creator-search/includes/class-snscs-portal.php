@@ -247,6 +247,8 @@ class SNSCS_Portal {
 
 		<?php self::render_form( $data, $errors, $creator_id, (bool) $pending ); ?>
 
+		<?php echo SNSCS_Columns::render( '発信力を上げるSNS運用コラム', array( 'count' => 3 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+
 		<?php if ( $published ) : ?>
 			<section class="snscs-panel snscs-danger">
 				<h2 class="snscs-panel__title">掲載をやめる</h2>
