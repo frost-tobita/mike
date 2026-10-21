@@ -15,6 +15,28 @@ class SNSCS_Notify {
 		add_action( 'snscs_submission_created', array( __CLASS__, 'to_admin' ) );
 		add_action( 'snscs_submission_approved', array( __CLASS__, 'approved' ) );
 		add_action( 'snscs_submission_rejected', array( __CLASS__, 'rejected' ) );
+		add_action( 'snscs_creator_withdrawn', array( __CLASS__, 'withdrawn' ), 10, 2 );
+	}
+
+	/**
+	 * 退会の完了を本人に、退会があったことを運営に知らせる。
+	 */
+	public static function withdrawn( $email, $name ) {
+		$body = implode(
+			"\n",
+			array(
+				"{$name} さん",
+				'',
+				'退会の手続きが完了しました。',
+				'登録情報と掲載情報は、すべて削除しました。',
+				'',
+				'これまでご利用いただき、ありがとうございました。',
+				'お心当たりのない場合は、このメールに返信してお知らせください。',
+			)
+		);
+		wp_mail( $email, self::subject( '退会が完了しました' ), $body );
+
+		wp_mail( get_option( 'admin_email' ), self::subject( "退会: {$name}" ), "発信者「{$name}」が退会しました。登録情報と掲載情報は削除済みです。" );
 	}
 
 	public static function to_admin( $id ) {

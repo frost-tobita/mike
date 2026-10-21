@@ -27,6 +27,7 @@ class SNSCS_Portal {
 		add_action( 'admin_post_snscs_register', array( __CLASS__, 'handle_register' ) );
 		add_action( 'admin_post_snscs_submit', array( __CLASS__, 'handle_submit' ) );
 		add_action( 'admin_post_snscs_unpublish', array( __CLASS__, 'handle_unpublish' ) );
+		add_action( 'admin_post_snscs_withdraw', array( __CLASS__, 'handle_withdraw' ) );
 
 		add_action( 'admin_init', array( __CLASS__, 'keep_out_of_admin' ) );
 		add_filter( 'show_admin_bar', array( __CLASS__, 'hide_admin_bar' ) );
@@ -95,6 +96,9 @@ class SNSCS_Portal {
 			'registered'     => array( 'success', '登録が完了しました。続けて、掲載したい内容を入力して審査を申請してください。' ),
 			'submitted'      => array( 'success', '申請を受け付けました。運営が審査し、結果をメールでお知らせします。' ),
 			'unpublished'    => array( 'success', '掲載を停止しました。検索結果と発信者ページに表示されなくなりました。' ),
+			'withdrawn'      => array( 'success', '退会しました。登録情報と掲載情報はすべて削除しました。ご利用ありがとうございました。' ),
+			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
+			'withdraw_check' => array( 'error', '退会するには、「削除されることを理解しました」にチェックを入れてください。' ),
 			'error'          => array( 'error', '入力内容を確認してください。' ),
 			'email_invalid'  => array( 'error', 'メールアドレスの形式が正しくありません。' ),
 			'email_exists'   => array( 'error', 'このメールアドレスはすでに登録されています。ログインしてください。' ),
@@ -254,6 +258,33 @@ class SNSCS_Portal {
 				</form>
 			</section>
 		<?php endif; ?>
+
+		<section class="snscs-panel snscs-danger" id="snscs-withdraw">
+			<h2 class="snscs-panel__title">退会する</h2>
+			<p>退会すると、次の情報がすべて削除され、<strong>元に戻すことはできません</strong>。もう一度掲載したいときは、新しく登録して審査を受けていただくことになります。</p>
+			<ul class="snscs-withdraw__list">
+				<li>アカウント（メールアドレス・パスワード）</li>
+				<li>掲載ページ、SNSアカウント、プロフィール写真</li>
+				<li>申請と審査の記録</li>
+				<li>紹介リンクと、リンクから来た人の記録</li>
+			</ul>
+			<p>一時的に表示を止めたいだけなら、退会ではなく「掲載をやめる」をお使いください。</p>
+			<form class="snscs-fields" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( '退会すると、登録情報と掲載情報がすべて削除され、元に戻せません。本当に退会しますか？' );">
+				<input type="hidden" name="action" value="snscs_withdraw">
+				<?php wp_nonce_field( 'snscs_withdraw', 'snscs_nonce' ); ?>
+				<label class="snscs-field">
+					<span>確認のため、パスワードを入力してください</span>
+					<input type="password" name="password" required autocomplete="current-password">
+				</label>
+				<label class="snscs-check">
+					<input type="checkbox" name="understand" value="1" required>
+					<span>登録情報と掲載情報がすべて削除され、元に戻せないことを理解しました。</span>
+				</label>
+				<div>
+					<button type="submit" class="snscs-button snscs-button--danger">退会する</button>
+				</div>
+			</form>
+		</section>
 		<?php
 	}
 
@@ -515,6 +546,75 @@ class SNSCS_Portal {
 			wp_update_post( array( 'ID' => $creator_id, 'post_status' => 'draft' ) );
 		}
 		self::back( 'unpublished' );
+	}
+
+	public static function handle_withdraw() {
+		if ( ! snscs_is_creator_user() || ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_withdraw' ) ) {
+			self::back();
+		}
+
+		$user     = wp_get_current_user();
+		$password = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- パスワードは加工しない。
+
+		if ( ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
+			self::back( 'withdraw_pass', '#snscs-withdraw' );
+		}
+		if ( empty( $_POST['understand'] ) ) {
+			self::back( 'withdraw_check', '#snscs-withdraw' );
+		}
+
+		self::withdraw( $user->ID );
+
+		wp_logout();
+		self::back( 'withdrawn' );
+	}
+
+	/**
+	 * 発信者を退会させ、本人に関わる情報をすべて削除する。
+	 *
+	 * @param int $user_id 発信者ユーザー。
+	 */
+	public static function withdraw( $user_id ) {
+		global $wpdb;
+
+		$user = get_userdata( $user_id );
+		if ( ! $user || ! snscs_is_creator_user( $user ) ) {
+			return;
+		}
+
+		$email      = $user->user_email;
+		$creator_id = SNSCS_Submissions::creator_id_for_user( $user_id );
+		$name       = $creator_id ? get_the_title( $creator_id ) : $user->display_name;
+
+		if ( $creator_id ) {
+			// SNSアカウントは before_delete_post（SNSCS_Admin::delete）で一緒に消える。
+			wp_delete_post( $creator_id, true );
+			$wpdb->delete( SNSCS_Scores::table(), array( 'creator_id' => $creator_id ), array( '%d' ) );
+			$wpdb->delete( SNSCS_Referrals::table(), array( 'creator_id' => $creator_id ), array( '%d' ) );
+		}
+
+		// 本人がアップロードした写真（申請中・差し戻し中のものを含む）。
+		$photos = get_posts(
+			array(
+				'post_type'   => 'attachment',
+				'post_status' => 'any',
+				'author'      => $user_id,
+				'numberposts' => -1,
+				'fields'      => 'ids',
+			)
+		);
+		foreach ( $photos as $photo_id ) {
+			wp_delete_attachment( $photo_id, true );
+		}
+
+		$wpdb->delete( SNSCS_Submissions::table(), array( 'user_id' => $user_id ), array( '%d' ) );
+		delete_transient( 'snscs_form_' . $user_id );
+
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		wp_delete_user( $user_id );
+
+		SNSCS_Scores::schedule_soon();
+		do_action( 'snscs_creator_withdrawn', $email, $name );
 	}
 
 	/**
