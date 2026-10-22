@@ -59,7 +59,7 @@ class SNSCS_Ranking_Admin {
 
 			<div style="max-width: 1000px; padding: 4px 20px 12px; margin-top: 16px; border: 1px solid #c3c4c7; background: #fff">
 				<h2>おすすめ順の決め方</h2>
-				<p>6つの点数を、それぞれ<strong>全体の中での順位</strong>から0〜100点（1位が100点、最下位が0点）にし、下の重みで合わせた<strong>総合点</strong>の高い順に並べます。検索結果の「おすすめ順」、おすすめの発信者、似ている発信者に使われます。</p>
+				<p><?php echo count( $signals ); ?>つの点数を、それぞれ<strong>全体の中での順位</strong>から0〜100点（1位が100点、最下位が0点）にし、下の重みで合わせた<strong>総合点</strong>の高い順に並べます。検索結果の「おすすめ順」、おすすめの発信者、似ている発信者に使われます。</p>
 				<ul style="list-style: disc; padding-left: 1.4em">
 					<li>紹介リンクとページ閲覧は、<strong>最近の動きほど重く</strong>数えます（<?php echo (int) $settings['half_life']; ?>日前の動きは半分）。</li>
 					<li>滞在時間とクリック率は、見た人が少ないと偶然に左右されるため、全体の平均に寄せて計算します。</li>
@@ -92,6 +92,7 @@ class SNSCS_Ranking_Admin {
 					</tr>
 				</table>
 				<p class="description">重みは割合で使われます（例: すべて同じ数にすると均等）。0にするとその点数を使いません。紹介リンクとフォロワーは最初 1:1（25:25）です。</p>
+				<p class="description">「サイトの利用日数・利用時間」は、発信者がログインしてこのサイトを使った状況です。水増しを防ぐため、利用時間は画面を見て操作している時間だけを1日30分まで、利用日数は1日1回まで数えます。</p>
 				<?php submit_button( '保存して計算し直す' ); ?>
 			</form>
 
@@ -149,12 +150,14 @@ class SNSCS_Ranking_Admin {
 						<th style="text-align: right">平均滞在</th>
 						<th style="text-align: right">クリック率</th>
 						<th style="text-align: right">記事</th>
+						<th style="text-align: right">利用日数</th>
+						<th style="text-align: right">利用時間</th>
 						<th style="text-align: right">総合点</th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="9">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
+						<tr><td colspan="11">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
 					<?php endif; ?>
 					<?php foreach ( $rows as $i => $row ) : ?>
 						<?php $p = json_decode( (string) $row['points'], true ); ?>
@@ -174,6 +177,8 @@ class SNSCS_Ranking_Admin {
 								'dwell'     => number_format_i18n( $row['dwell_avg'], 1 ) . '秒',
 								'clicks'    => number_format_i18n( $row['click_rate'] * 100, 1 ) . '%',
 								'articles'  => number_format_i18n( $row['articles'], 1 ),
+								'site_days' => number_format_i18n( $row['usage_days'] ) . '日',
+								'site_time' => number_format_i18n( round( $row['usage_time'] / 60 ) ) . '分',
 							);
 							?>
 							<?php foreach ( $cells as $signal => $value ) : ?>

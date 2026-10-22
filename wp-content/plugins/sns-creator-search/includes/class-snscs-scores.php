@@ -2,7 +2,7 @@
 /**
  * 表示順位（おすすめ順）のための点数計算。
  *
- * 6つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
+ * 8つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
  *
  *   紹介リンク     : 紹介リンクから来た人数（最近の日ほど重く数える）
  *   フォロワー     : 全SNSの合計フォロワー数
@@ -10,8 +10,11 @@
  *   滞在時間       : ページを実際に見ていた時間の平均
  *   リンクのクリック率 : ページを見た人のうち、SNSや外部リンクを押した人の割合
  *   記事の活動     : 最近公開した記事の数（新しい記事ほど重く数える）
+ *   サイトの利用日数 : 発信者がログインしてこのサイトを使った日数（最近の日ほど重く数える）
+ *   サイトの利用時間 : 発信者がログイン中にこのサイトを使っていた時間（1日30分まで、最近の日ほど重く数える）
  *
- *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)   ※初期の重みは 25:25:15:15:10:10（紹介:フォロワー = 1:1 は変えない）
+ *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)
+ *   ※初期の重みは 25:25:15:15:10:10:5:5（紹介:フォロワー = 1:1 は変えない）
  *
  * 順位の換算: 1位 = 100点、最下位 = 0点、同じ値の人は同じ点。
  *   点 = 自分より値が小さい人の人数 ÷ (全体の人数 − 1) × 100
@@ -79,6 +82,8 @@ class SNSCS_Scores {
   dwell_avg double NOT NULL DEFAULT 0,
   click_rate double NOT NULL DEFAULT 0,
   articles double NOT NULL DEFAULT 0,
+  usage_days int(10) unsigned NOT NULL DEFAULT 0,
+  usage_time int(10) unsigned NOT NULL DEFAULT 0,
   inflow_points double NOT NULL DEFAULT 0,
   follower_points double NOT NULL DEFAULT 0,
   points text,
@@ -139,6 +144,18 @@ class SNSCS_Scores {
 				'desc'    => '最近公開した記事の数（新しいほど高く数える）',
 				'tip'     => '定期的に記事を公開しましょう。最近の記事ほど高く数えます。',
 				'default' => 10,
+			),
+			'site_days' => array(
+				'label'   => 'サイトの利用日数',
+				'desc'    => '発信者がログインしてこのサイトを使った日数（最近ほど高く数える）',
+				'tip'     => 'こまめにログインして、ほかの発信者やコラムを見てみましょう。毎日少しずつ使うと点数が上がります。',
+				'default' => 5,
+			),
+			'site_time' => array(
+				'label'   => 'サイトの利用時間',
+				'desc'    => '発信者がログイン中にこのサイトを使っていた時間（1日30分まで）',
+				'tip'     => 'コラムを読んだり、記事を書いたりして、このサイトを活用しましょう（1日30分まで数えます）。',
+				'default' => 5,
 			),
 		);
 	}
@@ -263,9 +280,14 @@ class SNSCS_Scores {
 		$all_followers = wp_list_pluck( $rows, 'total', 'creator_id' );
 
 		$referral_raw = SNSCS_Referrals::counts( $days );
+		// 「要確認」の判定では、ページの計測を始める前の紹介リンクは比べない（正直な人が疑われないように）。
+		$started        = (int) get_option( 'snscs_tracking_started', time() );
+		$check_days     = min( $days, max( 1, (int) floor( ( time() - $started ) / DAY_IN_SECONDS ) + 1 ) );
+		$referral_check = $check_days < $days ? SNSCS_Referrals::counts( $check_days ) : $referral_raw;
 		$referral_w   = SNSCS_Referrals::weighted_counts( $days, $half_life );
 		$traffic      = SNSCS_Tracking::totals( $days, $half_life );
 		$articles     = SNSCS_Articles::activity( self::ARTICLE_DAYS, $half_life * 2 );
+		$usage        = SNSCS_Usage::totals( $days, $half_life );
 
 		// 全体の平均（少ない人数の平均を寄せる先）。
 		$sum_dwell  = 0;
@@ -295,12 +317,18 @@ class SNSCS_Scores {
 			$values['dwell'][ $id ]    = $t['dwell_count'] ? ( $t['dwell_sum'] + self::PRIOR_DWELL * $avg_dwell ) / ( $t['dwell_count'] + self::PRIOR_DWELL ) : -1;
 			$values['clicks'][ $id ]   = $t['views'] ? ( $t['out_clicks'] + self::PRIOR_CLICKS * $avg_click ) / ( $t['views'] + self::PRIOR_CLICKS ) : -1;
 			$values['articles'][ $id ] = isset( $articles[ $id ] ) ? $articles[ $id ] : 0.0;
+			$u                          = isset( $usage[ $id ] ) ? $usage[ $id ] : array( 'days' => 0, 'seconds' => 0, 'weighted_days' => 0.0, 'weighted_seconds' => 0.0 );
+			$values['site_days'][ $id ] = $u['weighted_days'];
+			$values['site_time'][ $id ] = $u['weighted_seconds'];
 
 			$raw[ $id ] = array(
 				'inflow'     => isset( $referral_raw[ $id ] ) ? $referral_raw[ $id ] : 0,
+				'inflow_chk' => isset( $referral_check[ $id ] ) ? $referral_check[ $id ] : 0,
 				'views'      => $t['views'],
 				'dwell_avg'  => $t['dwell_count'] ? $t['dwell_sum'] / $t['dwell_count'] : 0,
 				'click_rate' => $t['views'] ? $t['out_clicks'] / $t['views'] : 0,
+				'usage_days' => $u['days'],
+				'usage_time' => $u['seconds'],
 			);
 		}
 
@@ -323,7 +351,7 @@ class SNSCS_Scores {
 				}
 
 				// 不正の疑い: 紹介リンクのクリックは多いのに、ページがほとんど表示されていない。
-				if ( $raw[ $id ]['inflow'] >= self::SUSPECT_MIN_REFERRALS && $raw[ $id ]['views'] < $raw[ $id ]['inflow'] * self::SUSPECT_VIEW_RATIO ) {
+				if ( $raw[ $id ]['inflow_chk'] >= self::SUSPECT_MIN_REFERRALS && $raw[ $id ]['views'] < $raw[ $id ]['inflow_chk'] * self::SUSPECT_VIEW_RATIO ) {
 					$flags[]       = 'referral_without_views';
 					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
 				}
@@ -335,7 +363,7 @@ class SNSCS_Scores {
 				}
 
 				$rows[] = $wpdb->prepare(
-					'(%d, %d, %d, %d, %f, %f, %f, %f, %f, %s, %s, %f, %s)',
+					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %f, %s, %s, %f, %s)',
 					$id,
 					$raw[ $id ]['inflow'],
 					$values['followers'][ $id ],
@@ -343,6 +371,8 @@ class SNSCS_Scores {
 					$raw[ $id ]['dwell_avg'],
 					$raw[ $id ]['click_rate'],
 					$values['articles'][ $id ],
+					$raw[ $id ]['usage_days'],
+					$raw[ $id ]['usage_time'],
 					$p['referral'],
 					$p['followers'],
 					wp_json_encode( array_map( 'floatval', $p ) ),
@@ -352,11 +382,12 @@ class SNSCS_Scores {
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
 		SNSCS_Tracking::purge_old();
+		SNSCS_Usage::purge_old( $days );
 		update_option( 'snscs_scores_updated', time() );
 
 		return count( $creators );
@@ -450,6 +481,8 @@ class SNSCS_Scores {
 			'dwell_avg'       => (float) $row['dwell_avg'],
 			'click_rate'      => (float) $row['click_rate'],
 			'articles'        => (float) $row['articles'],
+			'usage_days'      => (int) $row['usage_days'],
+			'usage_time'      => (int) $row['usage_time'],
 			'inflow_points'   => (float) $row['inflow_points'],
 			'follower_points' => (float) $row['follower_points'],
 			'points'          => is_array( $points ) ? $points : array(),

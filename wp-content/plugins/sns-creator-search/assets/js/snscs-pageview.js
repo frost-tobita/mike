@@ -5,7 +5,7 @@
  * タブを開きっぱなしにしただけの時間は数えない。
  */
 ( function () {
-	var config = window.snscsTrack;
+	var config = window.snscsPageview;
 	if ( ! config || ! navigator.sendBeacon || ! window.URLSearchParams ) {
 		return;
 	}

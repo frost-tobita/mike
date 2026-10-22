@@ -343,6 +343,10 @@ class SNSCS_Portal {
 						<dt>平均滞在時間</dt>
 						<dd><?php echo esc_html( self::format_seconds( $standing['dwell_avg'] ) ); ?></dd>
 					</div>
+					<div>
+						<dt>あなたのサイト利用（直近<?php echo (int) $days; ?>日）</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['usage_days'] ) ); ?>日 <small>／ <?php echo esc_html( number_format_i18n( round( $standing['usage_time'] / 60 ) ) ); ?>分</small></dd>
+					</div>
 				<?php endif; ?>
 			</dl>
 			<p class="snscs-help">同じ人が同じ日に何度クリックしても1人として数え、ご自身のアクセスは数えません。</p>
@@ -353,7 +357,7 @@ class SNSCS_Portal {
 			<?php if ( ! $standing ) : ?>
 				<p>点数は掲載から1時間以内に表示されます。</p>
 			<?php else : ?>
-				<p>おすすめ順は、次の6つの点数（それぞれ0〜100点）を合わせて決まります。点数の低いものから伸ばすのが近道です。</p>
+				<p>おすすめ順は、次の<?php echo count( SNSCS_Scores::signals() ); ?>つの点数（それぞれ0〜100点）を合わせて決まります。点数の低いものから伸ばすのが近道です。</p>
 				<p class="snscs-analysis__total">総合点 <strong><?php echo esc_html( number_format_i18n( $standing['score'], 1 ) ); ?></strong> 点</p>
 				<ul class="snscs-analysis__list">
 					<?php
@@ -678,6 +682,7 @@ class SNSCS_Portal {
 		SNSCS_Articles::delete_for_user( $user_id );
 		if ( $creator_id ) {
 			SNSCS_Tracking::delete_for_creator( $creator_id );
+			SNSCS_Usage::delete_for_creator( $creator_id );
 		}
 		$wpdb->delete( SNSCS_Submissions::table(), array( 'user_id' => $user_id ), array( '%d' ) );
 		delete_transient( 'snscs_form_' . $user_id );

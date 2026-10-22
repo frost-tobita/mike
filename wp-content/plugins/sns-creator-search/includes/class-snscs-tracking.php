@@ -2,7 +2,8 @@
 /**
  * 発信者ページ・発信者の記事の「閲覧」「滞在時間」「リンクのクリック」を測る。
  *
- * ページを開くと、小さなスクリプト（assets/js/snscs-track.js）が次を送る:
+ * ページを開くと、小さなスクリプト（assets/js/snscs-pageview.js）が次を送る:
+ * （広告ブロッカーに止められにくいよう、アドレスやファイル名に track などの言葉を使わない）
  *   view  : ページを表示した（同じ人・同じ発信者は1日1回だけ数える）
  *   dwell : ページを実際に見ていた秒数（画面に表示され、操作があった時間だけ。最大600秒）
  *   out   : SNSや外部リンクを押した（同じ人・同じ発信者は1日1回だけ数える）
@@ -62,6 +63,9 @@ class SNSCS_Tracking {
 ) {$charset};"
 		);
 
+		// 計測を始めた日。始めた直後の「要確認」判定を、計測前の紹介リンクと比べないために使う。
+		add_option( 'snscs_tracking_started', time() );
+
 		dbDelta(
 			"CREATE TABLE {$daily} (
   creator_id bigint(20) unsigned NOT NULL,
@@ -110,12 +114,12 @@ class SNSCS_Tracking {
 		}
 
 		$hour = (int) floor( time() / HOUR_IN_SECONDS );
-		wp_enqueue_script( 'snscs-track', SNSCS_URL . 'assets/js/snscs-track.js', array(), SNSCS_VERSION, true );
+		wp_enqueue_script( 'snscs-pageview', SNSCS_URL . 'assets/js/snscs-pageview.js', array(), SNSCS_VERSION, true );
 		wp_add_inline_script(
-			'snscs-track',
-			'window.snscsTrack = ' . wp_json_encode(
+			'snscs-pageview',
+			'window.snscsPageview = ' . wp_json_encode(
 				array(
-					'url'     => esc_url_raw( rest_url( 'snscs/v1/track' ) ),
+					'url'     => esc_url_raw( rest_url( 'snscs/v1/pageview' ) ),
 					'creator' => $creator_id,
 					'kind'    => $kind,
 					'hour'    => $hour,
@@ -140,7 +144,7 @@ class SNSCS_Tracking {
 	public static function register_route() {
 		register_rest_route(
 			'snscs/v1',
-			'/track',
+			'/pageview',
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'receive' ),
