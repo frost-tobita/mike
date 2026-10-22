@@ -13,6 +13,7 @@
  *   クリックの水増し : 同じ人が同じ発信者を何度も押す（2回目からは数えず、多ければ減点）  → ×0.5
  *   釣り             : 検索で押されるのに、ほとんど全員がすぐ戻ってくる                    → ×0.7
  *   招待の水増し     : 招待して掲載された人の大半が、まったく見られていない（捨てアカウント） → ×0.7
+ *   フォローの水増し : フォロワー20人以上の8割以上が、この人をフォローする以外に何もしていない   → ×0.7
  * 理由が複数あれば倍率を掛け合わせる（下限 0.1）。
  * 運営は発信者ごとに「問題なし（対象外）」「手動で下げる」を選べる。発信者のマイページには、直し方つきでお知らせする。
  */
@@ -37,6 +38,7 @@ class SNSCS_Integrity {
 			'click_farm'        => array( 0.5, '同じ人からのくり返しクリックが多い', '' ),
 			'clickbait'         => array( 0.7, '検索で押されても、ほとんどの人がすぐ戻ってしまう', '名前・紹介文が、実際の発信内容と合っているか見直してください。' ),
 			'invite_farm'       => array( 0.7, '招待した発信者の大半が、まったく見られていない', '' ),
+			'follow_farm'       => array( 0.7, 'フォロワーの大半が、ほかに何もしていないアカウント', '' ),
 		);
 	}
 
@@ -372,6 +374,11 @@ class SNSCS_Integrity {
 		$children = array();
 		foreach ( SNSCS_Invites::parents() as $child => $parent ) {
 			$children[ $parent ][] = $child;
+		}
+		foreach ( SNSCS_Social::follow_farms() as $id ) {
+			if ( isset( $reasons[ $id ] ) ) {
+				$reasons[ $id ][] = 'follow_farm';
+			}
 		}
 		foreach ( $children as $parent => $list ) {
 			if ( count( $list ) < 5 || ! isset( $reasons[ $parent ] ) ) {

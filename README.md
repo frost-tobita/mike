@@ -106,7 +106,7 @@ Googleアドセンスを使う場合は「広告枠 → 設定」で `ads.txt` �
 
 ### 8. 集客・回遊の機能を使う
 1. 管理画面「発信者 → 集客・回遊」の「機能ページをまとめて作成」を押す（ランキング・特集・無料ツール・お気に入り・メールマガジン・企業の方へ）
-2. 作られたページをメニューに追加する
+2. 作られたページをメニューに追加する（「会員ページ」は読者の登録・ログインと、フォロー中の新着・ブックマークの画面）
 3. トップページに `[sns_calendar_link]`（カレンダーへのリンク）、`[sns_for_you]`（あなたへのおすすめ）、`[sns_spotlight]`（今月の注目）、`[sns_trending]`（人気のキーワード）、`[sns_feature_links]`（人気の特集）を置く
 4. メールマガジンは「発信者 → メールマガジン」でテスト送信して確認してから、「集客・回遊」で自動配信をオンにする
 5. シェア画像に日本語を入れるには、サーバーに日本語フォントが必要（無ければ「集客・回遊」でフォントファイルの場所を指定するか、プラグインの `assets/fonts/` に .ttf / .otf を置く）
@@ -197,6 +197,7 @@ wp-content/plugins/sns-creator-search/
 │   ├── class-snscs-learner.php     重みの学習・A/Bテスト・管理画面「検索アルゴリズム」
 │   ├── class-snscs-tagger.php      AIの自動タグ
 │   ├── class-snscs-integrity.php   不正対策（アルゴリズムハックの検知と順位の引き下げ）
+│   ├── class-snscs-social.php      読者会員・フォロー・いいね・リポスト・ブックマーク
 │   └── legal/                      規約ページの文面（ひな形）
 │   └── functions.php               対応SNSの一覧など
 ├── templates/portal-full.php       ページテンプレート「SNS検索ポータル（全幅）」
@@ -206,6 +207,7 @@ wp-content/plugins/sns-creator-search/
 ├── assets/js/snscs-personal.js     好みの記録・お気に入り・おすすめ欄の読み込み
 └── assets/js/snscs-calendar.js     カレンダーの画面
     assets/js/snscs-search.js       検索の行動の記録・入力中の候補
+    assets/js/snscs-social.js       フォロー・いいね・リポスト・ブックマークのボタン
 ```
 
 ## 動作環境

@@ -173,7 +173,7 @@ class SNSCS_Ranking_Admin {
 						<th style="text-align: right">利用時間</th>
 						<th style="text-align: right">招待</th>
 						<th style="text-align: right">お気に入り</th>
-						<th style="text-align: right" title="検索で押された割合・満足・つながりの信頼度・プロフィールの充実度・新しさ（毎晩の学習で決まる点）">検索の学習</th>
+						<th style="text-align: right" title="このサイトでの反応・検索で押された割合・満足・つながりの信頼度・プロフィールの充実度・新しさ（毎晩の学習で決まる点）">検索の学習</th>
 						<th style="text-align: right">総合点</th>
 					</tr>
 				</thead>
@@ -213,7 +213,7 @@ class SNSCS_Ranking_Admin {
 							<?php endforeach; ?>
 							<?php
 							$learned = 0;
-							foreach ( array( 'search_ctr', 'satisfaction', 'authority', 'quality', 'freshness' ) as $signal ) {
+							foreach ( array( 'social', 'search_ctr', 'satisfaction', 'authority', 'quality', 'freshness' ) as $signal ) {
 								$learned += isset( $p[ $signal ] ) ? $p[ $signal ] : 0;
 							}
 							?>

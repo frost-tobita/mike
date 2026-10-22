@@ -353,6 +353,10 @@ class SNSCS_Portal {
 				</div>
 				<?php if ( $standing ) : ?>
 					<div>
+						<dt>このサイトでのフォロワー</dt>
+						<dd><?php echo esc_html( number_format_i18n( SNSCS_Social::follower_count( $creator_id ) ) ); ?>人</dd>
+					</div>
+					<div>
 						<dt>おすすめ順での順位</dt>
 						<dd><?php echo esc_html( number_format_i18n( $standing['rank'] ) ); ?>位 <small>／ <?php echo esc_html( number_format_i18n( $standing['total'] ) ); ?>人中</small></dd>
 					</div>

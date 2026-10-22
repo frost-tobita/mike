@@ -2892,3 +2892,182 @@ body.snscs-portal-body {
 	color: #4b5563;
 	font-size: 0.85em;
 }
+
+/* ------------------------------------------------------------------
+ * フォロー・いいね・リポスト・ブックマーク（SNSCS_Social）
+ * ---------------------------------------------------------------- */
+
+.snscs-follow {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 8px;
+}
+
+.snscs-author .snscs-follow {
+	display: inline-flex;
+	margin: 0 0 0 8px;
+	vertical-align: middle;
+}
+
+.snscs-follow__button {
+	padding: 6px 16px;
+	border: 1px solid #1e3a8a;
+	border-radius: 999px;
+	background: #1e3a8a;
+	color: #fff;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.snscs-follow__button.is-on {
+	background: #fff;
+	color: #1e3a8a;
+}
+
+.snscs-follow__count {
+	color: #555;
+	font-size: 0.85em;
+}
+
+.snscs-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 16px 0;
+}
+
+.snscs-actions__item {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 14px;
+	border: 1px solid #d0d5dd;
+	border-radius: 999px;
+	background: #fff;
+	color: #333;
+	font-size: 0.9em;
+	cursor: pointer;
+}
+
+.snscs-actions__item.is-static {
+	cursor: default;
+	color: #666;
+}
+
+.snscs-actions__item--like.is-on {
+	border-color: #e0245e;
+	color: #e0245e;
+	background: #fdeef3;
+}
+
+.snscs-actions__item--repost.is-on {
+	border-color: #17803d;
+	color: #17803d;
+	background: #eaf7ef;
+}
+
+.snscs-actions__item--bookmark.is-on {
+	border-color: #b7791f;
+	color: #b7791f;
+	background: #fdf6e7;
+}
+
+.snscs-actions__item:disabled {
+	opacity: 0.6;
+}
+
+.snscs-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 24px;
+	z-index: 9999;
+	max-width: calc(100% - 32px);
+	padding: 12px 16px;
+	border-radius: 8px;
+	background: #222;
+	color: #fff;
+	font-size: 0.9em;
+	transform: translateX(-50%);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.snscs-toast a {
+	color: #9ec5ff;
+	font-weight: 700;
+}
+
+.snscs-member__who {
+	color: #555;
+	font-size: 0.9em;
+}
+
+.snscs-member__tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px 0 20px;
+}
+
+.snscs-chip[aria-current="page"] {
+	background: #1e3a8a;
+	color: #fff;
+}
+
+.snscs-feed {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-feed__item {
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-feed__note {
+	margin: 10px 0 0;
+	color: #17803d;
+	font-size: 0.8em;
+}
+
+.snscs-feed__link {
+	display: flex;
+	gap: 12px;
+	padding: 12px 0;
+	color: inherit;
+	text-decoration: none;
+}
+
+.snscs-feed__image {
+	flex: none;
+	border-radius: 6px;
+	object-fit: cover;
+}
+
+.snscs-feed__body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snscs-feed__title {
+	color: #1e3a8a;
+	font-weight: 700;
+}
+
+.snscs-feed__link:hover .snscs-feed__title {
+	text-decoration: underline;
+}
+
+.snscs-feed__meta {
+	color: #666;
+	font-size: 0.8em;
+}
+
+.snscs-member__pager {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 16px;
+}

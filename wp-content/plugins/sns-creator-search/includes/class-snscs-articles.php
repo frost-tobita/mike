@@ -125,6 +125,7 @@ class SNSCS_Articles {
 				<div>
 					<a class="snscs-author__name" href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>"><?php echo esc_html( get_the_title( $creator_id ) ); ?></a>
 					<?php echo SNSCS_Recommend::fav_button( $creator_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?>
+					<?php echo SNSCS_Social::follow_button( $creator_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?>
 					<p class="snscs-author__bio"><?php echo esc_html( wp_trim_words( wp_strip_all_tags( get_post_field( 'post_content', $creator_id ) ), 50, '…' ) ); ?></p>
 				</div>
 			</div>

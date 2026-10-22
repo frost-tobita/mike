@@ -186,6 +186,12 @@ class SNSCS_Scores {
 				'tip'     => 'SNSの投稿で「プロフィールを☆お気に入りしておいてね」と呼びかけてみましょう。',
 				'default' => 5,
 			),
+			'social' => array(
+				'label'   => 'このサイトでの反応',
+				'desc'    => 'このサイトの会員からのフォローと、記事へのいいね・リポスト・ブックマーク',
+				'tip'     => 'SNSで「このサイトでフォローしてね」と呼びかけ、読者の役に立つ記事を書きましょう。',
+				'default' => 10,
+			),
 			'search_ctr' => array(
 				'label'   => '検索でのクリック率',
 				'desc'    => '検索結果で、表示された位置のわりによく押されるか',
@@ -352,6 +358,7 @@ class SNSCS_Scores {
 		$articles     = SNSCS_Articles::activity( self::ARTICLE_DAYS, $half_life * 2 );
 		$usage        = SNSCS_Usage::totals( $days, $half_life );
 		$feedback     = SNSCS_Feedback::for_creators( $creators );
+		$social       = SNSCS_Social::creator_values();
 		$avg_sat      = (float) get_option( 'snscs_avg_sat', 0.5 );
 		list( $quality, $freshness ) = self::profile_values( $creators );
 		$spikes       = SNSCS_Learner::setting( 'spike' ) ? self::spikes() : array();
@@ -390,6 +397,7 @@ class SNSCS_Scores {
 			$values['site_time'][ $id ] = $u['weighted_seconds'];
 			$values['favorites'][ $id ] = $t['weighted_favs'];
 			$f                           = isset( $feedback[ $id ] ) ? $feedback[ $id ] : null;
+			$values['social'][ $id ]       = isset( $social[ $id ] ) ? $social[ $id ] : 0.0;
 			$values['search_ctr'][ $id ]   = $f ? $f['coec'] : 1.0;
 			$values['satisfaction'][ $id ] = ( $f && $f['clicks'] > 0 ) ? $f['sat'] : $avg_sat;
 			$values['authority'][ $id ]    = $f ? $f['authority'] : 1.0;

@@ -426,6 +426,7 @@ class SNSCS_Frontend {
 		// 本文の前: パンくず（特集へ）と、お気に入り・シェアのボタン。
 		ob_start();
 		echo SNSCS_Features::creator_links_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Social::follow_button( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Share::visitor_buttons( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		$before = ob_get_clean();
 
@@ -436,6 +437,7 @@ class SNSCS_Frontend {
 		self::render_links( SNSCS_Submissions::links_for( $id ), SNSCS_Submissions::stores_for( $id ) );
 		echo SNSCS_Inquiries::form_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( $id, 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Social::reposts_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Interviews::for_creator_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		// 回遊: 一緒に見られている発信者（予測）→ 似ている発信者 → 最近見た発信者（この人のブラウザの記録）。
 		echo SNSCS_Personalize::also_viewed_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
