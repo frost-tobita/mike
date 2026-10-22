@@ -100,6 +100,9 @@ class SNSCS_Portal {
 			'unpublished'    => array( 'success', '掲載を停止しました。検索結果と発信者ページに表示されなくなりました。' ),
 			'article_saved'     => array( 'success', '記事を下書きとして保存しました。' ),
 			'article_submitted' => array( 'success', '記事の審査を申請しました。運営が確認し、結果をメールでお知らせします。' ),
+			'article_published' => array( 'success', '記事を公開しました。フォロワーにお知らせが届きます。' ),
+			'article_scheduled' => array( 'success', '記事の公開を予約しました。指定した日時に公開され、フォロワーにお知らせが届きます。' ),
+			'article_updated'   => array( 'success', '記事を更新しました。' ),
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
 			'link_theme_saved'  => array( 'success', 'マイリンクのデザインを保存しました。' ),
@@ -355,6 +358,10 @@ class SNSCS_Portal {
 					<div>
 						<dt>このサイトでのフォロワー</dt>
 						<dd><?php echo esc_html( number_format_i18n( SNSCS_Social::follower_count( $creator_id ) ) ); ?>人</dd>
+					</div>
+					<div>
+						<dt>あなたのリポストから読まれた数</dt>
+						<dd><?php echo esc_html( number_format_i18n( (int) get_post_meta( $creator_id, '_snscs_spread_reads', true ) ) ); ?>人</dd>
 					</div>
 					<div>
 						<dt>おすすめ順での順位</dt>

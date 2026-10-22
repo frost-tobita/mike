@@ -3071,3 +3071,249 @@ body.snscs-portal-body {
 	justify-content: space-between;
 	margin-top: 16px;
 }
+
+/* ------------------------------------------------------------------
+ * お知らせ（SNSCS_Inbox）
+ * ---------------------------------------------------------------- */
+
+.snscs-unread {
+	display: inline-block;
+	min-width: 1.6em;
+	margin-left: 4px;
+	padding: 0 5px;
+	border-radius: 999px;
+	background: #e0245e;
+	color: #fff;
+	font-size: 0.75em;
+	font-weight: 700;
+	line-height: 1.6;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.snscs-inbox {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-inbox__item {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 8px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-inbox__item.is-unread {
+	background: #f1f5ff;
+}
+
+.snscs-inbox__item.is-unread a {
+	font-weight: 700;
+}
+
+.snscs-inbox__when {
+	flex: none;
+	color: #888;
+	font-size: 0.8em;
+}
+
+/* ------------------------------------------------------------------
+ * 記事（SNSCS_Stories）
+ * ---------------------------------------------------------------- */
+
+.snscs-story-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	color: #666;
+	font-size: 0.85em;
+}
+
+.snscs-story-tag {
+	color: #1e3a8a;
+	text-decoration: none;
+}
+
+.snscs-story-tag:hover {
+	text-decoration: underline;
+}
+
+.snscs-story {
+	font-size: 1.05em;
+	line-height: 2;
+	letter-spacing: 0.02em;
+}
+
+.snscs-story h2 {
+	margin-top: 2.2em;
+	padding-bottom: 0.3em;
+	border-bottom: 1px solid #e5e7eb;
+	font-size: 1.35em;
+	line-height: 1.5;
+}
+
+.snscs-story h3 {
+	margin-top: 1.8em;
+	font-size: 1.15em;
+}
+
+.snscs-story blockquote {
+	margin: 1.5em 0;
+	padding: 0.5em 1em;
+	border-left: 4px solid #d0d5dd;
+	color: #444;
+}
+
+.snscs-spread__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-spread__item {
+	padding: 10px 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-spread__who {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.snscs-spread__who img {
+	border-radius: 50%;
+}
+
+.snscs-spread__comment,
+.snscs-feed__comment {
+	margin: 6px 0 0;
+	padding: 8px 12px;
+	border-radius: 8px;
+	background: #f6f7f9;
+	white-space: pre-wrap;
+}
+
+.snscs-repost-menu {
+	position: absolute;
+	z-index: 50;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: min(320px, calc(100vw - 32px));
+	margin-top: 44px;
+	padding: 10px;
+	border: 1px solid #d0d5dd;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.snscs-actions {
+	position: relative;
+}
+
+.snscs-repost-menu button {
+	padding: 8px 12px;
+	border: 1px solid #d0d5dd;
+	border-radius: 6px;
+	background: #fff;
+	text-align: left;
+	cursor: pointer;
+}
+
+.snscs-repost-menu button.is-primary {
+	border-color: #17803d;
+	background: #17803d;
+	color: #fff;
+	text-align: center;
+}
+
+.snscs-repost-menu textarea {
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+}
+
+.snscs-repost-menu__count {
+	align-self: flex-end;
+	color: #888;
+	font-size: 0.8em;
+}
+
+.snscs-actions__resume {
+	align-self: center;
+	font-size: 0.85em;
+	font-weight: 700;
+}
+
+.snscs-feed__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.snscs-feed__row .snscs-feed__link {
+	flex: 1;
+	min-width: 0;
+}
+
+.snscs-feed__mark {
+	flex: none;
+	width: 36px;
+	height: 36px;
+	border: 1px solid #d0d5dd;
+	border-radius: 50%;
+	background: #fff;
+	color: #b7791f;
+	font-size: 1.1em;
+	cursor: pointer;
+}
+
+.snscs-feed__mark.is-on {
+	border-color: #b7791f;
+	background: #fdf6e7;
+}
+
+.snscs-feed__progress {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: #555;
+	font-size: 0.8em;
+}
+
+.snscs-feed__progress.is-new {
+	color: #e0245e;
+	font-weight: 700;
+}
+
+.snscs-feed__progress.is-done {
+	color: #17803d;
+}
+
+.snscs-feed__bar {
+	display: inline-block;
+	width: 80px;
+	height: 6px;
+	border-radius: 3px;
+	background: #e5e7eb;
+	overflow: hidden;
+}
+
+.snscs-feed__bar span {
+	display: block;
+	height: 100%;
+	background: #1e3a8a;
+}
+
+.snscs-feed__resume {
+	margin: 0 0 10px;
+	font-size: 0.85em;
+	font-weight: 700;
+}

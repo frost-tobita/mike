@@ -198,6 +198,8 @@ wp-content/plugins/sns-creator-search/
 │   ├── class-snscs-tagger.php      AIの自動タグ
 │   ├── class-snscs-integrity.php   不正対策（アルゴリズムハックの検知と順位の引き下げ）
 │   ├── class-snscs-social.php      読者会員・フォロー・いいね・リポスト・ブックマーク
+│   ├── class-snscs-inbox.php       お知らせ（サイト内・メール）
+│   ├── class-snscs-stories.php     記事の公開（すぐ公開・予約・ハッシュタグ）・みんなの記事・話題の記事・拡散
 │   └── legal/                      規約ページの文面（ひな形）
 │   └── functions.php               対応SNSの一覧など
 ├── templates/portal-full.php       ページテンプレート「SNS検索ポータル（全幅）」
@@ -207,7 +209,8 @@ wp-content/plugins/sns-creator-search/
 ├── assets/js/snscs-personal.js     好みの記録・お気に入り・おすすめ欄の読み込み
 └── assets/js/snscs-calendar.js     カレンダーの画面
     assets/js/snscs-search.js       検索の行動の記録・入力中の候補
-    assets/js/snscs-social.js       フォロー・いいね・リポスト・ブックマークのボタン
+    assets/js/snscs-social.js       フォロー・いいね・リポスト・ブックマークのボタン・続きから読む
+    assets/js/snscs-inbox.js        未読のお知らせの数
 ```
 
 ## 動作環境

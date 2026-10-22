@@ -91,7 +91,7 @@ class SNSCS_Portal_Top {
 	 */
 	public static function header_links() {
 		$links = array();
-		foreach ( array( 'ranking' => 'ランキング', 'features' => '特集', 'calendar' => 'カレンダー', 'business' => '企業の方へ' ) as $key => $label ) {
+		foreach ( array( 'stories' => 'みんなの記事', 'ranking' => 'ランキング', 'features' => '特集', 'member' => is_user_logged_in() ? 'フォロー中' : 'ログイン', 'business' => '企業の方へ' ) as $key => $label ) {
 			if ( SNSCS_Hub::page_url( $key ) ) {
 				$links[] = array( SNSCS_Hub::page_url( $key ), $label );
 			}
@@ -254,6 +254,19 @@ class SNSCS_Portal_Top {
 		}
 		$ranking_new = $ranking ? add_query_arg( 'snscs_rk', 'new', $ranking ) : '';
 		$out        .= self::box( '新着の発信者', $rows ? '<ul class="snscs-pt-list">' . $rows . '</ul>' : '', $ranking_new );
+
+		// 話題の記事（いいね・リポスト・ブックマークの多い記事）。
+		$hot = array_keys( SNSCS_Stories::trending( 5 ) );
+		if ( ! $hot ) {
+			$hot = SNSCS_Stories::newest( 5 );
+		}
+		if ( $hot ) {
+			$items = array();
+			foreach ( $hot as $id ) {
+				$items[] = array( 'id' => $id, 'note' => '' );
+			}
+			$out .= self::box( '話題の記事', SNSCS_Social::render_list( $items ), SNSCS_Stories::stories_url() );
+		}
 
 		$out .= SNSCS_Columns::render( 'SNS運用コラム', array( 'count' => 3 ) );
 		return $out;

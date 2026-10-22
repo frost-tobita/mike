@@ -8,7 +8,8 @@
  *   いいね       : 記事への「よかった」。数を記事に表示する
  *   リポスト     : 記事を自分のフォロワーに紹介する。発信者がリポストすると、その発信者のフォロワーの「フォロー中」と、
  *                  発信者ページの「リポストした記事」に出る（読者のリポストは数として数えるだけ）
- *   ブックマーク : 自分だけの「あとで読む」。数は表示しない
+ *   引用リポスト : ひとこと（140文字まで）を添えたリポスト。記事の下の「この記事を広めた発信者」とフォロワーの画面に出る
+ *   ブックマーク : 自分だけの「あとで読む」。どこまで読んだかを覚え、「続きから読む」で戻れる。読み終えていないものは週1回お知らせ
  * 誰がフォロー・いいねしたかは公開しない（数だけ）。
  *
  * 不正対策: 自分自身へのフォロー・いいね等はできない。1人1時間300回まで。
@@ -81,6 +82,9 @@ class SNSCS_Social {
   user_id bigint(20) unsigned NOT NULL,
   article_id bigint(20) unsigned NOT NULL,
   type tinyint(3) unsigned NOT NULL,
+  comment varchar(280) NOT NULL DEFAULT '',
+  progress tinyint(3) unsigned NOT NULL DEFAULT 0,
+  read_at datetime DEFAULT NULL,
   created_at datetime NOT NULL,
   PRIMARY KEY  (user_id,article_id,type),
   KEY article_type (article_id,type),
@@ -304,7 +308,7 @@ class SNSCS_Social {
 	 *
 	 * @return array|WP_Error
 	 */
-	public static function toggle( $user_id, $action, $id, $on ) {
+	public static function toggle( $user_id, $action, $id, $on, $comment = '' ) {
 		global $wpdb;
 		$now = current_time( 'mysql' );
 		if ( 'follow' === $action ) {
@@ -319,7 +323,9 @@ class SNSCS_Social {
 			} else {
 				$wpdb->delete( self::follows_table(), array( 'user_id' => $user_id, 'creator_id' => $id ), array( '%d', '%d' ) );
 			}
-			return array( 'on' => (bool) $on, 'count' => self::recount_creator( $id ) );
+			$count = self::recount_creator( $id );
+			do_action( 'snscs_social_changed', $user_id, $action, $id, (bool) $on );
+			return array( 'on' => (bool) $on, 'count' => $count );
 		}
 		$types = array( 'like' => self::LIKE, 'repost' => self::REPOST, 'bookmark' => self::BOOKMARK );
 		if ( ! isset( $types[ $action ] ) ) {
@@ -332,12 +338,15 @@ class SNSCS_Social {
 		if ( self::BOOKMARK !== $types[ $action ] && $own && SNSCS_Articles::POST_TYPE === get_post_type( $id ) && SNSCS_Articles::creator_of( $id ) === $own ) {
 			return new WP_Error( 'self', '自分の記事にはできません。', array( 'status' => 400 ) );
 		}
+		$comment = self::REPOST === $types[ $action ] ? mb_substr( trim( sanitize_textarea_field( (string) $comment ) ), 0, 140 ) : '';
 		if ( $on ) {
-			$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . self::reactions_table() . ' (user_id, article_id, type, created_at) VALUES (%d, %d, %d, %s)', $user_id, $id, $types[ $action ], $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// ひとことを付け直したときは、ひとことだけ新しくする。
+			$wpdb->query( $wpdb->prepare( 'INSERT INTO ' . self::reactions_table() . ' (user_id, article_id, type, comment, created_at) VALUES (%d, %d, %d, %s, %s) ON DUPLICATE KEY UPDATE created_at = IF(VALUES(comment) <> \'\', VALUES(created_at), created_at), comment = IF(VALUES(comment) <> \'\', VALUES(comment), comment)', $user_id, $id, $types[ $action ], $comment, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} else {
 			$wpdb->delete( self::reactions_table(), array( 'user_id' => $user_id, 'article_id' => $id, 'type' => $types[ $action ] ), array( '%d', '%d', '%d' ) );
 		}
 		$counts = self::recount_article( $id );
+		do_action( 'snscs_social_changed', $user_id, $action, $id, (bool) $on );
 		return array( 'on' => (bool) $on, 'count' => $counts[ $types[ $action ] ] );
 	}
 
@@ -383,6 +392,15 @@ class SNSCS_Social {
 		);
 		register_rest_route(
 			'snscs/v1',
+			'/social/progress',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'rest_progress' ),
+				'permission_callback' => 'is_user_logged_in',
+			)
+		);
+		register_rest_route(
+			'snscs/v1',
 			'/social/sync',
 			array(
 				'methods'             => 'POST',
@@ -406,8 +424,20 @@ class SNSCS_Social {
 		if ( self::limited( $user_id ) ) {
 			return new WP_Error( 'too_many', '操作が多すぎます。しばらくしてからお試しください。', array( 'status' => 429 ) );
 		}
-		$result = self::toggle( $user_id, sanitize_key( (string) $request->get_param( 'action' ) ), absint( $request->get_param( 'id' ) ), (bool) $request->get_param( 'on' ) );
+		$result = self::toggle( $user_id, sanitize_key( (string) $request->get_param( 'action' ) ), absint( $request->get_param( 'id' ) ), (bool) $request->get_param( 'on' ), (string) $request->get_param( 'comment' ) );
 		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
+	}
+
+	/**
+	 * ブックマークした記事を、どこまで読んだか（0〜100%）。9割まで読んだら「読み終えた」。
+	 */
+	public static function rest_progress( WP_REST_Request $request ) {
+		global $wpdb;
+		$id       = absint( $request->get_param( 'id' ) );
+		$progress = min( 100, max( 0, (int) $request->get_param( 'p' ) ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( 'UPDATE ' . self::reactions_table() . ' SET progress = GREATEST(progress, %d), read_at = IF(read_at IS NULL AND %d >= 90, %s, read_at) WHERE user_id = %d AND article_id = %d AND type = %d', $progress, $progress, current_time( 'mysql' ), get_current_user_id(), $id, self::BOOKMARK ) );
+		return rest_ensure_response( array( 'ok' => true ) );
 	}
 
 	/**
@@ -473,6 +503,8 @@ class SNSCS_Social {
 			'window.snscsSocial = ' . wp_json_encode(
 				array(
 					'rest'     => esc_url_raw( rest_url( 'snscs/v1/social' ) ),
+					'article'  => is_singular( array( SNSCS_Articles::POST_TYPE, 'post' ) ) ? get_queried_object_id() : 0,
+					'progress' => self::my_progress(),
 					'nonce'    => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 					'loggedIn' => is_user_logged_in(),
 					'join'     => self::member_url( array( 'redirect_to' => rawurlencode( $current ) ) ),
@@ -480,6 +512,19 @@ class SNSCS_Social {
 			) . ';',
 			'before'
 		);
+	}
+
+	/**
+	 * 表示中の記事をブックマークしていれば、前回どこまで読んだか（%）。していなければ -1。
+	 */
+	private static function my_progress() {
+		global $wpdb;
+		if ( ! is_user_logged_in() || ! is_singular( array( SNSCS_Articles::POST_TYPE, 'post' ) ) ) {
+			return -1;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$p = $wpdb->get_var( $wpdb->prepare( 'SELECT progress FROM ' . self::reactions_table() . ' WHERE user_id = %d AND article_id = %d AND type = %d', get_current_user_id(), get_queried_object_id(), self::BOOKMARK ) );
+		return null === $p ? -1 : (int) $p;
 	}
 
 	/**
@@ -573,28 +618,60 @@ class SNSCS_Social {
 	}
 
 	/**
-	 * 記事の一覧（会員ページ・発信者ページ用）。
+	 * 記事の一覧（会員ページ・みんなの記事・発信者ページ用）。
 	 *
-	 * @param array $items [['id' => 記事ID, 'note' => 上に出す一言], ...]
+	 * @param array $items [['id' => 記事ID, 'note' => 上に出す一言, 'comment' => ひとこと, 'rp' => リポストした発信者ID,
+	 *                       'progress' => 読んだ割合（ブックマーク）, 'read' => 読み終えたか], ...]
 	 */
 	public static function render_list( array $items, $empty = '' ) {
 		if ( ! $items ) {
 			return $empty ? '<p class="snscs-help">' . esc_html( $empty ) . '</p>' : '';
 		}
-		$html = '<ul class="snscs-feed">';
+		self::enqueue();
+		$ids     = wp_list_pluck( $items, 'id' );
+		$user_id = get_current_user_id();
+		$mine    = $user_id ? self::state( $user_id, array(), $ids )['reactions'] : array();
+		$html    = '<ul class="snscs-feed">';
 		foreach ( $items as $item ) {
 			$d      = self::card_data( $item['id'] );
 			$counts = self::counts( $item['id'] );
+			$url    = ! empty( $item['rp'] ) ? add_query_arg( 'rp', (int) $item['rp'], $d['url'] ) : $d['url'];
+			$marked = ! empty( $mine[ $item['id'] ][ self::BOOKMARK ] );
 			$html  .= '<li class="snscs-feed__item">';
 			if ( ! empty( $item['note'] ) ) {
 				$html .= '<p class="snscs-feed__note">↻ ' . esc_html( $item['note'] ) . '</p>';
 			}
-			$html .= '<a class="snscs-feed__link" href="' . esc_url( $d['url'] ) . '">';
+			if ( ! empty( $item['comment'] ) ) {
+				$html .= '<p class="snscs-feed__comment">' . esc_html( $item['comment'] ) . '</p>';
+			}
+			$html .= '<div class="snscs-feed__row"><a class="snscs-feed__link" href="' . esc_url( $url ) . '">';
 			if ( $d['image'] ) {
 				$html .= '<img class="snscs-feed__image" src="' . esc_url( $d['image'] ) . '" alt="" width="64" height="64" loading="lazy">';
 			}
 			$html .= '<span class="snscs-feed__body"><span class="snscs-feed__title">' . esc_html( $d['title'] ) . '</span>';
-			$html .= '<span class="snscs-feed__meta">' . esc_html( trim( $d['creator'] . '　' . $d['date'] ) ) . '　♥ ' . esc_html( number_format_i18n( $counts[ self::LIKE ] ) ) . '　↻ ' . esc_html( number_format_i18n( $counts[ self::REPOST ] ) ) . '</span></span></a></li>';
+			$html .= '<span class="snscs-feed__meta">' . esc_html( trim( $d['creator'] . '　' . $d['date'] ) ) . '　♥ ' . esc_html( number_format_i18n( $counts[ self::LIKE ] ) ) . '　↻ ' . esc_html( number_format_i18n( $counts[ self::REPOST ] ) ) . '</span>';
+			if ( isset( $item['progress'] ) ) {
+				if ( ! empty( $item['read'] ) ) {
+					$html .= '<span class="snscs-feed__progress is-done">読み終えました</span>';
+				} elseif ( $item['progress'] > 0 ) {
+					$html .= '<span class="snscs-feed__progress"><span class="snscs-feed__bar"><span style="width:' . (int) $item['progress'] . '%"></span></span>' . (int) $item['progress'] . '%まで読みました</span>';
+				} else {
+					$html .= '<span class="snscs-feed__progress is-new">未読</span>';
+				}
+			}
+			$html .= '</span></a>';
+			$html .= sprintf(
+				'<button type="button" class="snscs-feed__mark%s" data-snscs-social="bookmark" data-id="%d" aria-pressed="%s" aria-label="ブックマーク" data-icon-on="★" data-icon-off="☆"><span class="snscs-actions__icon" aria-hidden="true">%s</span></button>',
+				$marked ? ' is-on' : '',
+				(int) $item['id'],
+				$marked ? 'true' : 'false',
+				$marked ? '★' : '☆'
+			);
+			$html .= '</div>';
+			if ( isset( $item['progress'] ) && empty( $item['read'] ) && $item['progress'] > 0 ) {
+				$html .= '<p class="snscs-feed__resume"><a href="' . esc_url( $d['url'] . '#snscs-resume' ) . '">続きから読む →</a></p>';
+			}
+			$html .= '</li>';
 		}
 		return $html . '</ul>';
 	}
@@ -623,7 +700,7 @@ class SNSCS_Social {
 		$users = wp_list_pluck( $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'snscs_creator_id' AND meta_value IN ({$in})", ARRAY_A ), 'meta_value', 'user_id' );
 		$reposts = array();
 		if ( $users ) {
-			$reposts = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, article_id AS id, created_at AS at FROM ' . self::reactions_table() . ' WHERE type = %d AND user_id IN (' . implode( ',', array_map( 'intval', array_keys( $users ) ) ) . ') ORDER BY created_at DESC LIMIT %d', self::REPOST, $limit ), ARRAY_A );
+			$reposts = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, article_id AS id, comment, created_at AS at FROM ' . self::reactions_table() . ' WHERE type = %d AND user_id IN (' . implode( ',', array_map( 'intval', array_keys( $users ) ) ) . ') ORDER BY created_at DESC LIMIT %d', self::REPOST, $limit ), ARRAY_A );
 		}
 		// phpcs:enable
 		$items = array();
@@ -635,9 +712,10 @@ class SNSCS_Social {
 			if ( ! self::is_article( $id ) ) {
 				continue;
 			}
-			$who = get_the_title( (int) $users[ $row['user_id'] ] ) . 'さんがリポスト';
+			$creator = (int) $users[ $row['user_id'] ];
+			$who     = get_the_title( $creator ) . 'さんが' . ( '' !== $row['comment'] ? 'ひとこと付きで' : '' ) . 'リポスト';
 			if ( ! isset( $items[ $id ] ) || $row['at'] > $items[ $id ]['at'] ) {
-				$items[ $id ] = array( 'id' => $id, 'at' => $row['at'], 'note' => $who );
+				$items[ $id ] = array( 'id' => $id, 'at' => $row['at'], 'note' => $who, 'comment' => $row['comment'], 'rp' => $creator );
 			}
 		}
 		usort(
@@ -655,12 +733,19 @@ class SNSCS_Social {
 	public static function reacted( $user_id, $type, $page = 1 ) {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ids = $wpdb->get_col( $wpdb->prepare( 'SELECT article_id FROM ' . self::reactions_table() . ' WHERE user_id = %d AND type = %d ORDER BY created_at DESC LIMIT %d, %d', $user_id, $type, ( $page - 1 ) * self::PER_PAGE, self::PER_PAGE + 1 ) );
-		$out = array();
-		foreach ( $ids as $id ) {
-			if ( self::is_article( (int) $id ) ) {
-				$out[] = array( 'id' => (int) $id, 'note' => '' );
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT article_id, comment, progress, read_at FROM ' . self::reactions_table() . ' WHERE user_id = %d AND type = %d ORDER BY created_at DESC LIMIT %d, %d', $user_id, $type, ( $page - 1 ) * self::PER_PAGE, self::PER_PAGE + 1 ), ARRAY_A );
+		$out  = array();
+		foreach ( $rows as $row ) {
+			$id = (int) $row['article_id'];
+			if ( ! self::is_article( $id ) ) {
+				continue;
 			}
+			$item = array( 'id' => $id, 'note' => '', 'comment' => $row['comment'] );
+			if ( self::BOOKMARK === (int) $type ) {
+				$item['progress'] = (int) $row['progress'];
+				$item['read']     = null !== $row['read_at'];
+			}
+			$out[] = $item;
 		}
 		return $out;
 	}
@@ -690,6 +775,7 @@ class SNSCS_Social {
 			'registered'     => array( 'success', '会員登録が完了しました。発信者をフォローしたり、記事にいいね・リポスト・ブックマークしたりできます。' ),
 			'logged_in'      => array( 'success', 'ログインしました。' ),
 			'withdrawn'      => array( 'success', '退会しました。フォロー・いいねなどの記録もすべて削除しました。' ),
+			'inbox_saved'    => array( 'success', 'お知らせメールの設定を保存しました。' ),
 			'login_error'    => array( 'error', 'メールアドレスかパスワードが違います。' ),
 			'email_invalid'  => array( 'error', 'メールアドレスの形式が正しくありません。' ),
 			'email_exists'   => array( 'error', 'このメールアドレスはすでに登録されています。ログインしてください。' ),
@@ -707,7 +793,7 @@ class SNSCS_Social {
 
 	public static function shortcode() {
 		self::enqueue();
-		$tab  = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'timeline'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$tab  = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : ( is_user_logged_in() && SNSCS_Inbox::unread_count( get_current_user_id() ) ? 'inbox' : 'timeline' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$page = isset( $_GET['pg'] ) ? max( 1, absint( $_GET['pg'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		ob_start();
 		echo '<div class="snscs-member">';
@@ -760,7 +846,9 @@ class SNSCS_Social {
 	}
 
 	private static function render_member( $user_id, $tab, $page ) {
-		$tabs = array(
+		$unread = SNSCS_Inbox::unread_count( $user_id );
+		$tabs   = array(
+			'inbox'     => 'お知らせ' . ( $unread ? '（' . $unread . '）' : '' ),
 			'timeline'  => 'フォロー中の新着',
 			'bookmarks' => 'ブックマーク',
 			'likes'     => 'いいねした記事',
@@ -783,7 +871,12 @@ class SNSCS_Social {
 			<?php endforeach; ?>
 		</nav>
 		<?php
+		if ( 'inbox' === $tab ) {
+			SNSCS_Inbox::render( $user_id );
+			return;
+		}
 		if ( 'account' === $tab ) {
+			SNSCS_Inbox::render_settings( $user_id );
 			self::render_account();
 			return;
 		}

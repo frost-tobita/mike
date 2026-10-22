@@ -73,6 +73,8 @@ class SNSCS_Articles_Review {
 			echo '<div class="notice notice-success is-dismissible"><p>承認して公開しました。発信者にメールでお知らせしました。</p></div>';
 		} elseif ( 'rejected' === $done ) {
 			echo '<div class="notice notice-success is-dismissible"><p>差し戻しました。理由を発信者にメールでお知らせしました。</p></div>';
+		} elseif ( 'mode' === $done ) {
+			echo '<div class="notice notice-success is-dismissible"><p>記事の公開のしかたを保存しました。</p></div>';
 		}
 		$error = get_transient( 'snscs_article_review_error_' . get_current_user_id() );
 		if ( $error ) {
@@ -84,6 +86,7 @@ class SNSCS_Articles_Review {
 		if ( $article && SNSCS_Articles::POST_TYPE === $article->post_type ) {
 			self::render_detail( $article );
 		} else {
+			SNSCS_Stories::render_mode_form();
 			self::render_list();
 		}
 		echo '</div>';
@@ -197,9 +200,15 @@ class SNSCS_Articles_Review {
 				if ( $pending['thumbnail_id'] ) {
 					set_post_thumbnail( $article_id, $pending['thumbnail_id'] );
 				}
+				if ( isset( $pending['tags'] ) ) {
+					SNSCS_Stories::set_tags( $article_id, (array) $pending['tags'] );
+				}
 				delete_post_meta( $article_id, '_snscs_pending' );
+				do_action( 'snscs_article_updated', $article_id );
 			} else {
-				wp_update_post( array( 'ID' => $article_id, 'post_status' => 'publish' ) );
+				// 予約の日時が過ぎていなければ、その日時に公開する。
+				$at = (string) get_post_meta( $article_id, '_snscs_publish_at', true );
+				SNSCS_Stories::publish( $article_id, $at && strtotime( $at ) > strtotime( current_time( 'mysql' ) ) + 60 ? $at : '' );
 			}
 			delete_post_meta( $article_id, '_snscs_reject_note' );
 			do_action( 'snscs_article_approved', $article_id );

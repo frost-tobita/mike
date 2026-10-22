@@ -114,13 +114,99 @@
 			return;
 		}
 
+		if ( 'repost' === action && ! button.hasAttribute( 'data-snscs-direct' ) ) {
+			repostMenu( button, id, on );
+			return;
+		}
+		send( button, action, id, on, '' );
+	} );
+
+	/* ------------------------------------------------------------------
+	 * リポストのメニュー（そのままリポスト / ひとこと付きでリポスト / 取り消す）
+	 * ---------------------------------------------------------------- */
+
+	function closeMenus() {
+		Array.prototype.forEach.call( document.querySelectorAll( '.snscs-repost-menu' ), function ( menu ) {
+			menu.remove();
+		} );
+	}
+
+	document.addEventListener( 'click', function ( event ) {
+		if ( ! event.target.closest || ( ! event.target.closest( '.snscs-repost-menu' ) && ! event.target.closest( '[data-snscs-social="repost"]' ) ) ) {
+			closeMenus();
+		}
+	} );
+
+	function repostMenu( button, id, on ) {
+		closeMenus();
+		var menu = document.createElement( 'div' );
+		menu.className = 'snscs-repost-menu';
+		menu.addEventListener( 'click', function ( event ) {
+			event.stopPropagation();
+		} );
+		menu.setAttribute( 'role', 'dialog' );
+		menu.setAttribute( 'aria-label', 'リポスト' );
+		function item( label, handler ) {
+			var b = document.createElement( 'button' );
+			b.type = 'button';
+			b.textContent = label;
+			b.addEventListener( 'click', function ( event ) {
+				// 中身を入れ替えるので、外側のクリック（メニューを閉じる処理）へは伝えない。
+				event.stopPropagation();
+				handler( event );
+			} );
+			menu.appendChild( b );
+			return b;
+		}
+		function quoteForm() {
+			menu.innerHTML = '';
+			var area = document.createElement( 'textarea' );
+			area.maxLength = 140;
+			area.rows = 3;
+			area.placeholder = 'この記事について、ひとこと（140文字まで）';
+			var counter = document.createElement( 'span' );
+			counter.className = 'snscs-repost-menu__count';
+			counter.textContent = '0 / 140';
+			area.addEventListener( 'input', function () {
+				counter.textContent = area.value.length + ' / 140';
+			} );
+			menu.appendChild( area );
+			menu.appendChild( counter );
+			var ok = item( 'ひとこと付きでリポスト', function () {
+				if ( ! area.value.trim() ) {
+					area.focus();
+					return;
+				}
+				send( button, 'repost', id, true, area.value.trim() );
+				closeMenus();
+			} );
+			ok.className = 'is-primary';
+			area.focus();
+		}
+		if ( on ) {
+			item( 'ひとことを書き直す', quoteForm );
+			item( 'リポストを取り消す', function () {
+				send( button, 'repost', id, false, '' );
+				closeMenus();
+			} );
+		} else {
+			item( 'リポスト', function () {
+				send( button, 'repost', id, true, '' );
+				closeMenus();
+			} );
+			item( 'ひとこと付きでリポスト', quoteForm );
+		}
+		button.parentNode.insertBefore( menu, button.nextSibling );
+	}
+
+	function send( button, action, id, on, comment ) {
 		button.disabled = true;
 		renderAll( action, id, on );
 		fetch( config.rest, {
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-			body: JSON.stringify( { action: action, id: id, on: on } ),
+			body: JSON.stringify( { action: action, id: id, on: on, comment: comment } ),
 		} )
 			.then( function ( response ) {
 				return response.json().then( function ( data ) {
@@ -139,8 +225,98 @@
 			} )
 			.then( function () {
 				button.disabled = false;
+				if ( 'repost' === action && on && comment ) {
+					toast( 'ひとこと付きでリポストしました。フォロワーの画面に表示されます。' );
+				}
 			} );
-	} );
+	}
+
+	/* ------------------------------------------------------------------
+	 * ブックマークした記事: どこまで読んだかを覚え、「続きから読む」で戻る
+	 * ---------------------------------------------------------------- */
+
+	var body = document.querySelector( '.snscs-story' ) || document.querySelector( '.snscs-actions' );
+	if ( config.article && body ) {
+		var area = document.querySelector( '.snscs-story' ) || body.parentNode;
+		var LOCAL_PROGRESS = 'snscs_progress';
+		var readLocalProgress = function () {
+			try {
+				return JSON.parse( window.localStorage.getItem( LOCAL_PROGRESS ) || '{}' ) || {};
+			} catch ( e ) {
+				return {};
+			}
+		};
+		var bookmarked = function () {
+			var b = document.querySelector( '[data-snscs-social="bookmark"][data-id="' + config.article + '"]' );
+			return b && 'true' === b.getAttribute( 'aria-pressed' );
+		};
+		var saved = config.loggedIn ? config.progress : ( readLocalProgress()[ config.article ] || 0 );
+		var percent = function () {
+			var rect = area.getBoundingClientRect();
+			var seen = window.innerHeight - rect.top;
+			return Math.max( 0, Math.min( 100, Math.round( seen / Math.max( 1, rect.height ) * 100 ) ) );
+		};
+		var max = 0;
+		var timer = null;
+		window.addEventListener( 'scroll', function () {
+			max = Math.max( max, percent() );
+			// 読み進めたら、少し止まったところで保存する（ページを閉じたときにも保存する）。
+			clearTimeout( timer );
+			timer = setTimeout( function () {
+				report();
+			}, 1500 );
+		}, { passive: true } );
+		var report = function () {
+			if ( ! bookmarked() || max <= Math.max( 0, saved ) ) {
+				return;
+			}
+			saved = max;
+			if ( config.loggedIn ) {
+				fetch( config.rest + '/progress', {
+					method: 'POST',
+					credentials: 'same-origin',
+					keepalive: true,
+					headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
+					body: JSON.stringify( { id: config.article, p: max } ),
+				} ).catch( function () {} );
+			} else {
+				var all = readLocalProgress();
+				all[ config.article ] = max;
+				try {
+					window.localStorage.setItem( LOCAL_PROGRESS, JSON.stringify( all ) );
+				} catch ( e ) {}
+			}
+		};
+		document.addEventListener( 'visibilitychange', function () {
+			if ( 'hidden' === document.visibilityState ) {
+				report();
+			}
+		} );
+		window.addEventListener( 'pagehide', report );
+
+		// 「続きから読む」: 前回読んだところの少し手前へ。
+		if ( '#snscs-resume' === window.location.hash && saved > 0 && saved < 90 ) {
+			window.addEventListener( 'load', function () {
+				var rect = area.getBoundingClientRect();
+				window.scrollTo( 0, window.pageYOffset + rect.top + rect.height * saved / 100 - window.innerHeight * 0.9 );
+				toast( '前回の続き（' + saved + '%）から表示しています。' );
+			} );
+		} else if ( saved > 0 && saved < 90 && bookmarked() ) {
+			var bar = document.querySelector( '.snscs-actions' );
+			if ( bar ) {
+				var resume = document.createElement( 'a' );
+				resume.className = 'snscs-actions__resume';
+				resume.href = '#snscs-resume';
+				resume.textContent = '前回の続き（' + saved + '%）から読む';
+				resume.addEventListener( 'click', function ( event ) {
+					event.preventDefault();
+					var rect = area.getBoundingClientRect();
+					window.scrollTo( { top: window.pageYOffset + rect.top + rect.height * saved / 100 - window.innerHeight * 0.9, behavior: 'smooth' } );
+				} );
+				bar.appendChild( resume );
+			}
+		}
+	}
 
 	// ログインしたら、このブラウザのブックマークをアカウントへ移す。
 	if ( config.loggedIn && readLocal().length ) {

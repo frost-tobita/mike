@@ -199,7 +199,7 @@ class SNSCS_Articles {
 				<h2 class="snscs-panel__title">あなたの記事</h2>
 				<a class="snscs-button snscs-button--primary" href="<?php echo esc_url( self::editor_url() ); ?>">新しい記事を書く</a>
 			</div>
-			<p class="snscs-help">記事はあなたの発信者ページに並び、記事の下にはあなたのSNSとリンクが表示されます。新しい記事も変更も、運営の審査を通ると公開されます。</p>
+			<p class="snscs-help">記事はあなたの発信者ページと「みんなの記事」に並び、記事の下にはあなたのSNSとリンクが表示されます。公開すると、あなたをフォローしている人にお知らせが届きます。<?php echo SNSCS_Stories::can_publish_now( $creator_id ) ? '' : '最初の記事は、運営の確認を通ってから公開されます。'; ?></p>
 			<?php if ( ! $articles ) : ?>
 				<p>まだ記事はありません。得意なテーマや、SNSでは書ききれない話を書いてみましょう。</p>
 			<?php else : ?>
@@ -215,6 +215,12 @@ class SNSCS_Articles {
 									<a href="<?php echo esc_url( get_permalink( $article ) ); ?>" target="_blank">見る</a>
 								<?php endif; ?>
 							</span>
+							<?php if ( 'publish' === $article->post_status ) : ?>
+								<?php $c = SNSCS_Social::counts( $article->ID ); ?>
+								<span class="snscs-my-articles__note">♥ <?php echo esc_html( number_format_i18n( $c[ SNSCS_Social::LIKE ] ) ); ?>　↻ <?php echo esc_html( number_format_i18n( $c[ SNSCS_Social::REPOST ] ) ); ?>　☆ <?php echo esc_html( number_format_i18n( $c[ SNSCS_Social::BOOKMARK ] ) ); ?>　リポストから読まれた数 <?php echo esc_html( number_format_i18n( (int) get_post_meta( $article->ID, '_snscs_via_repost', true ) ) ); ?></span>
+							<?php elseif ( 'future' === $article->post_status ) : ?>
+								<span class="snscs-my-articles__note"><?php echo esc_html( mysql2date( 'Y年n月j日 H:i', $article->post_date ) ); ?> に公開予定</span>
+							<?php endif; ?>
 							<?php $note = get_post_meta( $article->ID, '_snscs_reject_note', true ); ?>
 							<?php if ( $note ) : ?>
 								<span class="snscs-my-articles__note">運営からのメッセージ: <?php echo esc_html( $note ); ?></span>
@@ -239,6 +245,9 @@ class SNSCS_Articles {
 		}
 		if ( 'pending' === $article->post_status ) {
 			return array( 'pending', '審査中' );
+		}
+		if ( 'future' === $article->post_status ) {
+			return array( 'pending', '公開予約' );
 		}
 		return get_post_meta( $article->ID, '_snscs_reject_note', true ) ? array( 'rejected', '差し戻し' ) : array( 'off', '下書き' );
 	}
@@ -277,7 +286,20 @@ class SNSCS_Articles {
 			$title   = $state['title'];
 			$content = $state['content'];
 		}
+		$tags       = $article ? SNSCS_Stories::tags_text( $article->ID ) : '';
+		$publish_at = $article ? (string) get_post_meta( $article->ID, '_snscs_publish_at', true ) : '';
+		if ( is_array( $pending ) && isset( $pending['tags'] ) ) {
+			$tags = $pending['tags'] ? '#' . implode( ' #', $pending['tags'] ) : '';
+		}
+		if ( $state && (int) $state['article_id'] === $article_id && isset( $state['tags'] ) ) {
+			$tags       = $state['tags'];
+			$publish_at = $state['publish_at'];
+		}
+		if ( $article && 'future' === $article->post_status ) {
+			$publish_at = $article->post_date;
+		}
 		$published = $article && 'publish' === $article->post_status;
+		$instant   = SNSCS_Stories::can_publish_now( $creator_id );
 		$photo_url = $photo ? wp_get_attachment_image_url( $photo, 'medium' ) : '';
 		?>
 		<div class="snscs-account-bar">
@@ -296,7 +318,9 @@ class SNSCS_Articles {
 				</div>
 			<?php endif; ?>
 			<?php if ( $published ) : ?>
-				<p class="snscs-notice">この記事は公開中です。変更は審査を通ると反映され、それまでは今の内容が表示されます。</p>
+				<p class="snscs-notice"><?php echo $instant ? 'この記事は公開中です。「更新する」を押すと、すぐに反映されます。' : 'この記事は公開中です。変更は審査を通ると反映され、それまでは今の内容が表示されます。'; ?></p>
+			<?php elseif ( $article && 'future' === $article->post_status ) : ?>
+				<p class="snscs-notice"><?php echo esc_html( sprintf( '%s に公開する予定です。', mysql2date( 'Y年n月j日 H:i', $article->post_date ) ) ); ?></p>
 			<?php endif; ?>
 
 			<form class="snscs-fields" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -342,8 +366,25 @@ class SNSCS_Articles {
 					?>
 				</div>
 
+				<label class="snscs-field">
+					<span>ハッシュタグ（<?php echo (int) SNSCS_Stories::MAX_TAGS; ?>個まで。スペースで区切る）</span>
+					<input type="text" name="tags" value="<?php echo esc_attr( $tags ); ?>" placeholder="#作り置き #時短レシピ">
+					<small class="snscs-help">「みんなの記事」でタグから探してもらえます。</small>
+				</label>
+
+				<?php if ( ! $published ) : ?>
+					<label class="snscs-field">
+						<span>公開する日時（予約投稿。空なら<?php echo $instant ? 'すぐに公開' : '承認されたらすぐに公開'; ?>）</span>
+						<input type="datetime-local" name="publish_at" value="<?php echo esc_attr( $publish_at ? str_replace( ' ', 'T', substr( $publish_at, 0, 16 ) ) : '' ); ?>">
+					</label>
+				<?php endif; ?>
+
+				<?php if ( ! $instant ) : ?>
+					<p class="snscs-help">記事は運営の確認を通ってから公開されます。1本目が公開されると、次からは審査なしですぐに公開できるようになります。</p>
+				<?php endif; ?>
+
 				<div class="snscs-article-buttons">
-					<button type="submit" name="intent" value="submit" class="snscs-button snscs-button--primary"><?php echo $published ? '変更を申請する' : '審査を申請する'; ?></button>
+					<button type="submit" name="intent" value="submit" class="snscs-button snscs-button--primary"><?php echo $instant ? ( $published ? '更新する' : '公開する' ) : ( $published ? '変更を申請する' : '審査を申請する' ); ?></button>
 					<?php if ( ! $published ) : ?>
 						<button type="submit" name="intent" value="draft" class="snscs-button">下書き保存</button>
 					<?php endif; ?>
@@ -398,6 +439,15 @@ class SNSCS_Articles {
 			$errors[] = '本文が長すぎます。2つの記事に分けてください。';
 		}
 
+		$tags_raw   = isset( $_POST['tags'] ) ? sanitize_text_field( wp_unslash( $_POST['tags'] ) ) : '';
+		$tags       = SNSCS_Stories::parse_tags( $tags_raw );
+		$at_raw     = isset( $_POST['publish_at'] ) ? sanitize_text_field( wp_unslash( $_POST['publish_at'] ) ) : '';
+		$publish_at = SNSCS_Stories::parse_publish_at( $at_raw );
+		if ( '' !== $at_raw && '' === $publish_at ) {
+			$errors[] = '公開する日時は、今より後の日時にしてください（すぐに公開するなら空にしてください）。';
+		}
+		$instant = SNSCS_Stories::can_publish_now( $creator_id );
+
 		$thumbnail_id = isset( $_POST['thumbnail_id'] ) ? absint( $_POST['thumbnail_id'] ) : 0;
 		if ( $thumbnail_id && (int) get_post_field( 'post_author', $thumbnail_id ) !== $user_id ) {
 			$thumbnail_id = 0;
@@ -414,16 +464,30 @@ class SNSCS_Articles {
 		if ( $errors ) {
 			set_transient(
 				'snscs_article_form_' . $user_id,
-				array( 'article_id' => $article_id, 'errors' => $errors, 'title' => $title, 'content' => $content ),
+				array( 'article_id' => $article_id, 'errors' => $errors, 'title' => $title, 'content' => $content, 'tags' => $tags_raw, 'publish_at' => $at_raw ? str_replace( 'T', ' ', $at_raw ) : '' ),
 				10 * MINUTE_IN_SECONDS
 			);
 			wp_safe_redirect( self::editor_url( $article_id ) );
 			exit;
 		}
 
+		if ( $article && 'publish' === $article->post_status && $instant && 'submit' === $intent ) {
+			// すぐ公開できる人: 公開中の記事の変更をそのまま反映する。
+			wp_update_post( wp_slash( array( 'ID' => $article_id, 'post_title' => $title, 'post_content' => $content ) ) );
+			if ( $thumbnail_id ) {
+				set_post_thumbnail( $article_id, $thumbnail_id );
+			}
+			SNSCS_Stories::set_tags( $article_id, $tags );
+			delete_post_meta( $article_id, '_snscs_pending' );
+			delete_post_meta( $article_id, '_snscs_reject_note' );
+			delete_post_meta( $article_id, '_snscs_rejected_draft' );
+			do_action( 'snscs_article_updated', $article_id );
+			self::back( 'article_updated' );
+		}
+
 		if ( $article && 'publish' === $article->post_status ) {
 			// 公開中の記事: 変更は承認まで別に置いておく。
-			update_post_meta( $article_id, '_snscs_pending', array( 'title' => $title, 'content' => $content, 'thumbnail_id' => $thumbnail_id, 'at' => time() ) );
+			update_post_meta( $article_id, '_snscs_pending', array( 'title' => $title, 'content' => $content, 'thumbnail_id' => $thumbnail_id, 'tags' => $tags, 'at' => time() ) );
 			delete_post_meta( $article_id, '_snscs_reject_note' );
 			delete_post_meta( $article_id, '_snscs_rejected_draft' );
 			do_action( 'snscs_article_submitted', $article_id );
@@ -447,6 +511,20 @@ class SNSCS_Articles {
 		}
 		if ( $thumbnail_id ) {
 			set_post_thumbnail( $article_id, $thumbnail_id );
+		}
+		SNSCS_Stories::set_tags( $article_id, $tags );
+		if ( '' !== $publish_at ) {
+			update_post_meta( $article_id, '_snscs_publish_at', $publish_at );
+		} else {
+			delete_post_meta( $article_id, '_snscs_publish_at' );
+		}
+
+		// すぐ公開できる人は、審査を通さずに公開（日時の指定があれば予約）。
+		if ( 'pending' === $status && $instant ) {
+			delete_post_meta( $article_id, '_snscs_reject_note' );
+			$result = SNSCS_Stories::publish( $article_id, $publish_at );
+			SNSCS_Scores::schedule_soon();
+			self::back( 'future' === $result ? 'article_scheduled' : 'article_published' );
 		}
 
 		if ( 'pending' === $status ) {

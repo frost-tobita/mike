@@ -36,6 +36,7 @@ class SNSCS_Hub {
 			'features'   => array( 'title' => '特集から探す', 'slug' => 'find', 'shortcode' => '[sns_features]', 'nav' => '特集' ),
 			'tools'      => array( 'title' => 'SNS運用の無料ツール', 'slug' => 'tools', 'shortcode' => '[sns_tools]', 'nav' => '無料ツール' ),
 			'favorites'  => array( 'title' => 'お気に入りの発信者', 'slug' => 'favorites', 'shortcode' => '[sns_favorites]', 'nav' => 'お気に入り' ),
+			'stories'    => array( 'title' => 'みんなの記事', 'slug' => 'stories', 'shortcode' => '[sns_stories]', 'nav' => 'みんなの記事' ),
 			'member'     => array( 'title' => '会員ページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
 			'newsletter' => array( 'title' => 'メールマガジン', 'slug' => 'newsletter', 'shortcode' => '[sns_newsletter]', 'nav' => '' ),
