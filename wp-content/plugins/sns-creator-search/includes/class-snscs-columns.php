@@ -321,6 +321,8 @@ class SNSCS_Columns {
 				<a class="button" href="<?php echo esc_url( admin_url( 'edit.php?category_name=' . self::CATEGORY_SLUG ) ); ?>">コラムの一覧</a>
 			</p>
 
+			<div class="notice notice-info inline"><p><strong>AIによる自動執筆:</strong> 章立てのしっかりした5000字前後のコラムを毎日自動で書いて公開できます。スターター記事を5000字版に書き直すこともできます。 <a href="<?php echo esc_url( SNSCS_Autopost::admin_url() ); ?>">記事の自動投稿の設定へ</a></p></div>
+
 			<h2>書き方</h2>
 			<ol>
 				<li>「投稿 → 新規投稿」で記事を書く</li>

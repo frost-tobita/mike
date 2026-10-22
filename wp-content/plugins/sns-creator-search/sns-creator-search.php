@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.2.0
+ * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.2.0' );
+define( 'SNSCS_VERSION', '1.3.0' );
 define( 'SNSCS_DB_VERSION', '11' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
@@ -59,6 +59,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-inquiries.php';
 require_once SNSCS_DIR . 'includes/class-snscs-biolink.php';
 require_once SNSCS_DIR . 'includes/class-snscs-calendar.php';
 require_once SNSCS_DIR . 'includes/class-snscs-portal-top.php';
+require_once SNSCS_DIR . 'includes/class-snscs-autopost.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -93,6 +94,7 @@ function snscs_deactivate() {
 	wp_clear_scheduled_hook( SNSCS_Newsletter::CRON_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Newsletter::CRON_HOOK . '_more' );
 	wp_clear_scheduled_hook( SNSCS_Calendar::CRON_HOOK );
+	wp_clear_scheduled_hook( SNSCS_Autopost::CRON_HOOK );
 	flush_rewrite_rules();
 }
 
@@ -165,3 +167,4 @@ SNSCS_Inquiries::init();
 SNSCS_Biolink::init();
 SNSCS_Calendar::init();
 SNSCS_Portal_Top::init();
+SNSCS_Autopost::init();

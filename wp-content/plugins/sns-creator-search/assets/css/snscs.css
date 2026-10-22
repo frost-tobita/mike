@@ -2857,3 +2857,38 @@ body.snscs-portal-body {
 		order: -1;
 	}
 }
+
+/* ---------------------------------------------------------------------
+ * 1.3: 自動執筆の記事（目次・AIの注記）
+ * ------------------------------------------------------------------- */
+
+.snscs-toc {
+	margin: 24px 0 32px;
+	padding: 16px 20px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #f9fafb;
+}
+
+.snscs-toc__title {
+	margin: 0 0 8px;
+	font-weight: bold;
+}
+
+.snscs-toc ol {
+	margin: 0;
+	padding-left: 1.4em;
+}
+
+.snscs-toc li {
+	margin: 4px 0;
+}
+
+.snscs-ai-note {
+	margin-top: 32px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: #f3f4f6;
+	color: #4b5563;
+	font-size: 0.85em;
+}
