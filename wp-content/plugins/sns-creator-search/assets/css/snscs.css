@@ -2236,3 +2236,624 @@
 		flex-basis: 72px;
 	}
 }
+
+/* ---------------------------------------------------------------------
+ * 1.2: ヤフー風のポータル（テンプレート「SNS検索ポータル（全幅）」と [sns_portal_top]）
+ * ------------------------------------------------------------------- */
+
+body.snscs-portal-body {
+	margin: 0;
+	background: #f3f4f6;
+	color: #1f2937;
+	font-family: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.snscs-portal-body a {
+	color: #1d4ed8;
+	text-decoration: none;
+}
+
+.snscs-portal-body a:hover {
+	color: #1e3a8a;
+	text-decoration: underline;
+}
+
+.snscs-portal-body img {
+	max-width: 100%;
+	height: auto;
+}
+
+.snscs-portal-body .screen-reader-text {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	white-space: nowrap;
+}
+
+.snscs-portal-body .screen-reader-text:focus {
+	z-index: 100000;
+	top: 8px;
+	left: 8px;
+	width: auto;
+	height: auto;
+	padding: 8px 16px;
+	background: #fff;
+	clip: auto;
+}
+
+/* ヘッダー */
+.snscs-ph {
+	border-bottom: 1px solid #e5e7eb;
+	background: #fff;
+}
+
+.snscs-ph__inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 20px;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 10px 20px;
+}
+
+.snscs-portal-body .snscs-ph__logo {
+	color: #1d4ed8;
+	font-size: 26px;
+	font-weight: 700;
+	letter-spacing: -0.5px;
+	text-decoration: none;
+}
+
+.snscs-ph__logo-image {
+	display: block;
+	width: auto;
+	max-height: 44px;
+}
+
+.snscs-ph__nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 18px;
+	font-size: 14px;
+}
+
+.snscs-ph__menu,
+.snscs-pf__menu {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-portal-body .snscs-ph__login {
+	padding: 8px 18px;
+	border-radius: 6px;
+	background: #1d4ed8;
+	color: #fff;
+	font-weight: 700;
+}
+
+.snscs-portal-body .snscs-ph__login:hover {
+	background: #1e3a8a;
+	color: #fff;
+	text-decoration: none;
+}
+
+/* 本文 */
+.snscs-pm__page {
+	box-sizing: border-box;
+	max-width: 1200px;
+	margin: 20px auto;
+	padding: 24px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.snscs-pm__title {
+	margin: 0 0 16px;
+	font-size: 1.6em;
+	line-height: 1.4;
+}
+
+/* フッター */
+.snscs-pf {
+	margin-top: 24px;
+	background: #1f2937;
+	color: #e5e7eb;
+}
+
+.snscs-pf__inner {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 24px 20px;
+	font-size: 13px;
+}
+
+.snscs-portal-body .snscs-pf a {
+	color: #e5e7eb;
+}
+
+.snscs-pf__copy {
+	margin: 16px 0 0;
+	color: #9ca3af;
+}
+
+/* トップ: 検索窓 */
+.snscs-pt-search {
+	border-bottom: 1px solid #e5e7eb;
+	background: #fff;
+}
+
+.snscs-pt-search__inner {
+	box-sizing: border-box;
+	max-width: 860px;
+	margin: 0 auto;
+	padding: 28px 20px 22px;
+}
+
+.snscs-pt-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.snscs-pt-tab input {
+	position: absolute;
+	opacity: 0;
+}
+
+.snscs-pt-tab span {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 16px;
+	box-sizing: border-box;
+	border: 1px solid #e5e7eb;
+	border-bottom: 3px solid transparent;
+	border-radius: 8px 8px 0 0;
+	background: #f9fafb;
+	color: #374151;
+	cursor: pointer;
+}
+
+.snscs-pt-tab input:checked + span {
+	border-color: #1d4ed8;
+	background: #eff6ff;
+	color: #1e3a8a;
+	font-weight: 700;
+}
+
+.snscs-pt-tab input:focus-visible + span {
+	outline: 2px solid #1d4ed8;
+	outline-offset: 2px;
+}
+
+.snscs-pt-search__row {
+	display: flex;
+	gap: 8px;
+	margin-top: -1px;
+}
+
+.snscs-pt-search__row input {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 52px;
+	padding: 0 16px;
+	box-sizing: border-box;
+	border: 2px solid #1d4ed8;
+	border-radius: 0 8px 8px 8px;
+	font: inherit;
+	font-size: 17px;
+}
+
+.snscs-pt-search__row button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 52px;
+	padding: 0 26px;
+	border: 0;
+	border-radius: 8px;
+	background: #1d4ed8;
+	color: #fff;
+	font: inherit;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.snscs-pt-search__row button:hover {
+	background: #1e3a8a;
+}
+
+.snscs-pt-search__keywords {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 14px 0 0;
+	font-size: 13px;
+}
+
+.snscs-pt-search__keywords span {
+	color: #6b7280;
+}
+
+.snscs-portal-body .snscs-pt-search__keywords a,
+.snscs-pt-search__keywords a {
+	padding: 4px 12px;
+	border-radius: 999px;
+	background: #f3f4f6;
+	color: #1f2937;
+}
+
+/* トップ: 3つの列 */
+.snscs-pt-columns {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 20px;
+	box-sizing: border-box;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.snscs-pt-left {
+	display: flex;
+	flex: 1 1 220px;
+	flex-direction: column;
+	gap: 20px;
+	max-width: 100%;
+}
+
+.snscs-pt-center {
+	display: flex;
+	flex: 999 1 520px;
+	flex-direction: column;
+	gap: 20px;
+	min-width: 0;
+}
+
+.snscs-pt-right {
+	display: flex;
+	flex: 1 1 260px;
+	flex-direction: column;
+	gap: 20px;
+	max-width: 100%;
+}
+
+.snscs-pt-box,
+.snscs-pt-center > .snscs-columns,
+.snscs-pt-personal:not(:empty) {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 18px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.snscs-pt-personal:has(.snscs-personal:empty) {
+	display: none;
+}
+
+.snscs-pt-personal .snscs-reco {
+	margin: 0;
+}
+
+.snscs-pt-box p {
+	margin: 0 0 10px;
+	font-size: 13px;
+}
+
+.snscs-pt-box__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0 0 10px;
+}
+
+.snscs-pt-box__title {
+	margin: 0;
+	font-size: 16px;
+	line-height: 1.4;
+}
+
+.snscs-pt-box__more {
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.snscs-pt-box--warm {
+	border-color: #fed7aa;
+	background: #fff7ed;
+}
+
+.snscs-pt-box--warm .snscs-pt-box__title,
+.snscs-portal-body .snscs-pt-strong,
+.snscs-pt-strong {
+	color: #9a3412;
+	font-weight: 700;
+}
+
+.snscs-pt-cats {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-pt-cat {
+	font-weight: 700;
+}
+
+.snscs-pt-cat__subs {
+	display: block;
+	color: #6b7280;
+	font-size: 12px;
+}
+
+.snscs-portal-body .snscs-pt-cat__subs a {
+	color: #4b5563;
+}
+
+.snscs-pt-regions {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px 12px;
+	font-size: 13px;
+}
+
+.snscs-pt-picks {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 12px;
+}
+
+.snscs-portal-body .snscs-pt-pick,
+.snscs-pt-pick {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	color: #1f2937;
+	font-size: 13px;
+}
+
+.snscs-pt-pick:hover {
+	border-color: #93c5fd;
+	text-decoration: none;
+}
+
+.snscs-pt-pick img,
+.snscs-pt-pick__initial {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-pt-pick__initial {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #dbeafe;
+	color: #1e3a8a;
+	font-size: 22px;
+	font-weight: 700;
+}
+
+.snscs-pt-pick strong {
+	font-size: 15px;
+}
+
+.snscs-pt-pick__genre {
+	color: #4b5563;
+	font-size: 12px;
+}
+
+.snscs-pt-ranks,
+.snscs-pt-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-pt-ranks li,
+.snscs-pt-list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 12px;
+	padding: 9px 0;
+	border-top: 1px solid #f3f4f6;
+}
+
+.snscs-pt-ranks a,
+.snscs-pt-list a {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-weight: 500;
+}
+
+.snscs-pt-ranks--small li {
+	padding: 6px 0;
+	font-size: 13px;
+}
+
+.snscs-pt-rank {
+	width: 26px;
+	color: #c2410c;
+	font-size: 17px;
+	font-weight: 700;
+	text-align: center;
+}
+
+.snscs-pt-ranks--small .snscs-pt-rank {
+	width: 18px;
+	font-size: 13px;
+}
+
+.snscs-pt-meta,
+.snscs-pt-when {
+	color: #6b7280;
+	font-size: 12px;
+}
+
+.snscs-pt-growth {
+	min-width: 56px;
+	color: #c2410c;
+	font-size: 13px;
+	font-weight: 700;
+	text-align: right;
+}
+
+.snscs-pt-list--news li {
+	display: block;
+}
+
+.snscs-pt-list--news .snscs-pt-when {
+	display: block;
+}
+
+.snscs-pt-features {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 12px;
+}
+
+.snscs-portal-body .snscs-pt-feature,
+.snscs-pt-feature {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 16px;
+	border-radius: 10px;
+	background: #eff6ff;
+	color: #1f2937;
+	font-size: 13px;
+}
+
+.snscs-pt-feature__tag {
+	color: #1e3a8a;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.snscs-pt-feature strong {
+	font-size: 15px;
+}
+
+.snscs-portal-body .snscs-pt-btn,
+.snscs-pt-btn {
+	display: block;
+	padding: 10px;
+	border-radius: 6px;
+	background: #1d4ed8;
+	color: #fff;
+	font-weight: 700;
+	text-align: center;
+}
+
+.snscs-portal-body .snscs-pt-btn:hover {
+	background: #1e3a8a;
+	color: #fff;
+	text-decoration: none;
+}
+
+.snscs-pt-sublink {
+	display: block;
+	margin-top: 8px;
+	font-size: 13px;
+	text-align: center;
+}
+
+.snscs-pt-right .snscs-callink {
+	margin: 0;
+	padding: 14px;
+	border-color: #e5e7eb;
+	background: #fff;
+}
+
+.snscs-pt-right .snscs-callink__date {
+	flex-basis: 64px;
+}
+
+.snscs-pt-right .snscs-callink__day {
+	font-size: 1.6em;
+}
+
+.snscs-pt-right .snscs-ad,
+.snscs-pt-center > .snscs-ad {
+	margin: 0;
+}
+
+.snscs-pt-center > .snscs-columns {
+	margin: 0;
+}
+
+/* ポータルの見た目のページでは、プラグインのボタンを青にそろえる */
+.snscs-portal-body .snscs-button--primary,
+.snscs-portal-body a.snscs-button--primary:hover {
+	border-color: #1d4ed8;
+	background: #1d4ed8;
+	color: #fff;
+}
+
+@media (max-width: 600px) {
+	.snscs-ph__inner {
+		padding: 8px 14px;
+	}
+
+	.snscs-ph__nav {
+		gap: 6px 12px;
+		font-size: 13px;
+	}
+
+	.snscs-pt-search__inner {
+		padding: 18px 14px;
+	}
+
+	.snscs-pt-tab span {
+		min-height: 36px;
+		padding: 0 10px;
+		font-size: 13px;
+	}
+
+	.snscs-pt-search__row button {
+		padding: 0 16px;
+	}
+
+	.snscs-pt-columns {
+		padding: 14px;
+	}
+
+	.snscs-pm__page {
+		margin: 12px;
+		padding: 16px;
+	}
+
+	/* スマホでは、中央（発信者・ランキング）を先に、カテゴリをその後に出す */
+	.snscs-pt-center {
+		order: -1;
+	}
+}

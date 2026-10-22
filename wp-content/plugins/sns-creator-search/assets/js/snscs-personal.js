@@ -300,6 +300,9 @@
 		}
 		Array.prototype.forEach.call( holders, function ( holder ) {
 			var blocks = holder.getAttribute( 'data-snscs-blocks' ).split( ',' ).filter( function ( b ) {
+				if ( 'personal' === b ) {
+					return learning;
+				}
 				if ( 'recent' === b ) {
 					return learning && profile.recent.length;
 				}

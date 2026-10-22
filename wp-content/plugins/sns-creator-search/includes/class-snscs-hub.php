@@ -272,6 +272,8 @@ class SNSCS_Hub {
 				<?php submit_button( '機能ページをまとめて作成', 'primary' ); ?>
 			</form>
 
+			<?php SNSCS_Portal_Top::render_admin_box(); ?>
+
 			<h2>トップページに置けるショートコード</h2>
 			<table class="widefat striped" style="max-width: 900px">
 				<tbody>

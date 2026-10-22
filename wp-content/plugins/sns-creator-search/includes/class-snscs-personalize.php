@@ -623,7 +623,7 @@ class SNSCS_Personalize {
 	}
 
 	public static function rest_personal( WP_REST_Request $request ) {
-		$blocks  = array_intersect( explode( ',', (string) $request->get_param( 'blocks' ) ), array( 'foryou', 'recent', 'favs', 'posts' ) );
+		$blocks  = array_intersect( explode( ',', (string) $request->get_param( 'blocks' ) ), array( 'foryou', 'personal', 'recent', 'favs', 'posts' ) );
 		$recent  = self::id_list( $request->get_param( 'recent' ) );
 		$favs    = self::id_list( $request->get_param( 'favs' ), 100 );
 		$seen    = self::id_list( $request->get_param( 'seen' ) );
@@ -634,6 +634,11 @@ class SNSCS_Personalize {
 		if ( in_array( 'foryou', $blocks, true ) ) {
 			$reco          = self::recommend( $profile, array_merge( $recent, $favs, array( $here ) ), 8 );
 			$out['foryou'] = SNSCS_Recommend::render( $reco['personal'] ? 'あなたへのおすすめ' : 'いま人気の発信者', $reco['items'], array( 'reasons' => true, 'note' => $reco['personal'] ? 'personal' : 'popular' ) );
+		}
+		// personal: 好みが分かっている人にだけ出す「あなたへのおすすめ」（トップページ用。人気の一覧は別の欄にあるため）。
+		if ( in_array( 'personal', $blocks, true ) && $profile ) {
+			$reco            = self::recommend( $profile, array_merge( $recent, $favs, array( $here ) ), 6 );
+			$out['personal'] = SNSCS_Recommend::render( 'あなたへのおすすめ', $reco['items'], array( 'reasons' => true, 'note' => 'personal' ) );
 		}
 		if ( in_array( 'recent', $blocks, true ) ) {
 			$out['recent'] = SNSCS_Recommend::render( '最近見た発信者', self::items( array_slice( array_diff( $recent, array( $here ) ), 0, 8 ) ), array( 'compact' => true ) );
