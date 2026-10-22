@@ -146,6 +146,10 @@ class SNSCS_Feedback {
 			$table = self::events_table();
 			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			if ( 'click' === $type ) {
+				// 同じ人が同じ発信者を同じ日に何度押しても1回だけ数える（水増しの防止）。
+				if ( ! SNSCS_Integrity::first_click( $cid ) ) {
+					return new WP_REST_Response( null, 204 );
+				}
 				$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET clicked = 1 WHERE qid = %s AND creator_id = %d", $qid, $cid ) );
 			} elseif ( 'good' === $type ) {
 				$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET good = 1, bounce = 0 WHERE qid = %s AND creator_id = %d AND clicked = 1", $qid, $cid ) );

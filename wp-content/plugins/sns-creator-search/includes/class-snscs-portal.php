@@ -383,6 +383,7 @@ class SNSCS_Portal {
 				<p>点数は掲載から1時間以内に表示されます。</p>
 			<?php else : ?>
 				<p>おすすめ順は、次の<?php echo count( SNSCS_Scores::signals() ); ?>つの点数（それぞれ0〜100点）を合わせて決まります。点数の低いものから伸ばすのが近道です。</p>
+				<?php SNSCS_Integrity::render_notice( $creator_id ); ?>
 				<p class="snscs-analysis__total">総合点 <strong><?php echo esc_html( number_format_i18n( $standing['score'], 1 ) ); ?></strong> 点</p>
 				<ul class="snscs-analysis__list">
 					<?php

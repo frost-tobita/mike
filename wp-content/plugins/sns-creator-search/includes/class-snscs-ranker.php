@@ -52,8 +52,11 @@ class SNSCS_Ranker {
 				$share *= 0.6;
 			}
 			$max = max( 0.000001, max( array_intersect_key( $rel, $rows ) ?: array( 1 ) ) ); // phpcs:ignore WordPress.PHP.DisallowShortTernary.Found
+			// 不正対策で下げている人は、言葉との一致の点にも同じ倍率を掛ける（総合点には計算のときに掛け済み）。
+			$penalties = SNSCS_Integrity::penalties();
 			foreach ( $rows as $id => $base ) {
-				$final[ $id ] = $share * ( isset( $rel[ $id ] ) ? $rel[ $id ] : 0 ) / $max * 100 + ( 1 - $share ) * $base;
+				$factor       = isset( $penalties[ $id ] ) ? $penalties[ $id ] : 1.0;
+				$final[ $id ] = $share * ( isset( $rel[ $id ] ) ? $rel[ $id ] : 0 ) / $max * 100 * $factor + ( 1 - $share ) * $base;
 			}
 		} else {
 			$final = $rows;

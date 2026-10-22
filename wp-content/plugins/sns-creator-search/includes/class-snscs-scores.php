@@ -355,6 +355,7 @@ class SNSCS_Scores {
 		$avg_sat      = (float) get_option( 'snscs_avg_sat', 0.5 );
 		list( $quality, $freshness ) = self::profile_values( $creators );
 		$spikes       = SNSCS_Learner::setting( 'spike' ) ? self::spikes() : array();
+		$penalties    = SNSCS_Integrity::detect( $creators );
 
 		// 全体の平均（少ない人数の平均を寄せる先）。
 		$sum_dwell  = 0;
@@ -423,6 +424,10 @@ class SNSCS_Scores {
 			if ( isset( $spikes[ $id ] ) ) {
 				$flags[ $id ][] = 'spike';
 			}
+			// 不正対策で順位を下げている（倍率は最後に総合点へ掛ける）。
+			if ( isset( $penalties[ $id ] ) ) {
+				$flags[ $id ][] = 'penalized';
+			}
 		}
 
 		// 紹介ネットワーク: 招待して掲載された人を、設定した段数までさかのぼって足す。
@@ -468,7 +473,8 @@ class SNSCS_Scores {
 					$p['referral']   = $p['referral'] * self::SUSPECT_PENALTY;
 					$p['search_ctr'] = $p['search_ctr'] * self::SUSPECT_PENALTY;
 				}
-				$tiers = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
+				$factor = isset( $penalties[ $id ] ) ? $penalties[ $id ] : 1.0;
+				$tiers  = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
 
 				$rows[] = $wpdb->prepare(
 					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s, %f)',
@@ -489,9 +495,9 @@ class SNSCS_Scores {
 					$p['followers'],
 					wp_json_encode( array_map( 'floatval', $p ) ),
 					implode( ',', $flags[ $id ] ),
-					self::combine( $p, $weights ),
+					self::combine( $p, $weights ) * $factor,
 					$now,
-					self::combine( $p, null === $weights_b ? $weights : $weights_b )
+					self::combine( $p, null === $weights_b ? $weights : $weights_b ) * $factor
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
@@ -755,6 +761,7 @@ class SNSCS_Scores {
 			'referral_without_views' => '紹介リンクのクリックに対して、ページの表示が少なすぎる',
 			'short_dwell'            => '閲覧は多いのに、滞在時間が極端に短い',
 			'spike'                  => '紹介リンクや閲覧が、ふだんより極端に急に増えた',
+			'penalized'              => '不正対策で順位を下げている（発信者 → 不正対策）',
 		);
 	}
 }

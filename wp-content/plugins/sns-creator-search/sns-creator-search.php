@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'SNSCS_VERSION', '1.4.0' );
-define( 'SNSCS_DB_VERSION', '12' );
+define( 'SNSCS_DB_VERSION', '13' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -68,6 +68,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-feedback.php';
 require_once SNSCS_DIR . 'includes/class-snscs-graph.php';
 require_once SNSCS_DIR . 'includes/class-snscs-learner.php';
 require_once SNSCS_DIR . 'includes/class-snscs-ranker.php';
+require_once SNSCS_DIR . 'includes/class-snscs-integrity.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -128,6 +129,7 @@ function snscs_install() {
 	SNSCS_Calendar::install();
 	SNSCS_Index::install();
 	SNSCS_Feedback::install();
+	SNSCS_Integrity::install();
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
@@ -185,3 +187,4 @@ SNSCS_Feedback::init();
 SNSCS_Graph::init();
 SNSCS_Learner::init();
 SNSCS_Tagger::init();
+SNSCS_Integrity::init();
