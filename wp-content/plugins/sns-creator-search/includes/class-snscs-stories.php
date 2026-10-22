@@ -245,24 +245,32 @@ class SNSCS_Stories {
 	public static function spread_html( $article_id ) {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT um.meta_value AS creator_id, r.comment, r.created_at FROM ' . SNSCS_Social::reactions_table() . " r INNER JOIN {$wpdb->usermeta} um ON um.user_id = r.user_id AND um.meta_key = 'snscs_creator_id' WHERE r.article_id = %d AND r.type = %d ORDER BY r.comment = '', r.created_at DESC LIMIT 12", $article_id, SNSCS_Social::REPOST ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT r.user_id, um.meta_value AS creator_id, r.comment, r.created_at FROM ' . SNSCS_Social::reactions_table() . " r LEFT JOIN {$wpdb->usermeta} um ON um.user_id = r.user_id AND um.meta_key = 'snscs_creator_id' WHERE r.article_id = %d AND r.type = %d ORDER BY um.meta_value IS NULL, r.comment = '', r.created_at DESC LIMIT 60", $article_id, SNSCS_Social::REPOST ), ARRAY_A );
 		$via  = (int) get_post_meta( $article_id, '_snscs_via_repost', true );
 		$list = '';
+		$n    = 0;
 		foreach ( $rows as $row ) {
 			$id = (int) $row['creator_id'];
-			if ( 'publish' !== get_post_status( $id ) ) {
+			if ( $id && 'publish' === get_post_status( $id ) ) {
+				// 発信者: 発信者ページへ。
+				$photo = get_the_post_thumbnail_url( $id, 'thumbnail' );
+				$who   = '<a class="snscs-spread__who" href="' . esc_url( get_permalink( $id ) ) . '">' . ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="32" height="32" loading="lazy">' : '' ) . esc_html( get_the_title( $id ) ) . '</a>';
+			} elseif ( ! $id && SNSCS_People::is_public( (int) $row['user_id'] ) ) {
+				// 公開プロフィールの会員: プロフィールへ。
+				$name = SNSCS_People::nickname( (int) $row['user_id'] );
+				$who  = '<a class="snscs-spread__who" href="' . esc_url( SNSCS_People::profile_url( (int) $row['user_id'] ) ) . '"><span class="snscs-profile__avatar snscs-profile__avatar--small" aria-hidden="true">' . esc_html( mb_substr( $name, 0, 1 ) ) . '</span>' . esc_html( $name ) . '</a>';
+			} else {
 				continue;
 			}
-			$photo = get_the_post_thumbnail_url( $id, 'thumbnail' );
-			$list .= '<li class="snscs-spread__item"><a class="snscs-spread__who" href="' . esc_url( get_permalink( $id ) ) . '">'
-				. ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="32" height="32" loading="lazy">' : '' )
-				. esc_html( get_the_title( $id ) ) . '</a>'
-				. ( '' !== $row['comment'] ? '<p class="snscs-spread__comment">' . esc_html( $row['comment'] ) . '</p>' : '' ) . '</li>';
+			$list .= '<li class="snscs-spread__item">' . $who . ( '' !== $row['comment'] ? '<p class="snscs-spread__comment">' . esc_html( $row['comment'] ) . '</p>' : '' ) . '</li>';
+			if ( ++$n >= 12 ) {
+				break;
+			}
 		}
 		if ( '' === $list && ! $via ) {
 			return '';
 		}
-		$html = '<section class="snscs-spread"><h2 class="snscs-single__heading">この記事を広めた発信者</h2>';
+		$html = '<section class="snscs-spread"><h2 class="snscs-single__heading">この記事を広めた人</h2>';
 		if ( $via ) {
 			$html .= '<p class="snscs-help">リポストから' . esc_html( number_format_i18n( $via ) ) . '人がこの記事を読みました。</p>';
 		}
@@ -273,18 +281,29 @@ class SNSCS_Stories {
 	 * リポストから読まれた数（URL の ?rp=発信者ID で判断。同じ人・同じ日・同じ記事は1回）。
 	 */
 	public static function count_via_repost() {
-		if ( empty( $_GET['rp'] ) || ! is_singular( array( SNSCS_Articles::POST_TYPE, 'post' ) ) || SNSCS_Referrals::is_bot_request() ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ( empty( $_GET['rp'] ) && empty( $_GET['ru'] ) ) || ! is_singular( array( SNSCS_Articles::POST_TYPE, 'post' ) ) || SNSCS_Referrals::is_bot_request() ) {
 			return;
 		}
-		$reposter = absint( $_GET['rp'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$article  = get_queried_object_id();
-		if ( SNSCS_Post_Types::POST_TYPE !== get_post_type( $reposter ) || ( is_user_logged_in() && SNSCS_Social::own_creator( get_current_user_id() ) === $reposter ) ) {
-			return;
-		}
+		$reposter = isset( $_GET['rp'] ) ? absint( $_GET['rp'] ) : 0;
+		$user     = isset( $_GET['ru'] ) ? absint( $_GET['ru'] ) : 0;
+		// phpcs:enable
+		$article = get_queried_object_id();
 		global $wpdb;
-		// 実際にリポストしている人のリンクだけを数える。
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ok = $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . SNSCS_Social::reactions_table() . " r INNER JOIN {$wpdb->usermeta} um ON um.user_id = r.user_id AND um.meta_key = 'snscs_creator_id' AND um.meta_value = %d WHERE r.article_id = %d AND r.type = %d LIMIT 1", $reposter, $article, SNSCS_Social::REPOST ) );
+		if ( $reposter ) {
+			if ( SNSCS_Post_Types::POST_TYPE !== get_post_type( $reposter ) || ( is_user_logged_in() && SNSCS_Social::own_creator( get_current_user_id() ) === $reposter ) ) {
+				return;
+			}
+			// 実際にリポストしている人のリンクだけを数える。
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ok = $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . SNSCS_Social::reactions_table() . " r INNER JOIN {$wpdb->usermeta} um ON um.user_id = r.user_id AND um.meta_key = 'snscs_creator_id' AND um.meta_value = %d WHERE r.article_id = %d AND r.type = %d LIMIT 1", $reposter, $article, SNSCS_Social::REPOST ) );
+		} else {
+			if ( ! SNSCS_People::is_public( $user ) || get_current_user_id() === $user ) {
+				return;
+			}
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ok = $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . SNSCS_Social::reactions_table() . ' WHERE user_id = %d AND article_id = %d AND type = %d', $user, $article, SNSCS_Social::REPOST ) );
+		}
 		if ( ! $ok ) {
 			return;
 		}
@@ -292,7 +311,11 @@ class SNSCS_Stories {
 		$new = (int) $wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . SNSCS_Integrity::seen_table() . ' (day, visitor, creator_id) VALUES (%s, %s, %d)', current_time( 'Y-m-d' ), substr( SNSCS_Referrals::visitor_hash(), 0, 16 ), $article ) );
 		if ( $new ) {
 			update_post_meta( $article, '_snscs_via_repost', (int) get_post_meta( $article, '_snscs_via_repost', true ) + 1 );
-			update_post_meta( $reposter, '_snscs_spread_reads', (int) get_post_meta( $reposter, '_snscs_spread_reads', true ) + 1 );
+			if ( $reposter ) {
+				update_post_meta( $reposter, '_snscs_spread_reads', (int) get_post_meta( $reposter, '_snscs_spread_reads', true ) + 1 );
+			} else {
+				update_user_meta( $user, '_snscs_spread_reads', (int) get_user_meta( $user, '_snscs_spread_reads', true ) + 1 );
+			}
 		}
 	}
 

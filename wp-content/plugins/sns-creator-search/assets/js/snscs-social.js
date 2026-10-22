@@ -77,7 +77,7 @@
 		} );
 	}
 
-	var labels = { follow: 'フォロー', like: 'いいね', repost: 'リポスト', bookmark: 'ブックマーク' };
+	var labels = { follow: 'フォロー', follow_user: 'フォロー', like: 'いいね', repost: 'リポスト', bookmark: 'ブックマーク' };
 
 	// ログインしていない人のブックマークは、ブラウザの記録で表示をそろえる。
 	if ( ! config.loggedIn ) {
@@ -137,6 +137,7 @@
 		}
 	} );
 
+	// on = 押したあとの状態（true ならまだリポストしていない）。
 	function repostMenu( button, id, on ) {
 		closeMenus();
 		var menu = document.createElement( 'div' );
@@ -183,7 +184,7 @@
 			ok.className = 'is-primary';
 			area.focus();
 		}
-		if ( on ) {
+		if ( ! on ) {
 			item( 'ひとことを書き直す', quoteForm );
 			item( 'リポストを取り消す', function () {
 				send( button, 'repost', id, false, '' );

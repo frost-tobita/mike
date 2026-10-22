@@ -3317,3 +3317,72 @@ body.snscs-portal-body {
 	font-size: 0.85em;
 	font-weight: 700;
 }
+
+/* ------------------------------------------------------------------
+ * 公開プロフィール（SNSCS_People）
+ * ---------------------------------------------------------------- */
+
+.snscs-profile {
+	margin-bottom: 24px;
+	padding: 20px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+}
+
+.snscs-profile__head {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.snscs-profile__avatar {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: #1e3a8a;
+	color: #fff;
+	font-size: 1.6em;
+	font-weight: 700;
+}
+
+.snscs-profile__avatar--small {
+	width: 32px;
+	height: 32px;
+	font-size: 0.9em;
+}
+
+.snscs-profile__name {
+	margin: 0;
+	font-size: 1.3em;
+}
+
+.snscs-profile__stats {
+	margin: 4px 0 0;
+	color: #666;
+	font-size: 0.85em;
+}
+
+.snscs-profile__bio {
+	margin: 12px 0;
+	white-space: pre-wrap;
+}
+
+.snscs-people {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-people a {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	text-decoration: none;
+}

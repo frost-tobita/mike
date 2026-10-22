@@ -19,7 +19,8 @@
 			var base = config.member.replace( /\/$/, '' );
 			var links = document.querySelectorAll( 'a[href]' );
 			Array.prototype.forEach.call( links, function ( link ) {
-				var href = link.getAttribute( 'href' ).split( '?' )[ 0 ].replace( /\/$/, '' );
+				// メニューなどの「会員ページ」そのものへのリンクだけ（?user= などの付いたリンクは除く）。
+				var href = link.getAttribute( 'href' ).replace( /\/$/, '' );
 				if ( href !== base || link.querySelector( '.snscs-unread' ) || link.closest( '.snscs-member__tabs' ) ) {
 					return;
 				}

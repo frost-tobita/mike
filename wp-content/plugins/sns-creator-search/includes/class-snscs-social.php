@@ -311,6 +311,9 @@ class SNSCS_Social {
 	public static function toggle( $user_id, $action, $id, $on, $comment = '' ) {
 		global $wpdb;
 		$now = current_time( 'mysql' );
+		if ( 'follow_user' === $action ) {
+			return SNSCS_People::toggle( (int) $user_id, (int) $id, $on );
+		}
 		if ( 'follow' === $action ) {
 			if ( SNSCS_Post_Types::POST_TYPE !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) {
 				return new WP_Error( 'not_found', '発信者が見つかりません。', array( 'status' => 404 ) );
@@ -635,7 +638,7 @@ class SNSCS_Social {
 		foreach ( $items as $item ) {
 			$d      = self::card_data( $item['id'] );
 			$counts = self::counts( $item['id'] );
-			$url    = ! empty( $item['rp'] ) ? add_query_arg( 'rp', (int) $item['rp'], $d['url'] ) : $d['url'];
+			$url    = ! empty( $item['rp'] ) ? add_query_arg( 'rp', (int) $item['rp'], $d['url'] ) : ( ! empty( $item['ru'] ) ? add_query_arg( 'ru', (int) $item['ru'], $d['url'] ) : $d['url'] );
 			$marked = ! empty( $mine[ $item['id'] ][ self::BOOKMARK ] );
 			$html  .= '<li class="snscs-feed__item">';
 			if ( ! empty( $item['note'] ) ) {
@@ -683,12 +686,13 @@ class SNSCS_Social {
 		global $wpdb;
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$creators = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( 'SELECT creator_id FROM ' . self::follows_table() . ' WHERE user_id = %d', $user_id ) ) );
-		if ( ! $creators ) {
+		$people   = SNSCS_People::following_ids( $user_id );
+		if ( ! $creators && ! $people ) {
 			return array();
 		}
-		$in    = implode( ',', $creators );
+		$in    = $creators ? implode( ',', $creators ) : '0';
 		$limit = self::PER_PAGE * $page + 1;
-		$posts = $wpdb->get_results(
+		$posts = ! $creators ? array() : $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT p.ID AS id, p.post_date AS at FROM {$wpdb->posts} p INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_snscs_creator_id' AND pm.meta_value IN ({$in})
 				WHERE p.post_type = %s AND p.post_status = 'publish' ORDER BY p.post_date DESC LIMIT %d",
@@ -697,10 +701,12 @@ class SNSCS_Social {
 			),
 			ARRAY_A
 		);
-		$users = wp_list_pluck( $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'snscs_creator_id' AND meta_value IN ({$in})", ARRAY_A ), 'meta_value', 'user_id' );
-		$reposts = array();
-		if ( $users ) {
-			$reposts = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, article_id AS id, comment, created_at AS at FROM ' . self::reactions_table() . ' WHERE type = %d AND user_id IN (' . implode( ',', array_map( 'intval', array_keys( $users ) ) ) . ') ORDER BY created_at DESC LIMIT %d', self::REPOST, $limit ), ARRAY_A );
+		$users = $creators ? wp_list_pluck( $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'snscs_creator_id' AND meta_value IN ({$in})", ARRAY_A ), 'meta_value', 'user_id' ) : array();
+		// リポストを流す人: フォローしている発信者のアカウントと、フォローしている会員。
+		$reposters = array_unique( array_merge( array_map( 'intval', array_keys( $users ) ), $people ) );
+		$reposts   = array();
+		if ( $reposters ) {
+			$reposts = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, article_id AS id, comment, created_at AS at FROM ' . self::reactions_table() . ' WHERE type = %d AND user_id IN (' . implode( ',', $reposters ) . ') ORDER BY created_at DESC LIMIT %d', self::REPOST, $limit ), ARRAY_A );
 		}
 		// phpcs:enable
 		$items = array();
@@ -712,10 +718,11 @@ class SNSCS_Social {
 			if ( ! self::is_article( $id ) ) {
 				continue;
 			}
-			$creator = (int) $users[ $row['user_id'] ];
-			$who     = get_the_title( $creator ) . 'さんが' . ( '' !== $row['comment'] ? 'ひとこと付きで' : '' ) . 'リポスト';
+			$creator = isset( $users[ $row['user_id'] ] ) ? (int) $users[ $row['user_id'] ] : 0;
+			$name    = $creator ? get_the_title( $creator ) : SNSCS_People::nickname( (int) $row['user_id'] );
+			$who     = $name . 'さんが' . ( '' !== $row['comment'] ? 'ひとこと付きで' : '' ) . 'リポスト';
 			if ( ! isset( $items[ $id ] ) || $row['at'] > $items[ $id ]['at'] ) {
-				$items[ $id ] = array( 'id' => $id, 'at' => $row['at'], 'note' => $who, 'comment' => $row['comment'], 'rp' => $creator );
+				$items[ $id ] = array( 'id' => $id, 'at' => $row['at'], 'note' => $who, 'comment' => $row['comment'], 'rp' => $creator, 'ru' => $creator ? 0 : (int) $row['user_id'] );
 			}
 		}
 		usort(
@@ -776,6 +783,8 @@ class SNSCS_Social {
 			'logged_in'      => array( 'success', 'ログインしました。' ),
 			'withdrawn'      => array( 'success', '退会しました。フォロー・いいねなどの記録もすべて削除しました。' ),
 			'inbox_saved'    => array( 'success', 'お知らせメールの設定を保存しました。' ),
+			'profile_saved'  => array( 'success', 'プロフィールを保存しました。' ),
+			'profile_name'   => array( 'error', 'プロフィールを公開するには、ニックネームを入力してください。' ),
 			'login_error'    => array( 'error', 'メールアドレスかパスワードが違います。' ),
 			'email_invalid'  => array( 'error', 'メールアドレスの形式が正しくありません。' ),
 			'email_exists'   => array( 'error', 'このメールアドレスはすでに登録されています。ログインしてください。' ),
@@ -798,7 +807,10 @@ class SNSCS_Social {
 		ob_start();
 		echo '<div class="snscs-member">';
 		self::notice();
-		if ( ! is_user_logged_in() ) {
+		$profile = isset( $_GET['user'] ) ? absint( $_GET['user'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $profile ) {
+			SNSCS_People::render_profile( $profile );
+		} elseif ( ! is_user_logged_in() ) {
 			self::render_auth();
 		} else {
 			self::render_member( get_current_user_id(), $tab, $page );
@@ -876,6 +888,8 @@ class SNSCS_Social {
 			return;
 		}
 		if ( 'account' === $tab ) {
+			SNSCS_People::render_settings( $user_id );
+			SNSCS_Push::render_settings();
 			SNSCS_Inbox::render_settings( $user_id );
 			self::render_account();
 			return;
@@ -909,6 +923,14 @@ class SNSCS_Social {
 	}
 
 	private static function render_following( $user_id ) {
+		$people = SNSCS_People::following_ids( $user_id );
+		if ( $people ) {
+			echo '<h2 class="snscs-single__heading">フォロー中の会員</h2><ul class="snscs-people">';
+			foreach ( $people as $person ) {
+				echo '<li><a href="' . esc_url( SNSCS_People::profile_url( $person ) ) . '"><span class="snscs-profile__avatar snscs-profile__avatar--small" aria-hidden="true">' . esc_html( mb_substr( SNSCS_People::nickname( $person ), 0, 1 ) ) . '</span>' . esc_html( SNSCS_People::nickname( $person ) ) . '</a></li>';
+			}
+			echo '</ul><h2 class="snscs-single__heading">フォロー中の発信者</h2>';
+		}
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( 'SELECT f.creator_id FROM ' . self::follows_table() . " f INNER JOIN {$wpdb->posts} p ON p.ID = f.creator_id AND p.post_status = 'publish' WHERE f.user_id = %d ORDER BY f.created_at DESC LIMIT 500", $user_id ) ) );

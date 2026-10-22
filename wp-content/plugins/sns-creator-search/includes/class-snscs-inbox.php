@@ -7,7 +7,9 @@
  *   repost           フォローしている発信者がリポストした（サイト内だけ。メールでは送らない）
  *   bookmark_updated ブックマークした記事が更新された
  *   bookmark_unread  まだ読み終えていないブックマークがある（週1回）
+ *   user_repost      フォローしている会員がリポストした（サイト内とスマホ通知。メールでは送らない）
  *   new_follower     （発信者へ）フォローされた。1日ごとにまとめる
+ *   new_user_follower （公開プロフィールの会員へ）フォローされた
  *   reaction         （発信者へ）記事にいいね・リポストされた。記事ごと・1日ごとにまとめる
  *
  * 見る場所: 会員ページ「お知らせ」。サイト内の「会員ページ」へのリンクに未読の数が付く。
@@ -28,7 +30,7 @@ class SNSCS_Inbox {
 	const KEEP_DAYS   = 90;
 
 	/** メールで送る種類 */
-	const EMAIL_TYPES = array( 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'reaction' );
+	const EMAIL_TYPES = array( 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'schedule' ) );
@@ -66,6 +68,7 @@ class SNSCS_Inbox {
   created_at datetime NOT NULL,
   read_at datetime DEFAULT NULL,
   emailed tinyint(1) unsigned NOT NULL DEFAULT 0,
+  pushed tinyint(1) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   UNIQUE KEY one_per_day (user_id,type,object_id,actor_id,day),
   KEY user_unread (user_id,read_at),
@@ -93,7 +96,8 @@ class SNSCS_Inbox {
 			return;
 		}
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query( $wpdb->prepare( 'INSERT INTO ' . self::table() . ' (user_id, type, object_id, actor_id, day, created_at) VALUES (%d, %s, %d, %d, %s, %s) ON DUPLICATE KEY UPDATE count = count + 1, created_at = VALUES(created_at), read_at = NULL', $user_id, $type, $object_id, $actor_id, current_time( 'Y-m-d' ), current_time( 'mysql' ) ) );
+		$wpdb->query( $wpdb->prepare( 'INSERT INTO ' . self::table() . ' (user_id, type, object_id, actor_id, day, created_at) VALUES (%d, %s, %d, %d, %s, %s) ON DUPLICATE KEY UPDATE count = count + 1, created_at = VALUES(created_at), read_at = NULL, pushed = 0', $user_id, $type, $object_id, $actor_id, current_time( 'Y-m-d' ), current_time( 'mysql' ) ) );
+		do_action( 'snscs_inbox_added' );
 	}
 
 	/**
@@ -111,6 +115,7 @@ class SNSCS_Inbox {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . self::table() . ' (user_id, type, object_id, actor_id, day, created_at) SELECT user_id, %s, %d, %d, %s, %s FROM ' . SNSCS_Social::follows_table() . ' WHERE creator_id = %d', 'new_article', $post->ID, $creator, current_time( 'Y-m-d' ), current_time( 'mysql' ), $creator ) );
+		do_action( 'snscs_inbox_added' );
 	}
 
 	/**
@@ -121,6 +126,7 @@ class SNSCS_Inbox {
 		$creator = SNSCS_Articles::creator_of( $article_id );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . self::table() . ' (user_id, type, object_id, actor_id, day, created_at) SELECT user_id, %s, %d, %d, %s, %s FROM ' . SNSCS_Social::reactions_table() . ' WHERE article_id = %d AND type = %d', 'bookmark_updated', $article_id, $creator, current_time( 'Y-m-d' ), current_time( 'mysql' ), $article_id, SNSCS_Social::BOOKMARK ) );
+		do_action( 'snscs_inbox_added' );
 	}
 
 	/**
@@ -141,11 +147,16 @@ class SNSCS_Inbox {
 		if ( in_array( $action, array( 'like', 'repost' ), true ) && SNSCS_Articles::POST_TYPE === get_post_type( $id ) ) {
 			self::add( $owner_user( SNSCS_Articles::creator_of( $id ) ), 'reaction', $id );
 		}
+		// 公開プロフィールの会員がリポストしたら、その人のフォロワーにも。
+		if ( 'repost' === $action ) {
+			SNSCS_People::on_repost( $user_id, $id );
+		}
 		// 発信者がリポストしたら、その発信者のフォロワーにも（サイト内だけ）。
 		$creator = SNSCS_Social::own_creator( $user_id );
 		if ( 'repost' === $action && $creator ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . self::table() . ' (user_id, type, object_id, actor_id, day, created_at, emailed) SELECT user_id, %s, %d, %d, %s, %s, 1 FROM ' . SNSCS_Social::follows_table() . ' WHERE creator_id = %d AND user_id <> %d', 'repost', $id, $creator, current_time( 'Y-m-d' ), current_time( 'mysql' ), $creator, $user_id ) );
+			do_action( 'snscs_inbox_added' );
 		}
 	}
 
@@ -192,6 +203,10 @@ class SNSCS_Inbox {
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "{$name}さんが記事を公開しました:「{$title}」", 'url' => get_permalink( $object ) ) : null;
 			case 'repost':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "{$name}さんがリポストしました:「{$title}」", 'url' => add_query_arg( 'rp', $actor, get_permalink( $object ) ) ) : null;
+			case 'user_repost':
+				return SNSCS_Social::is_article( $object ) && SNSCS_People::is_public( $actor ) ? array( 'text' => SNSCS_People::nickname( $actor ) . "さんがリポストしました:「{$title}」", 'url' => add_query_arg( 'ru', $actor, get_permalink( $object ) ) ) : null;
+			case 'new_user_follower':
+				return array( 'text' => $count > 1 ? "{$count}人に新しくフォローされました。" : '新しくフォローされました。', 'url' => SNSCS_People::profile_url( (int) $row['user_id'] ) );
 			case 'bookmark_updated':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "ブックマークした記事が更新されました:「{$title}」", 'url' => get_permalink( $object ) ) : null;
 			case 'bookmark_unread':
