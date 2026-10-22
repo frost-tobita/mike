@@ -233,7 +233,7 @@ class SNSCS_Frontend {
 	/**
 	 * @param array $accounts SNSCS_Search::format_creator() の accounts。
 	 */
-	private static function render_accounts( array $accounts ) {
+	public static function render_accounts( array $accounts ) {
 		if ( empty( $accounts ) ) {
 			return;
 		}
@@ -243,7 +243,7 @@ class SNSCS_Frontend {
 				<li class="snscs-account snscs-account--<?php echo esc_attr( $account['platform'] ); ?>">
 					<span class="snscs-account__platform"><?php echo esc_html( $account['platform_label'] ); ?></span>
 					<?php if ( $account['url'] ) : ?>
-						<a href="<?php echo esc_url( $account['url'] ); ?>" target="_blank" rel="noopener nofollow"><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></a>
+						<a href="<?php echo esc_url( $account['url'] ); ?>" target="_blank" rel="noopener nofollow" data-snscs-out="1"><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></a>
 					<?php else : ?>
 						<span><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></span>
 					<?php endif; ?>
@@ -276,20 +276,49 @@ class SNSCS_Frontend {
 	}
 
 	/**
+	 * 発信者が登録した「その他のリンク」（ブログ・企業サイトなど）。
+	 * 本人が登録したリンクなので、検索エンジン向けに ugc（利用者が投稿したリンク）を付ける。
+	 *
+	 * @param array $links SNSCS_Submissions::links_for() の戻り値。
+	 */
+	public static function render_links( array $links ) {
+		if ( empty( $links ) ) {
+			return;
+		}
+		?>
+		<ul class="snscs-links" aria-label="その他のリンク">
+			<?php foreach ( $links as $link ) : ?>
+				<li>
+					<a href="<?php echo esc_url( $link['url'] ); ?>" target="_blank" rel="nofollow ugc noopener" data-snscs-out="1">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg>
+						<?php echo esc_html( $link['label'] ); ?>
+					</a>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+		<?php
+	}
+
+	/**
 	 * 発信者の個別ページの本文の下に、SNSアカウント一覧を表示する。
 	 */
 	public static function append_accounts( $content ) {
-		if ( ! is_singular( SNSCS_Post_Types::POST_TYPE ) || ! in_the_loop() || ! is_main_query() ) {
+		static $running = false;
+		if ( $running || ! is_singular( SNSCS_Post_Types::POST_TYPE ) || ! in_the_loop() || ! is_main_query() || get_the_ID() !== get_queried_object_id() ) {
 			return $content;
 		}
+		$running = true;
 
-		// format_creator() は抜粋を作るときに the_content を呼ぶため、ここでは使わない（無限に呼び合ってしまう）。
 		$accounts = SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( get_the_ID() ) );
 
 		ob_start();
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts );
+		self::render_links( SNSCS_Submissions::links_for( get_the_ID() ) );
+		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( get_the_ID(), 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Recommend::similar_html( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Columns::for_creator( get_the_ID(), $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		$running = false;
 		return $content . ob_get_clean();
 	}
 }

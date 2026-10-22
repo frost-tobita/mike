@@ -153,6 +153,27 @@ class SNSCS_Referrals {
 	}
 
 	/**
+	 * 期間内の流入人数を、最近の日ほど重く数えたもの（発信者ID => 重み付きの人数）。
+	 *
+	 * @param int   $days      直近何日分か。
+	 * @param float $half_life 何日前の流入を半分に数えるか。
+	 * @return array<int,float>
+	 */
+	public static function weighted_counts( $days, $half_life ) {
+		global $wpdb;
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT creator_id, SUM(POW(0.5, DATEDIFF(%s, clicked_on) / %f)) AS total FROM {$table} WHERE clicked_on >= %s GROUP BY creator_id", current_time( 'Y-m-d' ), max( 1, (float) $half_life ), self::since( $days ) ), ARRAY_A );
+
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row['creator_id'] ] = (float) $row['total'];
+		}
+		return $counts;
+	}
+
+	/**
 	 * 1人の発信者の流入人数（直近 $days 日）。
 	 */
 	public static function count_for( $creator_id, $days ) {
@@ -191,8 +212,7 @@ class SNSCS_Referrals {
 		}
 
 		// ロボット（SNSのリンクカード作成用を含む）。
-		$agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? (string) $_SERVER['HTTP_USER_AGENT'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-		if ( '' === $agent || preg_match( '/bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|headless|curl|wget|python|httpclient|java\//i', $agent ) ) {
+		if ( self::is_bot_request() ) {
 			$count = false;
 		}
 
@@ -204,7 +224,18 @@ class SNSCS_Referrals {
 		return (bool) apply_filters( 'snscs_count_referral', $count, $creator_id );
 	}
 
-	private static function visitor_hash() {
+	/**
+	 * ロボット（検索エンジン、SNSのリンクカード作成、自動ツールなど）からのアクセスか。
+	 */
+	public static function is_bot_request() {
+		$agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? (string) $_SERVER['HTTP_USER_AGENT'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		return '' === $agent || (bool) preg_match( '/bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|headless|curl|wget|python|httpclient|java\//i', $agent );
+	}
+
+	/**
+	 * 訪問者を区別するための、元に戻せない文字列（日付入り）。
+	 */
+	public static function visitor_hash() {
 		$ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$ip    = (string) apply_filters( 'snscs_visitor_ip', $ip );
 		$agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? (string) $_SERVER['HTTP_USER_AGENT'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput

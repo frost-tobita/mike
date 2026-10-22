@@ -2,14 +2,26 @@
 /**
  * 表示順位（おすすめ順）のための点数計算。
  *
- *   ① 紹介流入点   : 直近30日の紹介リンク経由の流入人数の「順位」を 0〜100点に換算
- *   ② フォロワー点 : 全SNSの合計フォロワー数の「順位」を 0〜100点に換算
- *   総合点 = (① × ①の重み + ② × ②の重み) ÷ (①の重み + ②の重み)   ※初期値は 1:1
+ * 6つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
  *
- * 順位の換算: 1位 = 100点、最下位 = 0点、同じ数の人は同じ点。
- *   点 = 自分より数が少ない人の人数 ÷ (全体の人数 − 1) × 100
- * 数そのものではなく順位を使うのは、フォロワー数の桁違いの差で
- * ①の効果が消えてしまわないようにするため。
+ *   紹介リンク     : 紹介リンクから来た人数（最近の日ほど重く数える）
+ *   フォロワー     : 全SNSの合計フォロワー数
+ *   ページ閲覧     : 発信者ページと記事を見た人数（最近の日ほど重く数える）
+ *   滞在時間       : ページを実際に見ていた時間の平均
+ *   リンクのクリック率 : ページを見た人のうち、SNSや外部リンクを押した人の割合
+ *   記事の活動     : 最近公開した記事の数（新しい記事ほど重く数える）
+ *
+ *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)   ※初期の重みは 25:25:15:15:10:10（紹介:フォロワー = 1:1 は変えない）
+ *
+ * 順位の換算: 1位 = 100点、最下位 = 0点、同じ値の人は同じ点。
+ *   点 = 自分より値が小さい人の人数 ÷ (全体の人数 − 1) × 100
+ *
+ * 平均値（滞在時間・クリック率）は、見た人が少ないと偶然に左右されるため、
+ * 全体の平均に寄せて計算する（ベイズ平均）。まだ誰にも見られていない人は、この2つは最下位扱い。
+ *
+ * 不正の疑い（点数を下げ、管理画面に「要確認」と出す）:
+ *   - 紹介リンクのクリックは多いのに、ページがほとんど表示されていない（機械的なクリックの疑い）
+ *   - 閲覧は多いのに、滞在時間が極端に短い（機械的な閲覧の疑い）
  *
  * 計算は1時間ごと（WP-Cron）に全員分をまとめて行い、結果を専用テーブルに保存する。
  * 検索はこのテーブルの点数で並べるだけなので、人数が増えても速い。
@@ -23,9 +35,19 @@ class SNSCS_Scores {
 
 	const CRON_HOOK = 'snscs_recalculate_scores';
 
-	const DEFAULT_WEIGHT_INFLOW    = 1;
-	const DEFAULT_WEIGHT_FOLLOWERS = 1;
-	const DEFAULT_INFLOW_DAYS      = 30;
+	/** 平均を全体に寄せるときの「仮の人数」。 */
+	const PRIOR_DWELL  = 10;
+	const PRIOR_CLICKS = 20;
+
+	/** 不正の疑いを判断する目安。 */
+	const SUSPECT_MIN_REFERRALS = 20;
+	const SUSPECT_VIEW_RATIO    = 0.2;
+	const SUSPECT_MIN_VIEWS     = 30;
+	const SUSPECT_MIN_DWELL     = 5;
+	const SUSPECT_PENALTY       = 0.5;
+
+	/** 記事の活動を数える期間（日）。 */
+	const ARTICLE_DAYS = 90;
 
 	public static function init() {
 		add_action( self::CRON_HOOK, array( __CLASS__, 'recalculate' ) );
@@ -53,8 +75,14 @@ class SNSCS_Scores {
   ref_code varchar(16) DEFAULT NULL,
   inflow int(10) unsigned NOT NULL DEFAULT 0,
   followers bigint(20) unsigned NOT NULL DEFAULT 0,
+  views int(10) unsigned NOT NULL DEFAULT 0,
+  dwell_avg double NOT NULL DEFAULT 0,
+  click_rate double NOT NULL DEFAULT 0,
+  articles double NOT NULL DEFAULT 0,
   inflow_points double NOT NULL DEFAULT 0,
   follower_points double NOT NULL DEFAULT 0,
+  points text,
+  flags varchar(100) NOT NULL DEFAULT '',
   score double NOT NULL DEFAULT 0,
   scored_at datetime DEFAULT NULL,
   PRIMARY KEY  (creator_id),
@@ -66,19 +94,85 @@ class SNSCS_Scores {
 	}
 
 	/* --------------------------------------------------------------------
-	 * 設定値
+	 * 信号と設定
 	 * ------------------------------------------------------------------ */
 
-	public static function weight_inflow() {
-		return max( 0, (int) get_option( 'snscs_weight_inflow', self::DEFAULT_WEIGHT_INFLOW ) );
+	/**
+	 * 信号の一覧（並び順のまま画面に出る）。
+	 *
+	 * @return array<string,array{label:string,desc:string,tip:string,default:int}>
+	 */
+	public static function signals() {
+		return array(
+			'referral'  => array(
+				'label'   => '紹介リンク',
+				'desc'    => '紹介リンクから来た人数',
+				'tip'     => '紹介リンクを、SNSのプロフィール欄や投稿に貼りましょう。',
+				'default' => 25,
+			),
+			'followers' => array(
+				'label'   => 'フォロワー',
+				'desc'    => '全SNSの合計フォロワー数',
+				'tip'     => 'フォロワー数が増えたら、変更を申請して最新の数にしましょう。',
+				'default' => 25,
+			),
+			'views'     => array(
+				'label'   => 'ページ閲覧',
+				'desc'    => '発信者ページと記事を見た人数',
+				'tip'     => '記事を書いてSNSで紹介すると、ページを見る人が増えます。',
+				'default' => 15,
+			),
+			'dwell'     => array(
+				'label'   => '滞在時間',
+				'desc'    => 'ページを実際に見ていた時間の平均',
+				'tip'     => '紹介文を充実させ、読み応えのある記事を書くと、じっくり見てもらえます。',
+				'default' => 15,
+			),
+			'clicks'    => array(
+				'label'   => 'リンクのクリック率',
+				'desc'    => 'ページを見た人がSNSや外部リンクを押した割合',
+				'tip'     => 'ブログやほかのSNSなど「その他のリンク」を登録すると、押してもらえる機会が増えます。',
+				'default' => 10,
+			),
+			'articles'  => array(
+				'label'   => '記事の活動',
+				'desc'    => '最近公開した記事の数（新しいほど高く数える）',
+				'tip'     => '定期的に記事を公開しましょう。最近の記事ほど高く数えます。',
+				'default' => 10,
+			),
+		);
 	}
 
-	public static function weight_followers() {
-		return max( 0, (int) get_option( 'snscs_weight_followers', self::DEFAULT_WEIGHT_FOLLOWERS ) );
+	/**
+	 * @return array{weights:array<string,int>,days:int,half_life:int}
+	 */
+	public static function settings() {
+		$saved    = get_option( 'snscs_score_settings', array() );
+		$saved    = is_array( $saved ) ? $saved : array();
+		$defaults = array(
+			'weights'   => wp_list_pluck( self::signals(), 'default' ),
+			'days'      => (int) get_option( 'snscs_inflow_days', 30 ),
+			'half_life' => 14,
+		);
+
+		// 以前の「紹介:フォロワー」の重み設定を引き継ぐ（1:1 以外に変えていた場合）。
+		$old_wi = get_option( 'snscs_weight_inflow' );
+		$old_wf = get_option( 'snscs_weight_followers' );
+		if ( ! isset( $saved['weights'] ) && false !== $old_wi && false !== $old_wf && (int) $old_wi !== (int) $old_wf ) {
+			$defaults['weights']['referral']  = min( 100, 25 * (int) $old_wi );
+			$defaults['weights']['followers'] = min( 100, 25 * (int) $old_wf );
+		}
+
+		$settings            = array_merge( $defaults, $saved );
+		$settings['weights'] = array_merge( $defaults['weights'], isset( $saved['weights'] ) ? (array) $saved['weights'] : array() );
+		return $settings;
 	}
 
+	/**
+	 * 紹介リンクの流入を数える期間（日）。規約ページなどの文面にも使う。
+	 */
 	public static function inflow_days() {
-		return max( 1, (int) get_option( 'snscs_inflow_days', self::DEFAULT_INFLOW_DAYS ) );
+		return max( 1, (int) self::settings()['days'] );
 	}
 
 	/* --------------------------------------------------------------------
@@ -100,7 +194,7 @@ class SNSCS_Scores {
 
 		do {
 			// 読み間違えやすい文字（0/O、1/l/I）は使わない。
-			$code = '';
+			$code  = '';
 			$chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 			for ( $i = 0; $i < 8; $i++ ) {
 				$code .= $chars[ wp_rand( 0, strlen( $chars ) - 1 ) ];
@@ -135,7 +229,7 @@ class SNSCS_Scores {
 	}
 
 	/**
-	 * 新しく掲載された人にもすぐ点数が付くよう、1分後に計算し直す。
+	 * 新しく掲載された人・記事にもすぐ点数が付くよう、1分後に計算し直す。
 	 */
 	public static function schedule_soon() {
 		if ( ! wp_next_scheduled( self::CRON_HOOK . '_once' ) ) {
@@ -151,63 +245,128 @@ class SNSCS_Scores {
 	public static function recalculate() {
 		global $wpdb;
 
+		$settings  = self::settings();
+		$days      = max( 1, (int) $settings['days'] );
+		$half_life = max( 1, (int) $settings['half_life'] );
+
 		$creators = array_map(
 			'intval',
 			$wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish'", SNSCS_Post_Types::POST_TYPE ) )
 		);
 
+		// フォロワー（対応SNSの合計）。
 		$accounts     = SNSCS_Accounts::table();
 		$platforms    = array_keys( snscs_platforms() );
 		$placeholders = implode( ',', array_fill( 0, count( $platforms ), '%s' ) );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT creator_id, SUM(followers) AS total FROM {$accounts} WHERE platform IN ({$placeholders}) GROUP BY creator_id", $platforms ), ARRAY_A );
-
+		$rows          = $wpdb->get_results( $wpdb->prepare( "SELECT creator_id, SUM(followers) AS total FROM {$accounts} WHERE platform IN ({$placeholders}) GROUP BY creator_id", $platforms ), ARRAY_A );
 		$all_followers = wp_list_pluck( $rows, 'total', 'creator_id' );
-		$all_inflow    = SNSCS_Referrals::counts( self::inflow_days() );
 
-		$followers = array();
-		$inflow    = array();
+		$referral_raw = SNSCS_Referrals::counts( $days );
+		$referral_w   = SNSCS_Referrals::weighted_counts( $days, $half_life );
+		$traffic      = SNSCS_Tracking::totals( $days, $half_life );
+		$articles     = SNSCS_Articles::activity( self::ARTICLE_DAYS, $half_life * 2 );
+
+		// 全体の平均（少ない人数の平均を寄せる先）。
+		$sum_dwell  = 0;
+		$sum_dwells = 0;
+		$sum_out    = 0;
+		$sum_views  = 0;
 		foreach ( $creators as $id ) {
-			$followers[ $id ] = isset( $all_followers[ $id ] ) ? (int) $all_followers[ $id ] : 0;
-			$inflow[ $id ]    = isset( $all_inflow[ $id ] ) ? (int) $all_inflow[ $id ] : 0;
+			if ( isset( $traffic[ $id ] ) ) {
+				$sum_dwell  += $traffic[ $id ]['dwell_sum'];
+				$sum_dwells += $traffic[ $id ]['dwell_count'];
+				$sum_out    += $traffic[ $id ]['out_clicks'];
+				$sum_views  += $traffic[ $id ]['views'];
+			}
+		}
+		$avg_dwell = $sum_dwells ? $sum_dwell / $sum_dwells : 30.0;
+		$avg_click = $sum_views ? $sum_out / $sum_views : 0.05;
+
+		$values = array_fill_keys( array_keys( self::signals() ), array() );
+		$raw    = array();
+		foreach ( $creators as $id ) {
+			$t = isset( $traffic[ $id ] ) ? $traffic[ $id ] : array( 'views' => 0, 'weighted_views' => 0, 'dwell_sum' => 0, 'dwell_count' => 0, 'out_clicks' => 0 );
+
+			$values['referral'][ $id ]  = isset( $referral_w[ $id ] ) ? $referral_w[ $id ] : 0.0;
+			$values['followers'][ $id ] = isset( $all_followers[ $id ] ) ? (int) $all_followers[ $id ] : 0;
+			$values['views'][ $id ]     = $t['weighted_views'];
+			// まだ誰にも見られていない人は、平均値の信号では最下位扱い（-1）。
+			$values['dwell'][ $id ]    = $t['dwell_count'] ? ( $t['dwell_sum'] + self::PRIOR_DWELL * $avg_dwell ) / ( $t['dwell_count'] + self::PRIOR_DWELL ) : -1;
+			$values['clicks'][ $id ]   = $t['views'] ? ( $t['out_clicks'] + self::PRIOR_CLICKS * $avg_click ) / ( $t['views'] + self::PRIOR_CLICKS ) : -1;
+			$values['articles'][ $id ] = isset( $articles[ $id ] ) ? $articles[ $id ] : 0.0;
+
+			$raw[ $id ] = array(
+				'inflow'     => isset( $referral_raw[ $id ] ) ? $referral_raw[ $id ] : 0,
+				'views'      => $t['views'],
+				'dwell_avg'  => $t['dwell_count'] ? $t['dwell_sum'] / $t['dwell_count'] : 0,
+				'click_rate' => $t['views'] ? $t['out_clicks'] / $t['views'] : 0,
+			);
 		}
 
-		$inflow_points   = self::rank_points( $inflow );
-		$follower_points = self::rank_points( $followers );
-		$wi              = self::weight_inflow();
-		$wf              = self::weight_followers();
-		$now             = current_time( 'mysql', true );
-		$table           = self::table();
+		$points = array();
+		foreach ( $values as $signal => $by_creator ) {
+			$points[ $signal ] = self::rank_points( $by_creator );
+		}
+
+		$weights = $settings['weights'];
+		$now     = current_time( 'mysql', true );
+		$table   = self::table();
 
 		foreach ( array_chunk( $creators, 500 ) as $chunk ) {
-			$values = array();
+			$rows = array();
 			foreach ( $chunk as $id ) {
-				$values[] = $wpdb->prepare(
-					'(%d, %d, %d, %f, %f, %f, %s)',
+				$p     = array();
+				$flags = array();
+				foreach ( array_keys( self::signals() ) as $signal ) {
+					$p[ $signal ] = $points[ $signal ][ $id ];
+				}
+
+				// 不正の疑い: 紹介リンクのクリックは多いのに、ページがほとんど表示されていない。
+				if ( $raw[ $id ]['inflow'] >= self::SUSPECT_MIN_REFERRALS && $raw[ $id ]['views'] < $raw[ $id ]['inflow'] * self::SUSPECT_VIEW_RATIO ) {
+					$flags[]       = 'referral_without_views';
+					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
+				}
+				// 不正の疑い: 閲覧は多いのに、滞在時間が極端に短い。
+				if ( $raw[ $id ]['views'] >= self::SUSPECT_MIN_VIEWS && $raw[ $id ]['dwell_avg'] < self::SUSPECT_MIN_DWELL ) {
+					$flags[]       = 'short_dwell';
+					$p['views']    = $p['views'] * self::SUSPECT_PENALTY;
+					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
+				}
+
+				$rows[] = $wpdb->prepare(
+					'(%d, %d, %d, %d, %f, %f, %f, %f, %f, %s, %s, %f, %s)',
 					$id,
-					$inflow[ $id ],
-					$followers[ $id ],
-					$inflow_points[ $id ],
-					$follower_points[ $id ],
-					self::combine( $inflow_points[ $id ], $follower_points[ $id ], $wi, $wf ),
+					$raw[ $id ]['inflow'],
+					$values['followers'][ $id ],
+					$raw[ $id ]['views'],
+					$raw[ $id ]['dwell_avg'],
+					$raw[ $id ]['click_rate'],
+					$values['articles'][ $id ],
+					$p['referral'],
+					$p['followers'],
+					wp_json_encode( array_map( 'floatval', $p ) ),
+					implode( ',', $flags ),
+					self::combine( $p, $weights ),
 					$now
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, inflow_points, follower_points, score, scored_at) VALUES " . implode( ',', $values ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
+		SNSCS_Tracking::purge_old();
 		update_option( 'snscs_scores_updated', time() );
 
 		return count( $creators );
 	}
 
 	/**
-	 * 数の「順位」を 0〜100点に換算する。
-	 * 点 = 自分より数が少ない人の人数 ÷ (全体の人数 − 1) × 100
+	 * 値の「順位」を 0〜100点に換算する。
+	 * 点 = 自分より値が小さい人の人数 ÷ (全体の人数 − 1) × 100
 	 *
-	 * @param array<int,int> $values 発信者ID => 数。
+	 * @param array<int,float|int> $values 発信者ID => 値。
 	 * @return array<int,float> 発信者ID => 点。
 	 */
 	public static function rank_points( array $values ) {
@@ -224,29 +383,38 @@ class SNSCS_Scores {
 		$sorted = array_values( $values );
 		sort( $sorted, SORT_NUMERIC );
 
-		// 数ごとに「それより少ない人の人数」を求める（同じ数なら同じ点）。
+		// 値ごとに「それより小さい人の人数」を求める（同じ値なら同じ点）。小数はキーにできないため文字列にする。
 		$below = array();
 		foreach ( $sorted as $index => $value ) {
-			if ( ! isset( $below[ $value ] ) ) {
-				$below[ $value ] = $index;
+			$key = (string) $value;
+			if ( ! isset( $below[ $key ] ) ) {
+				$below[ $key ] = $index;
 			}
 		}
 
 		$points = array();
 		foreach ( $values as $id => $value ) {
-			$points[ $id ] = round( $below[ $value ] / ( $n - 1 ) * 100, 4 );
+			$points[ $id ] = round( $below[ (string) $value ] / ( $n - 1 ) * 100, 4 );
 		}
 		return $points;
 	}
 
 	/**
-	 * ①と②を重み付きで合わせる。
+	 * 信号の点を重み付きで合わせる。
+	 *
+	 * @param array<string,float> $points  信号 => 点。
+	 * @param array<string,int>   $weights 信号 => 重み。
+	 * @return float
 	 */
-	public static function combine( $inflow_points, $follower_points, $wi, $wf ) {
-		if ( $wi + $wf <= 0 ) {
-			return 0.0;
+	public static function combine( array $points, array $weights ) {
+		$total  = 0.0;
+		$weight = 0;
+		foreach ( $points as $signal => $point ) {
+			$w       = isset( $weights[ $signal ] ) ? max( 0, (int) $weights[ $signal ] ) : 0;
+			$total  += $point * $w;
+			$weight += $w;
 		}
-		return round( ( $inflow_points * $wi + $follower_points * $wf ) / ( $wi + $wf ), 4 );
+		return $weight ? round( $total / $weight, 4 ) : 0.0;
 	}
 
 	/* --------------------------------------------------------------------
@@ -273,12 +441,19 @@ class SNSCS_Scores {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 			return 1 + (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) {$from} AND st.{$column} > %f", SNSCS_Post_Types::POST_TYPE, $value ) );
 		};
+		$points = json_decode( (string) $row['points'], true );
 
 		return array(
 			'inflow'          => (int) $row['inflow'],
 			'followers'       => (int) $row['followers'],
+			'views'           => (int) $row['views'],
+			'dwell_avg'       => (float) $row['dwell_avg'],
+			'click_rate'      => (float) $row['click_rate'],
+			'articles'        => (float) $row['articles'],
 			'inflow_points'   => (float) $row['inflow_points'],
 			'follower_points' => (float) $row['follower_points'],
+			'points'          => is_array( $points ) ? $points : array(),
+			'flags'           => array_filter( explode( ',', (string) $row['flags'] ) ),
 			'score'           => (float) $row['score'],
 			'rank'            => $rank( 'score', $row['score'] ),
 			'inflow_rank'     => $rank( 'inflow', $row['inflow'] ),
@@ -289,12 +464,27 @@ class SNSCS_Scores {
 	}
 
 	/**
-	 * 総合点の上位（設定画面の確認用）。
+	 * 総合点の上位（設定画面の確認用、おすすめ表示用）。
+	 *
+	 * @param int  $limit         人数。
+	 * @param bool $only_flagged  「要確認」の人だけにするか。
+	 * @return array
 	 */
-	public static function top( $limit = 20 ) {
+	public static function top( $limit = 20, $only_flagged = false ) {
 		global $wpdb;
 		$table = self::table();
+		$where = $only_flagged ? " AND st.flags <> ''" : '';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_results( $wpdb->prepare( "SELECT st.*, p.post_title FROM {$table} st INNER JOIN {$wpdb->posts} p ON p.ID = st.creator_id AND p.post_status = 'publish' AND p.post_type = %s WHERE st.scored_at IS NOT NULL ORDER BY st.score DESC, st.followers DESC, st.creator_id DESC LIMIT %d", SNSCS_Post_Types::POST_TYPE, $limit ), ARRAY_A );
+		return $wpdb->get_results( $wpdb->prepare( "SELECT st.*, p.post_title FROM {$table} st INNER JOIN {$wpdb->posts} p ON p.ID = st.creator_id AND p.post_status = 'publish' AND p.post_type = %s WHERE st.scored_at IS NOT NULL{$where} ORDER BY st.score DESC, st.followers DESC, st.creator_id DESC LIMIT %d", SNSCS_Post_Types::POST_TYPE, $limit ), ARRAY_A );
+	}
+
+	/**
+	 * 「要確認」の理由を人が読める形に。
+	 */
+	public static function flag_labels() {
+		return array(
+			'referral_without_views' => '紹介リンクのクリックに対して、ページの表示が少なすぎる',
+			'short_dwell'            => '閲覧は多いのに、滞在時間が極端に短い',
+		);
 	}
 }

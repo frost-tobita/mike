@@ -356,6 +356,8 @@ class SNSCS_Ads_Admin {
 											<code>[sns_ad slot="<?php echo esc_html( $key ); ?>"]</code>
 										<?php elseif ( 0 === strpos( $key, 'column_' ) ) : ?>
 											<span class="description">（コラム記事の下に自動で表示）</span>
+										<?php elseif ( 0 === strpos( $key, 'article_' ) ) : ?>
+											<span class="description">（発信者が書いた記事の下に自動で表示）</span>
 										<?php else : ?>
 											<span class="description">（検索結果に自動で表示）</span>
 										<?php endif; ?>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           0.6.0
+ * Version:           0.7.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '0.6.0' );
-define( 'SNSCS_DB_VERSION', '5' );
+define( 'SNSCS_VERSION', '0.7.0' );
+define( 'SNSCS_DB_VERSION', '6' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -40,6 +40,10 @@ require_once SNSCS_DIR . 'includes/class-snscs-ads.php';
 require_once SNSCS_DIR . 'includes/class-snscs-ads-admin.php';
 require_once SNSCS_DIR . 'includes/class-snscs-legal.php';
 require_once SNSCS_DIR . 'includes/class-snscs-columns.php';
+require_once SNSCS_DIR . 'includes/class-snscs-tracking.php';
+require_once SNSCS_DIR . 'includes/class-snscs-articles.php';
+require_once SNSCS_DIR . 'includes/class-snscs-articles-review.php';
+require_once SNSCS_DIR . 'includes/class-snscs-recommend.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -57,6 +61,7 @@ function snscs_activate() {
 	SNSCS_Post_Types::register();
 	SNSCS_Referrals::add_rewrite_rule();
 	SNSCS_Ads::add_rewrite_rules();
+	SNSCS_Articles::register();
 	flush_rewrite_rules();
 }
 
@@ -78,6 +83,7 @@ function snscs_install() {
 	SNSCS_Referrals::install();
 	SNSCS_Scores::install();
 	SNSCS_Ads::install();
+	SNSCS_Tracking::install();
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
@@ -108,3 +114,7 @@ SNSCS_Ads::init();
 SNSCS_Ads_Admin::init();
 SNSCS_Legal::init();
 SNSCS_Columns::init();
+SNSCS_Tracking::init();
+SNSCS_Articles::init();
+SNSCS_Articles_Review::init();
+SNSCS_Recommend::init();

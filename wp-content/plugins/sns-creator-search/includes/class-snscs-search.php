@@ -119,12 +119,21 @@ class SNSCS_Search {
 			'id'        => (int) $post->ID,
 			'name'      => get_the_title( $post ),
 			'url'       => get_permalink( $post ),
-			'excerpt'   => wp_strip_all_tags( get_the_excerpt( $post ) ),
+			'excerpt'   => self::excerpt( $post ),
 			'thumbnail' => get_the_post_thumbnail_url( $post, 'thumbnail' ) ? get_the_post_thumbnail_url( $post, 'thumbnail' ) : '',
 			'genres'    => $term_names( SNSCS_Post_Types::TAX_GENRE ),
 			'regions'   => $term_names( SNSCS_Post_Types::TAX_REGION ),
 			'accounts'  => self::format_accounts( $accounts ),
 		);
+	}
+
+	/**
+	 * 紹介文の抜粋。get_the_excerpt() は本文のフィルター（the_content）を通すため、
+	 * 発信者ページの中で他の発信者のカードを作ると処理が呼び合って終わらなくなる。そのため本文から直接作る。
+	 */
+	public static function excerpt( WP_Post $post ) {
+		$text = '' !== $post->post_excerpt ? $post->post_excerpt : $post->post_content;
+		return wp_trim_words( wp_strip_all_tags( strip_shortcodes( $text ) ), 120, '…' );
 	}
 
 	/**

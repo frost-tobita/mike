@@ -240,7 +240,7 @@ class SNSCS_Columns {
 	 * コラム記事の下に「この話題の発信者を探す」と広告枠を付ける。
 	 */
 	public static function append_to_column( $content ) {
-		if ( ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() || ! self::is_column() ) {
+		if ( ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() || get_the_ID() !== get_queried_object_id() || ! self::is_column() ) {
 			return $content;
 		}
 

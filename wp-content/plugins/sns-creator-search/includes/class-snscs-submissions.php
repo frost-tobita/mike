@@ -24,8 +24,10 @@ class SNSCS_Submissions {
 	const TYPE_NEW    = 'new';
 	const TYPE_UPDATE = 'update';
 
-	const MAX_NAME = 50;
-	const MAX_BIO  = 1000;
+	const MAX_NAME  = 50;
+	const MAX_BIO   = 1000;
+	const MAX_LINKS = 5;
+	const MAX_LINK_LABEL = 30;
 
 	public static function table() {
 		global $wpdb;
@@ -221,6 +223,7 @@ class SNSCS_Submissions {
 			);
 		}
 		SNSCS_Accounts::replace_for_creator( $creator_id, $accounts );
+		update_post_meta( $creator_id, '_snscs_links', $data['links'] );
 
 		$wpdb->update(
 			self::table(),
@@ -310,7 +313,18 @@ class SNSCS_Submissions {
 			'regions'      => wp_get_object_terms( $creator_id, SNSCS_Post_Types::TAX_REGION, array( 'fields' => 'ids' ) ),
 			'thumbnail_id' => (int) get_post_thumbnail_id( $creator_id ),
 			'accounts'     => $accounts,
+			'links'        => self::links_for( $creator_id ),
 		);
+	}
+
+	/**
+	 * 発信者ページに載せている「その他のリンク」（ブログ・企業サイトなど）。
+	 *
+	 * @return array<int,array{label:string,url:string}>
+	 */
+	public static function links_for( $creator_id ) {
+		$links = get_post_meta( $creator_id, '_snscs_links', true );
+		return is_array( $links ) ? array_values( $links ) : array();
 	}
 
 	public static function empty_data() {
@@ -321,6 +335,7 @@ class SNSCS_Submissions {
 			'regions'      => array(),
 			'thumbnail_id' => 0,
 			'accounts'     => array(),
+			'links'        => array(),
 		);
 	}
 
@@ -369,6 +384,25 @@ class SNSCS_Submissions {
 			$data['accounts'][ $platform ] = array(
 				'handle'    => $handle,
 				'followers' => isset( $input['followers'] ) ? absint( str_replace( array( ',', '，' ), '', (string) $input['followers'] ) ) : 0,
+			);
+		}
+
+		$raw_links = isset( $raw['links'] ) && is_array( $raw['links'] ) ? array_values( $raw['links'] ) : array();
+		foreach ( array_slice( $raw_links, 0, self::MAX_LINKS ) as $i => $link ) {
+			$label = isset( $link['label'] ) ? mb_substr( trim( sanitize_text_field( $link['label'] ) ), 0, self::MAX_LINK_LABEL ) : '';
+			$url   = isset( $link['url'] ) ? trim( (string) $link['url'] ) : '';
+			if ( '' === $label && '' === $url ) {
+				continue;
+			}
+			$clean = esc_url_raw( $url, array( 'http', 'https' ) );
+			$host  = (string) wp_parse_url( $clean, PHP_URL_HOST );
+			if ( '' === $clean || false === strpos( $host, '.' ) ) {
+				$errors[] = sprintf( 'その他のリンク%d件目のURLが正しくありません（https:// から始まるアドレスを入れてください）。', $i + 1 );
+				continue;
+			}
+			$data['links'][] = array(
+				'label' => '' !== $label ? $label : wp_parse_url( $clean, PHP_URL_HOST ),
+				'url'   => $clean,
 			);
 		}
 
@@ -462,6 +496,12 @@ class SNSCS_Submissions {
 				? snscs_display_handle( $platform, $data['accounts'][ $platform ]['handle'] ) . '（' . number_format_i18n( $data['accounts'][ $platform ]['followers'] ) . '人）'
 				: '（なし）';
 		}
+
+		$links = array();
+		foreach ( (array) $data['links'] as $link ) {
+			$links[] = $link['label'] . '（' . $link['url'] . '）';
+		}
+		$rows['その他のリンク'] = $links ? implode( "\n", $links ) : '（なし）';
 
 		return $rows;
 	}

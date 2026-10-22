@@ -16,6 +16,65 @@ class SNSCS_Notify {
 		add_action( 'snscs_submission_approved', array( __CLASS__, 'approved' ) );
 		add_action( 'snscs_submission_rejected', array( __CLASS__, 'rejected' ) );
 		add_action( 'snscs_creator_withdrawn', array( __CLASS__, 'withdrawn' ), 10, 2 );
+		add_action( 'snscs_article_submitted', array( __CLASS__, 'article_submitted' ) );
+		add_action( 'snscs_article_approved', array( __CLASS__, 'article_approved' ) );
+		add_action( 'snscs_article_rejected', array( __CLASS__, 'article_rejected' ), 10, 2 );
+	}
+
+	public static function article_submitted( $article_id ) {
+		$creator_id = SNSCS_Articles::creator_of( $article_id );
+		$pending    = get_post_meta( $article_id, '_snscs_pending', true );
+		$title      = is_array( $pending ) ? $pending['title'] : get_the_title( $article_id );
+		$body       = implode(
+			"\n",
+			array(
+				'発信者「' . get_the_title( $creator_id ) . '」から記事の審査の申請が届きました。',
+				'',
+				'タイトル: ' . $title,
+				'',
+				'審査はこちら:',
+				SNSCS_Articles_Review::url( $article_id ),
+			)
+		);
+		wp_mail( get_option( 'admin_email' ), self::subject( '記事の審査待ち: ' . $title ), $body );
+	}
+
+	public static function article_approved( $article_id ) {
+		$user = get_userdata( (int) get_post_field( 'post_author', $article_id ) );
+		if ( ! $user ) {
+			return;
+		}
+		$body = implode(
+			"\n",
+			array(
+				'記事「' . get_the_title( $article_id ) . '」の審査が完了し、公開されました。',
+				'',
+				get_permalink( $article_id ),
+				'',
+				'SNSで紹介すると、あなたの発信者ページへの流入が増えます。',
+			)
+		);
+		wp_mail( $user->user_email, self::subject( '記事が公開されました' ), $body );
+	}
+
+	public static function article_rejected( $article_id, $note ) {
+		$user = get_userdata( (int) get_post_field( 'post_author', $article_id ) );
+		if ( ! $user ) {
+			return;
+		}
+		$body = implode(
+			"\n",
+			array(
+				'記事「' . get_the_title( $article_id ) . '」は、このままでは公開できませんでした。',
+				'',
+				'【運営からのメッセージ】',
+				$note,
+				'',
+				'マイページから記事を直して、もう一度申請できます:',
+				snscs_portal_url() . '#snscs-articles',
+			)
+		);
+		wp_mail( $user->user_email, self::subject( '記事の確認のお願い' ), $body );
 	}
 
 	/**

@@ -239,6 +239,22 @@ class SNSCS_Review_Admin {
 			return;
 		}
 
+		if ( 'その他のリンク' === $label ) {
+			if ( empty( $data['links'] ) ) {
+				echo '（なし）';
+				return;
+			}
+			foreach ( $data['links'] as $link ) {
+				printf(
+					'<div>%s: <a href="%s" target="_blank" rel="noopener noreferrer nofollow">%s</a></div>',
+					esc_html( $link['label'] ),
+					esc_url( $link['url'] ),
+					esc_html( $link['url'] )
+				);
+			}
+			return;
+		}
+
 		$platform = array_search( $label, snscs_platforms(), true );
 		if ( false !== $platform ) {
 			if ( ! isset( $data['accounts'][ $platform ] ) ) {

@@ -82,6 +82,8 @@ class SNSCS_Portal {
 		} elseif ( ! snscs_is_creator_user() ) {
 			echo '<p class="snscs-notice">運営用のアカウントでログインしています。審査は管理画面の「発信者 → 審査」から行えます。</p>';
 			echo '<p><a class="snscs-button" href="' . esc_url( admin_url( 'edit.php?post_type=' . SNSCS_Post_Types::POST_TYPE . '&page=' . SNSCS_Review_Admin::PAGE ) ) . '">審査画面へ</a></p>';
+		} elseif ( isset( $_GET['snscs_view'] ) && 'article' === $_GET['snscs_view'] && SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 表示の切り替えのみ。
+			SNSCS_Articles::render_editor( get_current_user_id(), SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) );
 		} else {
 			self::render_dashboard();
 		}
@@ -96,6 +98,9 @@ class SNSCS_Portal {
 			'registered'     => array( 'success', '登録が完了しました。続けて、掲載したい内容を入力して審査を申請してください。' ),
 			'submitted'      => array( 'success', '申請を受け付けました。運営が審査し、結果をメールでお知らせします。' ),
 			'unpublished'    => array( 'success', '掲載を停止しました。検索結果と発信者ページに表示されなくなりました。' ),
+			'article_saved'     => array( 'success', '記事を下書きとして保存しました。' ),
+			'article_submitted' => array( 'success', '記事の審査を申請しました。運営が確認し、結果をメールでお知らせします。' ),
+			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'withdrawn'      => array( 'success', '退会しました。登録情報と掲載情報はすべて削除しました。ご利用ありがとうございました。' ),
 			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
 			'withdraw_check' => array( 'error', '退会するには、「削除されることを理解しました」にチェックを入れてください。' ),
@@ -245,6 +250,10 @@ class SNSCS_Portal {
 			<?php self::render_referral( $creator_id ); ?>
 		<?php endif; ?>
 
+		<?php if ( $creator_id ) : ?>
+			<?php SNSCS_Articles::render_portal_list( $creator_id ); ?>
+		<?php endif; ?>
+
 		<?php self::render_form( $data, $errors, $creator_id, (bool) $pending ); ?>
 
 		<?php echo SNSCS_Columns::render( '発信力を上げるSNS運用コラム', array( 'count' => 3 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
@@ -267,7 +276,7 @@ class SNSCS_Portal {
 			<ul class="snscs-withdraw__list">
 				<li>アカウント（メールアドレス・パスワード）</li>
 				<li>掲載ページ、SNSアカウント、プロフィール写真</li>
-				<li>申請と審査の記録</li>
+				<li>申請と審査の記録、書いた記事</li>
 				<li>紹介リンクと、リンクから来た人の記録</li>
 			</ul>
 			<p>一時的に表示を止めたいだけなら、退会ではなく「掲載をやめる」をお使いください。</p>
@@ -291,7 +300,15 @@ class SNSCS_Portal {
 	}
 
 	/**
-	 * 発信者専用の紹介リンクと、表示順位の状況。
+	 * 秒数を「1分20秒」のように表す。
+	 */
+	private static function format_seconds( $seconds ) {
+		$seconds = (int) round( $seconds );
+		return $seconds >= 60 ? sprintf( '%d分%d秒', intdiv( $seconds, 60 ), $seconds % 60 ) : sprintf( '%d秒', $seconds );
+	}
+
+	/**
+	 * 発信者専用の紹介リンクと、表示順位の状況・分析。
 	 */
 	private static function render_referral( $creator_id ) {
 		$link     = SNSCS_Referrals::link_for( $creator_id );
@@ -319,23 +336,52 @@ class SNSCS_Portal {
 						<dd><?php echo esc_html( number_format_i18n( $standing['rank'] ) ); ?>位 <small>／ <?php echo esc_html( number_format_i18n( $standing['total'] ) ); ?>人中</small></dd>
 					</div>
 					<div>
-						<dt>① 紹介流入の順位</dt>
-						<dd><?php echo esc_html( number_format_i18n( $standing['inflow_rank'] ) ); ?>位</dd>
+						<dt>ページを見た人（直近<?php echo (int) $days; ?>日）</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['views'] ) ); ?>人</dd>
 					</div>
 					<div>
-						<dt>② フォロワー数の順位</dt>
-						<dd><?php echo esc_html( number_format_i18n( $standing['followers_rank'] ) ); ?>位</dd>
+						<dt>平均滞在時間</dt>
+						<dd><?php echo esc_html( self::format_seconds( $standing['dwell_avg'] ) ); ?></dd>
 					</div>
 				<?php endif; ?>
 			</dl>
-			<p class="snscs-help">
-				<?php if ( $standing ) : ?>
-					順位は1時間ごとに更新されます。
-				<?php else : ?>
-					順位は1時間以内に表示されます。
-				<?php endif; ?>
-				同じ人が同じ日に何度クリックしても1人として数え、ご自身のクリックは数えません。
-			</p>
+			<p class="snscs-help">同じ人が同じ日に何度クリックしても1人として数え、ご自身のアクセスは数えません。</p>
+		</section>
+
+		<section class="snscs-panel snscs-analysis" id="snscs-analysis">
+			<h2 class="snscs-panel__title">あなたの分析</h2>
+			<?php if ( ! $standing ) : ?>
+				<p>点数は掲載から1時間以内に表示されます。</p>
+			<?php else : ?>
+				<p>おすすめ順は、次の6つの点数（それぞれ0〜100点）を合わせて決まります。点数の低いものから伸ばすのが近道です。</p>
+				<p class="snscs-analysis__total">総合点 <strong><?php echo esc_html( number_format_i18n( $standing['score'], 1 ) ); ?></strong> 点</p>
+				<ul class="snscs-analysis__list">
+					<?php
+					$signals = SNSCS_Scores::signals();
+					$weakest = '';
+					$lowest  = 101;
+					foreach ( $signals as $key => $signal ) {
+						$point = isset( $standing['points'][ $key ] ) ? (float) $standing['points'][ $key ] : 0;
+						if ( $point < $lowest ) {
+							$lowest  = $point;
+							$weakest = $key;
+						}
+					}
+					?>
+					<?php foreach ( $signals as $key => $signal ) : ?>
+						<?php $point = isset( $standing['points'][ $key ] ) ? (float) $standing['points'][ $key ] : 0; ?>
+						<li class="<?php echo $key === $weakest ? 'is-weakest' : ''; ?>">
+							<span class="snscs-analysis__label"><?php echo esc_html( $signal['label'] ); ?></span>
+							<span class="snscs-analysis__bar" role="img" aria-label="<?php echo esc_attr( sprintf( '%s %d点', $signal['label'], round( $point ) ) ); ?>"><span style="width: <?php echo esc_attr( max( 2, round( $point ) ) ); ?>%"></span></span>
+							<span class="snscs-analysis__point"><?php echo esc_html( round( $point ) ); ?>点</span>
+							<?php if ( $key === $weakest ) : ?>
+								<span class="snscs-analysis__tip">伸ばすヒント: <?php echo esc_html( $signal['tip'] ); ?></span>
+							<?php endif; ?>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<p class="snscs-help">点数は全体の中での順位から計算し、1時間ごとに更新されます。</p>
+			<?php endif; ?>
 		</section>
 		<?php
 	}
@@ -436,6 +482,26 @@ class SNSCS_Portal {
 								</label>
 							</div>
 						<?php endforeach; ?>
+					</div>
+				</fieldset>
+
+				<fieldset class="snscs-field">
+					<legend>その他のリンク（<?php echo (int) SNSCS_Submissions::MAX_LINKS; ?>つまで）</legend>
+					<p class="snscs-help">ブログ、企業サイト、ネットショップ、上にないSNSなど、見てほしいページを載せられます。</p>
+					<div class="snscs-link-rows">
+						<?php for ( $i = 0; $i < SNSCS_Submissions::MAX_LINKS; $i++ ) : ?>
+							<?php $link = isset( $data['links'][ $i ] ) ? $data['links'][ $i ] : array( 'label' => '', 'url' => '' ); ?>
+							<div class="snscs-link-row">
+								<label>
+									<span class="screen-reader-text"><?php echo (int) $i + 1; ?>つ目のリンクの名前</span>
+									<input type="text" name="snscs[links][<?php echo (int) $i; ?>][label]" value="<?php echo esc_attr( $link['label'] ); ?>" maxlength="<?php echo (int) SNSCS_Submissions::MAX_LINK_LABEL; ?>" placeholder="名前（例: 公式ブログ）">
+								</label>
+								<label>
+									<span class="screen-reader-text"><?php echo (int) $i + 1; ?>つ目のリンクのURL</span>
+									<input type="url" name="snscs[links][<?php echo (int) $i; ?>][url]" value="<?php echo esc_attr( $link['url'] ); ?>" placeholder="https://">
+								</label>
+							</div>
+						<?php endfor; ?>
 					</div>
 				</fieldset>
 
@@ -609,6 +675,10 @@ class SNSCS_Portal {
 			wp_delete_attachment( $photo_id, true );
 		}
 
+		SNSCS_Articles::delete_for_user( $user_id );
+		if ( $creator_id ) {
+			SNSCS_Tracking::delete_for_creator( $creator_id );
+		}
 		$wpdb->delete( SNSCS_Submissions::table(), array( 'user_id' => $user_id ), array( '%d' ) );
 		delete_transient( 'snscs_form_' . $user_id );
 
@@ -622,7 +692,7 @@ class SNSCS_Portal {
 	/**
 	 * @return int|WP_Error 写真の添付ファイルID。
 	 */
-	private static function upload_photo() {
+	public static function upload_photo() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- 呼び出し元で確認済み。
 		$size = isset( $_FILES['snscs_photo']['size'] ) ? (int) $_FILES['snscs_photo']['size'] : 0;
 		if ( $size > self::MAX_PHOTO ) {

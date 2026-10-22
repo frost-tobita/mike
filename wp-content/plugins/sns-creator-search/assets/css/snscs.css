@@ -111,7 +111,7 @@
 	font-size: 0.9em;
 }
 
-.snscs-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.snscs-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]),
 .snscs-field select {
 	width: 100%;
 	box-sizing: border-box;
@@ -836,4 +836,373 @@
 	.snscs-ad__body .snscs-ad-content__image {
 		width: 100%;
 	}
+}
+
+/* ---------- その他のリンク ---------- */
+
+.snscs-link-rows {
+	display: grid;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.snscs-link-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+	gap: 8px;
+}
+
+@media (max-width: 480px) {
+	.snscs-link-row {
+		grid-template-columns: 1fr;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #eee;
+	}
+}
+
+.snscs-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-links a {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 40px;
+	padding: 0 14px;
+	box-sizing: border-box;
+	border: 1px solid #c7d2fe;
+	border-radius: 999px;
+	background: #eef2fb;
+	color: #1e3a8a;
+	font-size: 0.9em;
+	text-decoration: none;
+}
+
+.snscs-links a:hover,
+.snscs-links a:focus-visible {
+	text-decoration: underline;
+}
+
+/* ---------- あなたの分析 ---------- */
+
+.snscs-analysis p {
+	margin: 0 0 12px;
+}
+
+.snscs-analysis__total strong {
+	font-size: 1.6em;
+}
+
+.snscs-analysis__list {
+	display: grid;
+	gap: 10px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-analysis__list li {
+	display: grid;
+	grid-template-columns: 9em minmax(0, 1fr) 3.5em;
+	gap: 4px 10px;
+	align-items: center;
+}
+
+.snscs-analysis__label {
+	font-size: 0.9em;
+}
+
+.snscs-analysis__bar {
+	display: block;
+	height: 10px;
+	border-radius: 999px;
+	background: #eef0f3;
+	overflow: hidden;
+}
+
+.snscs-analysis__bar span {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: #1e3a8a;
+}
+
+.snscs-analysis__list li.is-weakest .snscs-analysis__bar span {
+	background: #c2410c;
+}
+
+.snscs-analysis__point {
+	font-weight: bold;
+	text-align: right;
+}
+
+.snscs-analysis__tip {
+	grid-column: 1 / -1;
+	padding: 8px 12px;
+	border-radius: 6px;
+	background: #fff7ed;
+	color: #7c2d12;
+	font-size: 0.85em;
+}
+
+@media (max-width: 480px) {
+	.snscs-analysis__list li {
+		grid-template-columns: minmax(0, 1fr) 3.5em;
+	}
+
+	.snscs-analysis__bar {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+}
+
+/* ---------- 発信者の記事 ---------- */
+
+.snscs-my-articles__head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.snscs-my-articles__head .snscs-panel__title {
+	margin: 0;
+}
+
+.snscs-my-articles__head .snscs-button {
+	text-decoration: none;
+}
+
+.snscs-my-articles__list {
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-my-articles__list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	padding: 10px 0;
+	border-top: 1px solid #eee;
+}
+
+.snscs-my-articles__name {
+	flex: 1 1 200px;
+	min-width: 0;
+	font-weight: bold;
+}
+
+.snscs-my-articles__actions {
+	display: flex;
+	gap: 12px;
+	font-size: 0.9em;
+}
+
+.snscs-my-articles__note {
+	flex-basis: 100%;
+	padding: 6px 10px;
+	border-left: 3px solid #c62828;
+	background: #fdf3f2;
+	font-size: 0.85em;
+}
+
+.snscs-article-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.snscs-article-delete {
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #eee;
+}
+
+.snscs-author {
+	margin: 32px 0 16px;
+	padding: 20px;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+	background: #fafafa;
+}
+
+.snscs-author__label {
+	margin: 0 0 8px;
+	color: #555;
+	font-size: 0.8em;
+}
+
+.snscs-author__head {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	margin-bottom: 12px;
+}
+
+.snscs-author__photo {
+	flex: none;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-author__name {
+	font-size: 1.1em;
+	font-weight: bold;
+}
+
+.snscs-author__bio {
+	margin: 4px 0 0;
+	color: #444;
+	font-size: 0.9em;
+}
+
+.snscs-author__more {
+	margin: 12px 0 0;
+	font-size: 0.9em;
+}
+
+.snscs-articles {
+	margin: 24px 0 0;
+}
+
+.snscs-articles__title {
+	margin: 0 0 10px;
+	font-size: 1.1em;
+}
+
+.snscs-articles__list {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-articles__list a {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	padding: 10px;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+	background: #fff;
+	color: inherit;
+	text-decoration: none;
+}
+
+.snscs-articles__list a:hover strong,
+.snscs-articles__list a:focus-visible strong {
+	text-decoration: underline;
+}
+
+.snscs-articles__image {
+	flex: none;
+	width: 72px;
+	height: 72px;
+	border-radius: 6px;
+	object-fit: cover;
+}
+
+.snscs-articles__list span {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.snscs-articles__date {
+	color: #666;
+	font-size: 0.8em;
+}
+
+/* ---------- おすすめ・似ている発信者 ---------- */
+
+.snscs-reco {
+	margin: 24px 0 0;
+}
+
+.snscs-reco__title {
+	margin: 0 0 10px;
+	font-size: 1.1em;
+}
+
+.snscs-reco__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-reco__list a {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 14px 10px;
+	border: 1px solid #e3e3e3;
+	border-radius: 8px;
+	background: #fff;
+	color: inherit;
+	text-align: center;
+	text-decoration: none;
+}
+
+.snscs-reco__list a:hover strong,
+.snscs-reco__list a:focus-visible strong {
+	text-decoration: underline;
+}
+
+.snscs-reco__photo {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-reco__initial {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	background: #dbeafe;
+	color: #1e3a8a;
+	font-size: 1.3em;
+	font-weight: bold;
+}
+
+.snscs-reco__meta {
+	color: #555;
+	font-size: 0.8em;
+}
+
+/* 記事の編集画面（WordPress のエディター）をテーマの装飾から守る。 */
+.snscs-fields .wp-editor-wrap {
+	width: 100%;
+}
+
+.snscs-fields .quicktags-toolbar input.button {
+	width: auto;
+	margin: 2px;
+}
+
+.snscs-fields .wp-editor-area {
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
 }

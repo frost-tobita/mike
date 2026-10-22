@@ -60,6 +60,7 @@ class SNSCS_Ads {
 				'search_infeed' => array( 'label' => '検索結果：一覧の途中', 'size' => '発信者カードと同じ横幅', 'default' => true ),
 				'search_bottom' => array( 'label' => '検索結果：一覧の下', 'size' => '728×90 または横幅いっぱい', 'default' => false ),
 				'column_bottom' => array( 'label' => 'コラム：記事の下', 'size' => '横幅いっぱい（コンテンツ販売のカードがおすすめ）', 'default' => true ),
+				'article_bottom' => array( 'label' => '発信者の記事：記事の下', 'size' => '横幅いっぱい', 'default' => false ),
 			)
 		);
 	}
