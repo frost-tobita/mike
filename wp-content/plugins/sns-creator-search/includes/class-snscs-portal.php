@@ -120,8 +120,15 @@ class SNSCS_Portal {
 	}
 
 	private static function render_auth() {
+		$invite_code = SNSCS_Invites::remembered_code();
+		$inviter     = SNSCS_Invites::inviter_for_code( $invite_code );
 		?>
-		<div class="snscs-auth">
+		<?php if ( $inviter ) : ?>
+			<p class="snscs-notice snscs-notice--invite">
+				<strong><?php echo esc_html( get_the_title( $inviter ) ); ?></strong> さんからの招待です。下の「新規登録」から、無料で発信者として掲載を申し込めます。
+			</p>
+		<?php endif; ?>
+		<div class="snscs-auth<?php echo $inviter ? ' snscs-auth--invited' : ''; ?>">
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">ログイン</h2>
 				<p>登録済みの発信者の方はこちら。</p>
@@ -156,6 +163,10 @@ class SNSCS_Portal {
 					<label class="snscs-field">
 						<span>パスワード（<?php echo (int) self::MIN_PASSWORD; ?>文字以上）</span>
 						<input type="password" name="password" required minlength="<?php echo (int) self::MIN_PASSWORD; ?>" autocomplete="new-password">
+					</label>
+					<label class="snscs-field">
+						<span>招待コード（お持ちの方のみ）</span>
+						<input type="text" name="invite_code" value="<?php echo esc_attr( $invite_code ); ?>" maxlength="16" autocomplete="off" pattern="[A-Za-z0-9]*">
 					</label>
 					<?php // 機械による大量登録よけ。人には見えない欄。 ?>
 					<label class="snscs-hp" aria-hidden="true">
@@ -248,6 +259,7 @@ class SNSCS_Portal {
 
 		<?php if ( $published ) : ?>
 			<?php self::render_referral( $creator_id ); ?>
+			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
 		<?php endif; ?>
 
 		<?php if ( $creator_id ) : ?>
@@ -490,6 +502,22 @@ class SNSCS_Portal {
 				</fieldset>
 
 				<fieldset class="snscs-field">
+					<legend>コンテンツ販売・ブログ</legend>
+					<p class="snscs-help">note や Brain で発信・販売している方は、名前かページのURLを入れてください。</p>
+					<div class="snscs-sns-rows">
+						<?php foreach ( snscs_profile_stores() as $key => $store ) : ?>
+							<div class="snscs-store-row">
+								<span class="snscs-sns-row__label"><?php echo esc_html( $store['label'] ); ?></span>
+								<label>
+									<span class="screen-reader-text"><?php echo esc_html( $store['label'] ); ?> の名前</span>
+									<input type="text" name="snscs[stores][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( isset( $data['stores'][ $key ] ) ? $data['stores'][ $key ] : '' ); ?>" placeholder="<?php echo esc_attr( $store['placeholder'] ); ?>">
+								</label>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</fieldset>
+
+				<fieldset class="snscs-field">
 					<legend>その他のリンク（<?php echo (int) SNSCS_Submissions::MAX_LINKS; ?>つまで）</legend>
 					<p class="snscs-help">ブログ、企業サイト、ネットショップ、上にないSNSなど、見てほしいページを載せられます。</p>
 					<div class="snscs-link-rows">
@@ -560,6 +588,9 @@ class SNSCS_Portal {
 		if ( is_wp_error( $user_id ) ) {
 			self::back( 'register_error' );
 		}
+
+		$invite_code = isset( $_POST['invite_code'] ) && '' !== $_POST['invite_code'] ? sanitize_text_field( wp_unslash( $_POST['invite_code'] ) ) : SNSCS_Invites::remembered_code();
+		SNSCS_Invites::record_signup( $user_id, $invite_code );
 
 		wp_set_current_user( $user_id );
 		wp_set_auth_cookie( $user_id );

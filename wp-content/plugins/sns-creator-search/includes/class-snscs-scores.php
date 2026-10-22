@@ -2,7 +2,7 @@
 /**
  * 表示順位（おすすめ順）のための点数計算。
  *
- * 8つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
+ * 9つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
  *
  *   紹介リンク     : 紹介リンクから来た人数（最近の日ほど重く数える）
  *   フォロワー     : 全SNSの合計フォロワー数
@@ -12,9 +12,10 @@
  *   記事の活動     : 最近公開した記事の数（新しい記事ほど重く数える）
  *   サイトの利用日数 : 発信者がログインしてこのサイトを使った日数（最近の日ほど重く数える）
  *   サイトの利用時間 : 発信者がログイン中にこのサイトを使っていた時間（1日30分まで、最近の日ほど重く数える）
+ *   紹介ネットワーク : 招待して掲載された発信者（初期3段目まで）の人数と紹介リンク流入（SNSCS_Invites）
  *
  *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)
- *   ※初期の重みは 25:25:15:15:10:10:5:5（紹介:フォロワー = 1:1 は変えない）
+ *   ※初期の重みは 25:25:15:15:10:10:5:5:10（紹介:フォロワー = 1:1 は変えない）
  *
  * 順位の換算: 1位 = 100点、最下位 = 0点、同じ値の人は同じ点。
  *   点 = 自分より値が小さい人の人数 ÷ (全体の人数 − 1) × 100
@@ -84,6 +85,9 @@ class SNSCS_Scores {
   articles double NOT NULL DEFAULT 0,
   usage_days int(10) unsigned NOT NULL DEFAULT 0,
   usage_time int(10) unsigned NOT NULL DEFAULT 0,
+  network double NOT NULL DEFAULT 0,
+  invites int(10) unsigned NOT NULL DEFAULT 0,
+  tiers varchar(64) NOT NULL DEFAULT '',
   inflow_points double NOT NULL DEFAULT 0,
   follower_points double NOT NULL DEFAULT 0,
   points text,
@@ -157,6 +161,12 @@ class SNSCS_Scores {
 				'tip'     => 'コラムを読んだり、記事を書いたりして、このサイトを活用しましょう（1日30分まで数えます）。',
 				'default' => 5,
 			),
+			'network'   => array(
+				'label'   => '紹介ネットワーク',
+				'desc'    => '招待して掲載された発信者（設定した段数まで）の人数と、その人たちの紹介リンク流入',
+				'tip'     => '「発信者仲間を招待する」のリンクを、発信している友人に送ってみましょう。',
+				'default' => 10,
+			),
 		);
 	}
 
@@ -170,6 +180,10 @@ class SNSCS_Scores {
 			'weights'   => wp_list_pluck( self::signals(), 'default' ),
 			'days'      => (int) get_option( 'snscs_inflow_days', 30 ),
 			'half_life' => 14,
+			// 紹介ネットワーク: 何段目まで数えるか、1段深くなるごとの割合（%）、招待1人あたりのボーナス。
+			'tiers'      => 3,
+			'tier_decay' => 50,
+			'join_bonus' => 10,
 		);
 
 		// 以前の「紹介:フォロワー」の重み設定を引き継ぐ（1:1 以外に変えていた場合）。
@@ -332,6 +346,33 @@ class SNSCS_Scores {
 			);
 		}
 
+		// 不正の疑いを先に判定する（紹介ネットワークでも使うため）。
+		$flags = array();
+		foreach ( $creators as $id ) {
+			$flags[ $id ] = array();
+			// 紹介リンクのクリックは多いのに、ページがほとんど表示されていない。
+			if ( $raw[ $id ]['inflow_chk'] >= self::SUSPECT_MIN_REFERRALS && $raw[ $id ]['views'] < $raw[ $id ]['inflow_chk'] * self::SUSPECT_VIEW_RATIO ) {
+				$flags[ $id ][] = 'referral_without_views';
+			}
+			// 閲覧は多いのに、滞在時間が極端に短い。
+			if ( $raw[ $id ]['views'] >= self::SUSPECT_MIN_VIEWS && $raw[ $id ]['dwell_avg'] < self::SUSPECT_MIN_DWELL ) {
+				$flags[ $id ][] = 'short_dwell';
+			}
+		}
+
+		// 紹介ネットワーク: 招待して掲載された人を、設定した段数までさかのぼって足す。
+		list( $network, $tier_counts ) = SNSCS_Invites::network_values(
+			SNSCS_Invites::parents(),
+			$values['referral'],
+			array_map( 'boolval', $flags ),
+			(int) $settings['tiers'],
+			min( 100, max( 0, (int) $settings['tier_decay'] ) ) / 100,
+			max( 0, (float) $settings['join_bonus'] )
+		);
+		foreach ( $creators as $id ) {
+			$values['network'][ $id ] = isset( $network[ $id ] ) ? $network[ $id ] : 0.0;
+		}
+
 		$points = array();
 		foreach ( $values as $signal => $by_creator ) {
 			$points[ $signal ] = self::rank_points( $by_creator );
@@ -344,26 +385,21 @@ class SNSCS_Scores {
 		foreach ( array_chunk( $creators, 500 ) as $chunk ) {
 			$rows = array();
 			foreach ( $chunk as $id ) {
-				$p     = array();
-				$flags = array();
+				$p = array();
 				foreach ( array_keys( self::signals() ) as $signal ) {
 					$p[ $signal ] = $points[ $signal ][ $id ];
 				}
-
-				// 不正の疑い: 紹介リンクのクリックは多いのに、ページがほとんど表示されていない。
-				if ( $raw[ $id ]['inflow_chk'] >= self::SUSPECT_MIN_REFERRALS && $raw[ $id ]['views'] < $raw[ $id ]['inflow_chk'] * self::SUSPECT_VIEW_RATIO ) {
-					$flags[]       = 'referral_without_views';
+				if ( in_array( 'referral_without_views', $flags[ $id ], true ) ) {
 					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
 				}
-				// 不正の疑い: 閲覧は多いのに、滞在時間が極端に短い。
-				if ( $raw[ $id ]['views'] >= self::SUSPECT_MIN_VIEWS && $raw[ $id ]['dwell_avg'] < self::SUSPECT_MIN_DWELL ) {
-					$flags[]       = 'short_dwell';
+				if ( in_array( 'short_dwell', $flags[ $id ], true ) ) {
 					$p['views']    = $p['views'] * self::SUSPECT_PENALTY;
 					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
 				}
+				$tiers = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
 
 				$rows[] = $wpdb->prepare(
-					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %f, %s, %s, %f, %s)',
+					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %s, %f, %f, %s, %s, %f, %s)',
 					$id,
 					$raw[ $id ]['inflow'],
 					$values['followers'][ $id ],
@@ -373,16 +409,19 @@ class SNSCS_Scores {
 					$values['articles'][ $id ],
 					$raw[ $id ]['usage_days'],
 					$raw[ $id ]['usage_time'],
+					$values['network'][ $id ],
+					$tiers[0],
+					wp_json_encode( $tiers ),
 					$p['referral'],
 					$p['followers'],
 					wp_json_encode( array_map( 'floatval', $p ) ),
-					implode( ',', $flags ),
+					implode( ',', $flags[ $id ] ),
 					self::combine( $p, $weights ),
 					$now
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, tiers, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
@@ -483,6 +522,9 @@ class SNSCS_Scores {
 			'articles'        => (float) $row['articles'],
 			'usage_days'      => (int) $row['usage_days'],
 			'usage_time'      => (int) $row['usage_time'],
+			'network'         => (float) $row['network'],
+			'invites'         => (int) $row['invites'],
+			'tiers'           => array_map( 'intval', (array) json_decode( (string) $row['tiers'], true ) ),
 			'inflow_points'   => (float) $row['inflow_points'],
 			'follower_points' => (float) $row['follower_points'],
 			'points'          => is_array( $points ) ? $points : array(),

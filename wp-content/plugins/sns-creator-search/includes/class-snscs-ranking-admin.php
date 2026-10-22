@@ -87,6 +87,25 @@ class SNSCS_Ranking_Admin {
 						<td><input id="snscs-days" name="days" type="number" min="1" max="90" step="1" value="<?php echo (int) $settings['days']; ?>" class="small-text"> 日間 <span class="description">（紹介リンク・閲覧・滞在・クリック）</span></td>
 					</tr>
 					<tr>
+						<th scope="row"><label for="snscs-tiers">紹介ネットワークの段数</label></th>
+						<td>
+							<select id="snscs-tiers" name="tiers">
+								<?php for ( $t = 1; $t <= SNSCS_Invites::MAX_TIERS; $t++ ) : ?>
+									<option value="<?php echo (int) $t; ?>" <?php selected( (int) $settings['tiers'], $t ); ?>><?php echo (int) $t; ?>段目まで</option>
+								<?php endfor; ?>
+							</select>
+							<span class="description">招待した人（1段目）、その人が招待した人（2段目）…を何段目まで数えるか</span>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="snscs-decay">1段深くなるごとの割合</label></th>
+						<td><input id="snscs-decay" name="tier_decay" type="number" min="0" max="100" step="5" value="<?php echo (int) $settings['tier_decay']; ?>" class="small-text"> % <span class="description">（50%なら 1段目100%、2段目50%、3段目25%…）</span></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="snscs-bonus">招待1人あたりのボーナス</label></th>
+						<td><input id="snscs-bonus" name="join_bonus" type="number" min="0" max="1000" step="1" value="<?php echo (int) $settings['join_bonus']; ?>" class="small-text"> 人分 <span class="description">（招待した人が掲載されたとき、紹介リンクから何人来たのと同じに数えるか）</span></td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="snscs-half">半分に数えるまでの日数</label></th>
 						<td><input id="snscs-half" name="half_life" type="number" min="1" max="90" step="1" value="<?php echo (int) $settings['half_life']; ?>" class="small-text"> 日 <span class="description">（小さいほど、最近の動きを重視します）</span></td>
 					</tr>
@@ -152,12 +171,13 @@ class SNSCS_Ranking_Admin {
 						<th style="text-align: right">記事</th>
 						<th style="text-align: right">利用日数</th>
 						<th style="text-align: right">利用時間</th>
+						<th style="text-align: right">招待</th>
 						<th style="text-align: right">総合点</th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="11">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
+						<tr><td colspan="12">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
 					<?php endif; ?>
 					<?php foreach ( $rows as $i => $row ) : ?>
 						<?php $p = json_decode( (string) $row['points'], true ); ?>
@@ -179,6 +199,7 @@ class SNSCS_Ranking_Admin {
 								'articles'  => number_format_i18n( $row['articles'], 1 ),
 								'site_days' => number_format_i18n( $row['usage_days'] ) . '日',
 								'site_time' => number_format_i18n( round( $row['usage_time'] / 60 ) ) . '分',
+								'network'   => number_format_i18n( $row['invites'] ) . '人',
 							);
 							?>
 							<?php foreach ( $cells as $signal => $value ) : ?>
@@ -209,7 +230,10 @@ class SNSCS_Ranking_Admin {
 			array(
 				'weights'   => $weights,
 				'days'      => isset( $_POST['days'] ) ? min( 90, max( 1, (int) $_POST['days'] ) ) : 30,
-				'half_life' => isset( $_POST['half_life'] ) ? min( 90, max( 1, (int) $_POST['half_life'] ) ) : 14,
+				'half_life'  => isset( $_POST['half_life'] ) ? min( 90, max( 1, (int) $_POST['half_life'] ) ) : 14,
+				'tiers'      => isset( $_POST['tiers'] ) ? min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $_POST['tiers'] ) ) : 3,
+				'tier_decay' => isset( $_POST['tier_decay'] ) ? min( 100, max( 0, (int) $_POST['tier_decay'] ) ) : 50,
+				'join_bonus' => isset( $_POST['join_bonus'] ) ? min( 1000, max( 0, (int) $_POST['join_bonus'] ) ) : 10,
 			)
 		);
 		// phpcs:enable

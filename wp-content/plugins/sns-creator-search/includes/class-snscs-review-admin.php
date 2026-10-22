@@ -239,6 +239,18 @@ class SNSCS_Review_Admin {
 			return;
 		}
 
+		foreach ( snscs_profile_stores() as $key => $store ) {
+			if ( $store['label'] === $label ) {
+				if ( empty( $data['stores'][ $key ] ) ) {
+					echo '（なし）';
+				} else {
+					$url = sprintf( $store['url'], rawurlencode( $data['stores'][ $key ] ) );
+					printf( '<a href="%s" target="_blank" rel="noopener noreferrer nofollow">%s</a>', esc_url( $url ), esc_html( $url ) );
+				}
+				return;
+			}
+		}
+
 		if ( 'その他のリンク' === $label ) {
 			if ( empty( $data['links'] ) ) {
 				echo '（なし）';

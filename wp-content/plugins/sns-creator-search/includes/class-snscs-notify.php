@@ -19,6 +19,32 @@ class SNSCS_Notify {
 		add_action( 'snscs_article_submitted', array( __CLASS__, 'article_submitted' ) );
 		add_action( 'snscs_article_approved', array( __CLASS__, 'article_approved' ) );
 		add_action( 'snscs_article_rejected', array( __CLASS__, 'article_rejected' ), 10, 2 );
+		add_action( 'snscs_invite_joined', array( __CLASS__, 'invite_joined' ), 10, 2 );
+	}
+
+	/**
+	 * 招待した人が掲載されたことを、招待した発信者に知らせる。
+	 */
+	public static function invite_joined( $inviter_id, $creator_id ) {
+		$user = get_userdata( (int) get_post_field( 'post_author', $inviter_id ) );
+		if ( ! $user ) {
+			return;
+		}
+		$body = implode(
+			"\n",
+			array(
+				get_the_title( $inviter_id ) . ' さん',
+				'',
+				'あなたの招待で「' . get_the_title( $creator_id ) . '」さんが掲載されました。ありがとうございます。',
+				'あなたの「紹介ネットワーク」の点数に加わります（1時間以内に反映されます）。',
+				'',
+				get_permalink( $creator_id ),
+				'',
+				'招待の状況はマイページで確認できます:',
+				snscs_portal_url() . '#snscs-invite',
+			)
+		);
+		wp_mail( $user->user_email, self::subject( 'あなたの招待で発信者が掲載されました' ), $body );
 	}
 
 	public static function article_submitted( $article_id ) {

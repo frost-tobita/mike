@@ -136,3 +136,50 @@ function snscs_search_url() {
 	$url     = $page_id ? get_permalink( $page_id ) : '';
 	return $url ? $url : home_url( '/' );
 }
+
+/**
+ * 発信者ページに載せられる「コンテンツ販売・ブログ」（SNSとは別。フォロワー数や検索のタブには使わない）。
+ * 追加したい場合は `snscs_profile_stores` フィルターで増やせる。
+ *
+ * @return array<string,array{label:string,url:string,placeholder:string}> url の %s にアカウント名が入る。
+ */
+function snscs_profile_stores() {
+	return apply_filters(
+		'snscs_profile_stores',
+		array(
+			'note'  => array(
+				'label'       => 'note',
+				'url'         => 'https://note.com/%s',
+				'placeholder' => 'note.com/ のあとの名前、またはURL',
+			),
+			'brain' => array(
+				'label'       => 'Brain',
+				'url'         => 'https://brain-market.com/u/%s',
+				'placeholder' => 'brain-market.com/u/ のあとの名前、またはURL',
+			),
+		)
+	);
+}
+
+/**
+ * 「コンテンツ販売・ブログ」のURLやアカウント名から、アカウント名だけを取り出す。
+ *
+ * @param string $store キー（note、brain）。
+ * @param string $value 入力値。
+ * @return string 使えない形なら空文字。
+ */
+function snscs_store_handle( $store, $value ) {
+	$value = trim( (string) $value );
+	if ( preg_match( '#^https?://#i', $value ) ) {
+		$path     = (string) wp_parse_url( $value, PHP_URL_PATH );
+		$segments = array_values( array_filter( explode( '/', $path ) ) );
+		// Brain は brain-market.com/u/名前 の形。
+		if ( 'brain' === $store && isset( $segments[0], $segments[1] ) && 'u' === $segments[0] ) {
+			$value = $segments[1];
+		} else {
+			$value = $segments ? $segments[0] : '';
+		}
+	}
+	$value = ltrim( $value, '@' );
+	return preg_match( '/^[A-Za-z0-9_.-]{1,64}$/', $value ) ? $value : '';
+}

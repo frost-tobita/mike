@@ -128,7 +128,7 @@ class SNSCS_Articles {
 				</div>
 			</div>
 			<?php SNSCS_Frontend::render_accounts( $accounts ); ?>
-			<?php SNSCS_Frontend::render_links( SNSCS_Submissions::links_for( $creator_id ) ); ?>
+			<?php SNSCS_Frontend::render_links( SNSCS_Submissions::links_for( $creator_id ), SNSCS_Submissions::stores_for( $creator_id ) ); ?>
 			<p class="snscs-author__more"><a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">プロフィールを見る</a></p>
 		</aside>
 		<?php

@@ -110,6 +110,9 @@ class SNSCS_Referrals {
 			self::record( $creator_id, self::visitor_hash() );
 		}
 
+		// この人がのちに発信者として登録したときに「招待」として結びつけるため（SNSCS_Invites）。
+		do_action( 'snscs_referral_visit', $creator_id, $code );
+
 		nocache_headers();
 		wp_safe_redirect( get_permalink( $creator_id ), 302 );
 		exit;

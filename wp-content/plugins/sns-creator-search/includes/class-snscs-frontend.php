@@ -281,12 +281,21 @@ class SNSCS_Frontend {
 	 *
 	 * @param array $links SNSCS_Submissions::links_for() の戻り値。
 	 */
-	public static function render_links( array $links ) {
-		if ( empty( $links ) ) {
+	public static function render_links( array $links, array $stores = array() ) {
+		if ( empty( $links ) && empty( $stores ) ) {
 			return;
 		}
+		$labels = snscs_profile_stores();
 		?>
-		<ul class="snscs-links" aria-label="その他のリンク">
+		<ul class="snscs-links" aria-label="コンテンツ販売・ブログとその他のリンク">
+			<?php foreach ( $stores as $key => $handle ) : ?>
+				<li>
+					<a class="snscs-links__store snscs-links__store--<?php echo esc_attr( $key ); ?>" href="<?php echo esc_url( sprintf( $labels[ $key ]['url'], rawurlencode( $handle ) ) ); ?>" target="_blank" rel="nofollow ugc noopener" data-snscs-out="1">
+						<strong><?php echo esc_html( $labels[ $key ]['label'] ); ?></strong>
+						<?php echo esc_html( $handle ); ?>
+					</a>
+				</li>
+			<?php endforeach; ?>
 			<?php foreach ( $links as $link ) : ?>
 				<li>
 					<a href="<?php echo esc_url( $link['url'] ); ?>" target="_blank" rel="nofollow ugc noopener" data-snscs-out="1">
@@ -312,9 +321,10 @@ class SNSCS_Frontend {
 		$accounts = SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( get_the_ID() ) );
 
 		ob_start();
+		echo SNSCS_Invites::badge( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts );
-		self::render_links( SNSCS_Submissions::links_for( get_the_ID() ) );
+		self::render_links( SNSCS_Submissions::links_for( get_the_ID() ), SNSCS_Submissions::stores_for( get_the_ID() ) );
 		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( get_the_ID(), 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Recommend::similar_html( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Columns::for_creator( get_the_ID(), $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。

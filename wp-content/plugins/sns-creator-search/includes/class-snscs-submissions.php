@@ -224,6 +224,7 @@ class SNSCS_Submissions {
 		}
 		SNSCS_Accounts::replace_for_creator( $creator_id, $accounts );
 		update_post_meta( $creator_id, '_snscs_links', $data['links'] );
+		update_post_meta( $creator_id, '_snscs_stores', $data['stores'] );
 
 		$wpdb->update(
 			self::table(),
@@ -314,7 +315,18 @@ class SNSCS_Submissions {
 			'thumbnail_id' => (int) get_post_thumbnail_id( $creator_id ),
 			'accounts'     => $accounts,
 			'links'        => self::links_for( $creator_id ),
+			'stores'       => self::stores_for( $creator_id ),
 		);
+	}
+
+	/**
+	 * 発信者ページに載せている「コンテンツ販売・ブログ」（キー => アカウント名）。
+	 *
+	 * @return array<string,string>
+	 */
+	public static function stores_for( $creator_id ) {
+		$stores = get_post_meta( $creator_id, '_snscs_stores', true );
+		return is_array( $stores ) ? array_intersect_key( $stores, snscs_profile_stores() ) : array();
 	}
 
 	/**
@@ -336,6 +348,7 @@ class SNSCS_Submissions {
 			'thumbnail_id' => 0,
 			'accounts'     => array(),
 			'links'        => array(),
+			'stores'       => array(),
 		);
 	}
 
@@ -385,6 +398,20 @@ class SNSCS_Submissions {
 				'handle'    => $handle,
 				'followers' => isset( $input['followers'] ) ? absint( str_replace( array( ',', '，' ), '', (string) $input['followers'] ) ) : 0,
 			);
+		}
+
+		$raw_stores = isset( $raw['stores'] ) && is_array( $raw['stores'] ) ? $raw['stores'] : array();
+		foreach ( snscs_profile_stores() as $key => $store ) {
+			$value = isset( $raw_stores[ $key ] ) ? trim( sanitize_text_field( $raw_stores[ $key ] ) ) : '';
+			if ( '' === $value ) {
+				continue;
+			}
+			$handle = snscs_store_handle( $key, $value );
+			if ( '' === $handle ) {
+				$errors[] = sprintf( '%sの名前（またはURL）が正しくありません。', $store['label'] );
+				continue;
+			}
+			$data['stores'][ $key ] = $handle;
 		}
 
 		$raw_links = isset( $raw['links'] ) && is_array( $raw['links'] ) ? array_values( $raw['links'] ) : array();
@@ -495,6 +522,10 @@ class SNSCS_Submissions {
 			$rows[ $label ] = isset( $data['accounts'][ $platform ] )
 				? snscs_display_handle( $platform, $data['accounts'][ $platform ]['handle'] ) . '（' . number_format_i18n( $data['accounts'][ $platform ]['followers'] ) . '人）'
 				: '（なし）';
+		}
+
+		foreach ( snscs_profile_stores() as $key => $store ) {
+			$rows[ $store['label'] ] = isset( $data['stores'][ $key ] ) ? sprintf( $store['url'], $data['stores'][ $key ] ) : '（なし）';
 		}
 
 		$links = array();

@@ -1206,3 +1206,106 @@
 	box-sizing: border-box;
 	font: inherit;
 }
+
+/* ---------- コンテンツ販売・ブログ（note・Brain） ---------- */
+
+.snscs-store-row {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 8px;
+	align-items: center;
+	padding-left: 8px;
+	border-left: 4px solid #9ca3af;
+}
+
+.snscs-links a.snscs-links__store {
+	border-color: #e5e7eb;
+	background: #fff;
+	color: #1f2937;
+}
+
+.snscs-links a.snscs-links__store--note {
+	border-left: 4px solid #41c9b4;
+}
+
+.snscs-links a.snscs-links__store--brain {
+	border-left: 4px solid #2563eb;
+}
+
+/* ---------- 招待 ---------- */
+
+.snscs-share {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.snscs-share__button {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 16px;
+	border-radius: 6px;
+	color: #fff;
+	font-size: 0.9em;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.snscs-share__button:hover,
+.snscs-share__button:focus-visible {
+	color: #fff;
+	text-decoration: underline;
+}
+
+.snscs-share__button--x {
+	background: #111;
+}
+
+.snscs-share__button--line {
+	background: #06813a;
+}
+
+.snscs-share__button--fb {
+	background: #1659c7;
+}
+
+.snscs-invite__template {
+	margin: 0 0 12px;
+}
+
+.snscs-invite__template summary {
+	cursor: pointer;
+	font-size: 0.9em;
+}
+
+.snscs-invite__template textarea {
+	width: 100%;
+	box-sizing: border-box;
+	margin: 8px 0;
+	padding: 8px;
+	font: inherit;
+	background: #f9fafb;
+}
+
+.snscs-notice--invite {
+	border-color: #c2410c;
+	background: #fff7ed;
+}
+
+/* 招待リンクから来た人には、新規登録を先に見せる。 */
+.snscs-auth--invited > .snscs-panel:last-child {
+	order: -1;
+	border-color: #c2410c;
+}
+
+.snscs-ambassador {
+	margin: 0 0 8px;
+	font-size: 0.9em;
+}
+
+.snscs-badge--ambassador {
+	background: #fde68a;
+	color: #713f12;
+}
