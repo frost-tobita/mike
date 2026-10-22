@@ -100,7 +100,8 @@ class SNSCS_Social {
 
 	public static function is_reader( $user = null ) {
 		$user = $user ? ( $user instanceof WP_User ? $user : get_userdata( $user ) ) : wp_get_current_user();
-		return $user && $user->exists() && in_array( self::ROLE, (array) $user->roles, true ) && ! user_can( $user, 'edit_posts' );
+		// 発信者としても登録した人は、発信者として扱う（退会などは発信者マイページから）。
+		return $user && $user->exists() && in_array( self::ROLE, (array) $user->roles, true ) && ! in_array( SNSCS_Portal::ROLE, (array) $user->roles, true ) && ! user_can( $user, 'edit_posts' );
 	}
 
 	public static function member_url( $args = array() ) {
@@ -938,11 +939,7 @@ class SNSCS_Social {
 			echo '<p class="snscs-help">まだ誰もフォローしていません。</p>';
 			return;
 		}
-		$items = array();
-		foreach ( $ids as $id ) {
-			$items[] = SNSCS_Search::format_creator( get_post( $id ) );
-		}
-		SNSCS_Frontend::render_cards( $items );
+		SNSCS_Frontend::render_cards( SNSCS_Personalize::items( $ids ) );
 	}
 
 	private static function render_account() {

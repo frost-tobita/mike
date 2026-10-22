@@ -396,12 +396,13 @@ class SNSCS_Learner {
 		$s['diversity']       = min( 100, max( 0, (int) ( $in['diversity'] ?? 30 ) ) );
 		$s['log_rate']        = min( 100, max( 1, (int) ( $in['log_rate'] ?? 100 ) ) );
 		$s['min_pairs']       = min( 100000, max( 50, (int) ( $in['min_pairs'] ?? 300 ) ) );
-		$s['synonyms']        = sanitize_textarea_field( (string) ( $in['synonyms'] ?? '' ) );
+		// ブラウザから届く改行（\r\n）を \n にそろえる（変わったかどうかを正しく比べるため）。
+		$s['synonyms']        = str_replace( array( "\r\n", "\r" ), "\n", sanitize_textarea_field( (string) ( $in['synonyms'] ?? '' ) ) );
 		$s['ai_tags']         = empty( $in['ai_tags'] ) ? 0 : 1;
 		$s['ai_tags_per_day'] = min( 2000, max( 10, (int) ( $in['ai_tags_per_day'] ?? 200 ) ) );
 		$s['spike']           = empty( $in['spike'] ) ? 0 : 1;
 		// phpcs:enable
-		$synonyms_changed = $s['synonyms'] !== self::setting( 'synonyms' );
+		$synonyms_changed = trim( $s['synonyms'] ) !== trim( str_replace( array( "\r\n", "\r" ), "\n", (string) self::setting( 'synonyms' ) ) );
 		update_option( self::OPTION, $s, false );
 		SNSCS_Scores::schedule_soon();
 		wp_safe_redirect( self::admin_url( array( 'snscs_msg' => $synonyms_changed ? 'saved_syn' : 'saved' ) ) );

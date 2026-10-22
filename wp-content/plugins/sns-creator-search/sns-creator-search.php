@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.7.0
+ * Version:           1.7.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.7.0' );
-define( 'SNSCS_DB_VERSION', '16' );
+define( 'SNSCS_VERSION', '1.7.1' );
+define( 'SNSCS_DB_VERSION', '17' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -96,8 +96,23 @@ function snscs_activate() {
 	SNSCS_Features::add_rewrite_rule();
 	SNSCS_Share::add_rewrite_rules();
 	SNSCS_Biolink::add_rewrite_rule();
+	SNSCS_Stories::register();
+	SNSCS_Post_Types::install_default_terms();
 	flush_rewrite_rules();
 }
+
+/**
+ * 有効化・更新のあとの最初の表示で1回だけ: 既定のジャンル・地域（無ければ）と、URLの規則の作り直し。
+ * ファイルを入れ替えて更新したとき（有効化し直さないとき）も、新しいURL（記事のハッシュタグなど）が使えるようにする。
+ */
+function snscs_after_install() {
+	if ( get_option( 'snscs_after_install' ) ) {
+		delete_option( 'snscs_after_install' );
+		SNSCS_Post_Types::install_default_terms();
+		flush_rewrite_rules();
+	}
+}
+add_action( 'init', 'snscs_after_install', 99 );
 
 /**
  * 停止時: 定期的な点数計算を止める。
@@ -144,6 +159,7 @@ function snscs_install() {
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
+	update_option( 'snscs_after_install', 1, false );
 	// 新しいURL（特集・バッジ・シェア画像）を使えるよう、次の読み込みでパーマリンクを更新する。
 	update_option( 'snscs_flush_rewrite', 1 );
 }

@@ -28,6 +28,7 @@ class SNSCS_Portal {
 		add_action( 'admin_post_snscs_submit', array( __CLASS__, 'handle_submit' ) );
 		add_action( 'admin_post_snscs_unpublish', array( __CLASS__, 'handle_unpublish' ) );
 		add_action( 'admin_post_snscs_withdraw', array( __CLASS__, 'handle_withdraw' ) );
+		add_action( 'admin_post_snscs_become_creator', array( __CLASS__, 'handle_become_creator' ) );
 
 		add_action( 'admin_init', array( __CLASS__, 'keep_out_of_admin' ) );
 		add_filter( 'show_admin_bar', array( __CLASS__, 'hide_admin_bar' ) );
@@ -79,6 +80,20 @@ class SNSCS_Portal {
 
 		if ( ! is_user_logged_in() ) {
 			self::render_auth();
+		} elseif ( SNSCS_Social::is_reader() ) {
+			// 読者会員: 同じアカウントのまま、発信者としても登録できる。
+			?>
+			<section class="snscs-panel">
+				<h2 class="snscs-panel__title">発信者としても掲載する</h2>
+				<p>いまは読者会員としてログインしています。同じアカウントのまま発信者として登録し、掲載の申請や記事の執筆ができます（フォロー・ブックマークなどはそのまま使えます）。</p>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="snscs_become_creator">
+					<?php wp_nonce_field( 'snscs_become_creator', 'snscs_nonce' ); ?>
+					<label class="snscs-check"><input type="checkbox" name="agree" value="1" required> 掲載の条件（利用規約）に同意する</label>
+					<p><button type="submit" class="snscs-button snscs-button--primary">発信者として登録する</button></p>
+				</form>
+			</section>
+			<?php
 		} elseif ( ! snscs_is_creator_user() ) {
 			echo '<p class="snscs-notice">運営用のアカウントでログインしています。審査は管理画面の「発信者 → 審査」から行えます。</p>';
 			echo '<p><a class="snscs-button" href="' . esc_url( admin_url( 'edit.php?post_type=' . SNSCS_Post_Types::POST_TYPE . '&page=' . SNSCS_Review_Admin::PAGE ) ) . '">審査画面へ</a></p>';
@@ -625,6 +640,22 @@ class SNSCS_Portal {
 
 		wp_set_current_user( $user_id );
 		wp_set_auth_cookie( $user_id );
+		self::back( 'registered' );
+	}
+
+	/**
+	 * 読者会員が、同じアカウントのまま発信者としても登録する。
+	 */
+	public static function handle_become_creator() {
+		if ( ! SNSCS_Social::is_reader() || ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_become_creator' ) ) {
+			self::back();
+		}
+		if ( empty( $_POST['agree'] ) ) {
+			self::back( 'agree' );
+		}
+		$user = wp_get_current_user();
+		$user->add_role( self::ROLE );
+		SNSCS_Invites::record_signup( $user->ID, SNSCS_Invites::remembered_code() );
 		self::back( 'registered' );
 	}
 

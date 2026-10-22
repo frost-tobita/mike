@@ -68,4 +68,23 @@ class SNSCS_Post_Types {
 			)
 		);
 	}
+
+	/**
+	 * 新しいサイトで、ジャンルと地域がまだ1つも無ければ、よく使うものを入れる（あとから管理画面で自由に変えられる）。
+	 * ジャンルが無いと発信者が登録の申請をできないため。
+	 */
+	public static function install_default_terms() {
+		$defaults = array(
+			self::TAX_GENRE  => array( '料理', '美容', 'ファッション', '旅行', '子育て', 'ゲーム', '音楽', 'スポーツ', 'ビジネス', 'テクノロジー' ),
+			self::TAX_REGION => array( '北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄' ),
+		);
+		foreach ( $defaults as $taxonomy => $names ) {
+			if ( ! taxonomy_exists( $taxonomy ) || wp_count_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) ) ) {
+				continue;
+			}
+			foreach ( $names as $name ) {
+				wp_insert_term( $name, $taxonomy );
+			}
+		}
+	}
 }

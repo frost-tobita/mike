@@ -330,6 +330,8 @@ class SNSCS_Scores {
 	 */
 	public static function recalculate() {
 		global $wpdb;
+		// 発信者が多いと配列が大きくなるため、WordPress の「重い処理」用のメモリ上限まで使えるようにする。
+		wp_raise_memory_limit( 'snscs_scores' );
 
 		$settings  = self::settings();
 		$days      = max( 1, (int) $settings['days'] );
@@ -416,6 +418,9 @@ class SNSCS_Scores {
 			);
 		}
 
+		// ここから先で使わないものは、早めにメモリから外す。
+		unset( $referral_raw, $referral_check, $referral_w, $traffic, $articles, $usage, $feedback, $quality, $freshness, $all_followers, $rows );
+
 		// 不正の疑いを先に判定する（紹介ネットワークでも使うため）。
 		$flags = array();
 		foreach ( $creators as $id ) {
@@ -454,6 +459,10 @@ class SNSCS_Scores {
 		$points = array();
 		foreach ( $values as $signal => $by_creator ) {
 			$points[ $signal ] = self::rank_points( $by_creator );
+			// 保存に使う値（フォロワー・記事・紹介ネットワーク）だけ残す。
+			if ( ! in_array( $signal, array( 'followers', 'articles', 'network' ), true ) ) {
+				unset( $values[ $signal ] );
+			}
 		}
 
 		// 学習した重みが良ければ混ぜて使う。A/Bテスト中は B組用の点数も計算する。

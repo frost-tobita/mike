@@ -46,8 +46,20 @@ class SNSCS_Integrity {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
 		add_action( 'admin_post_snscs_integrity', array( __CLASS__, 'handle_admin' ) );
 		add_action( 'snscs_nightly_engine', array( __CLASS__, 'purge' ), 40 );
+		add_action( 'before_delete_post', array( __CLASS__, 'on_delete_post' ) );
 		add_action( 'add_meta_boxes_' . SNSCS_Post_Types::POST_TYPE, array( __CLASS__, 'add_meta_box' ) );
 		add_action( 'save_post_' . SNSCS_Post_Types::POST_TYPE, array( __CLASS__, 'save_meta' ) );
+	}
+
+	/**
+	 * 発信者が削除されたら（退会など）、判定の記録も消す。
+	 */
+	public static function on_delete_post( $post_id ) {
+		global $wpdb;
+		if ( SNSCS_Post_Types::POST_TYPE === get_post_type( $post_id ) ) {
+			$wpdb->delete( self::table(), array( 'creator_id' => (int) $post_id ), array( '%d' ) );
+			wp_cache_delete( 'snscs_penalties', 'snscs' );
+		}
 	}
 
 	public static function add_meta_box() {
