@@ -135,6 +135,7 @@ class SNSCS_Invites {
 			return;
 		}
 		update_post_meta( $row['creator_id'], '_snscs_referrer', $inviter );
+		update_post_meta( $row['creator_id'], '_snscs_joined_at', current_time( 'mysql' ) );
 		do_action( 'snscs_invite_joined', $inviter, $row['creator_id'] );
 	}
 

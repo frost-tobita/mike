@@ -2,7 +2,7 @@
 /**
  * 表示順位（おすすめ順）のための点数計算。
  *
- * 9つの「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
+ * 10の「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
  *
  *   紹介リンク     : 紹介リンクから来た人数（最近の日ほど重く数える）
  *   フォロワー     : 全SNSの合計フォロワー数
@@ -13,9 +13,10 @@
  *   サイトの利用日数 : 発信者がログインしてこのサイトを使った日数（最近の日ほど重く数える）
  *   サイトの利用時間 : 発信者がログイン中にこのサイトを使っていた時間（1日30分まで、最近の日ほど重く数える）
  *   紹介ネットワーク : 招待して掲載された発信者（初期3段目まで）の人数と紹介リンク流入（SNSCS_Invites）
+ *   お気に入り     : ページを見てお気に入りに登録した人数（最近の日ほど重く数える）
  *
  *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)
- *   ※初期の重みは 25:25:15:15:10:10:5:5:10（紹介:フォロワー = 1:1 は変えない）
+ *   ※初期の重みは 25:25:15:15:10:10:5:5:10:5（紹介:フォロワー = 1:1 は変えない）
  *
  * 順位の換算: 1位 = 100点、最下位 = 0点、同じ値の人は同じ点。
  *   点 = 自分より値が小さい人の人数 ÷ (全体の人数 − 1) × 100
@@ -87,6 +88,7 @@ class SNSCS_Scores {
   usage_time int(10) unsigned NOT NULL DEFAULT 0,
   network double NOT NULL DEFAULT 0,
   invites int(10) unsigned NOT NULL DEFAULT 0,
+  favs int(10) unsigned NOT NULL DEFAULT 0,
   tiers varchar(64) NOT NULL DEFAULT '',
   inflow_points double NOT NULL DEFAULT 0,
   follower_points double NOT NULL DEFAULT 0,
@@ -166,6 +168,12 @@ class SNSCS_Scores {
 				'desc'    => '招待して掲載された発信者（設定した段数まで）の人数と、その人たちの紹介リンク流入',
 				'tip'     => '「発信者仲間を招待する」のリンクを、発信している友人に送ってみましょう。',
 				'default' => 10,
+			),
+			'favorites' => array(
+				'label'   => 'お気に入り',
+				'desc'    => 'ページを見た人がお気に入りに登録した人数（最近ほど高く数える）',
+				'tip'     => 'SNSの投稿で「プロフィールを☆お気に入りしておいてね」と呼びかけてみましょう。',
+				'default' => 5,
 			),
 		);
 	}
@@ -322,7 +330,7 @@ class SNSCS_Scores {
 		$values = array_fill_keys( array_keys( self::signals() ), array() );
 		$raw    = array();
 		foreach ( $creators as $id ) {
-			$t = isset( $traffic[ $id ] ) ? $traffic[ $id ] : array( 'views' => 0, 'weighted_views' => 0, 'dwell_sum' => 0, 'dwell_count' => 0, 'out_clicks' => 0 );
+			$t = isset( $traffic[ $id ] ) ? $traffic[ $id ] : array( 'views' => 0, 'weighted_views' => 0, 'dwell_sum' => 0, 'dwell_count' => 0, 'out_clicks' => 0, 'favs' => 0, 'weighted_favs' => 0 );
 
 			$values['referral'][ $id ]  = isset( $referral_w[ $id ] ) ? $referral_w[ $id ] : 0.0;
 			$values['followers'][ $id ] = isset( $all_followers[ $id ] ) ? (int) $all_followers[ $id ] : 0;
@@ -334,6 +342,7 @@ class SNSCS_Scores {
 			$u                          = isset( $usage[ $id ] ) ? $usage[ $id ] : array( 'days' => 0, 'seconds' => 0, 'weighted_days' => 0.0, 'weighted_seconds' => 0.0 );
 			$values['site_days'][ $id ] = $u['weighted_days'];
 			$values['site_time'][ $id ] = $u['weighted_seconds'];
+			$values['favorites'][ $id ] = $t['weighted_favs'];
 
 			$raw[ $id ] = array(
 				'inflow'     => isset( $referral_raw[ $id ] ) ? $referral_raw[ $id ] : 0,
@@ -343,6 +352,7 @@ class SNSCS_Scores {
 				'click_rate' => $t['views'] ? $t['out_clicks'] / $t['views'] : 0,
 				'usage_days' => $u['days'],
 				'usage_time' => $u['seconds'],
+				'favs'       => $t['favs'],
 			);
 		}
 
@@ -399,7 +409,7 @@ class SNSCS_Scores {
 				$tiers = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
 
 				$rows[] = $wpdb->prepare(
-					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %s, %f, %f, %s, %s, %f, %s)',
+					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s)',
 					$id,
 					$raw[ $id ]['inflow'],
 					$values['followers'][ $id ],
@@ -411,6 +421,7 @@ class SNSCS_Scores {
 					$raw[ $id ]['usage_time'],
 					$values['network'][ $id ],
 					$tiers[0],
+					$raw[ $id ]['favs'],
 					wp_json_encode( $tiers ),
 					$p['referral'],
 					$p['followers'],
@@ -421,7 +432,7 @@ class SNSCS_Scores {
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, tiers, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, favs, tiers, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), favs = VALUES(favs), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
@@ -524,6 +535,7 @@ class SNSCS_Scores {
 			'usage_time'      => (int) $row['usage_time'],
 			'network'         => (float) $row['network'],
 			'invites'         => (int) $row['invites'],
+			'favs'            => (int) $row['favs'],
 			'tiers'           => array_map( 'intval', (array) json_decode( (string) $row['tiers'], true ) ),
 			'inflow_points'   => (float) $row['inflow_points'],
 			'follower_points' => (float) $row['follower_points'],

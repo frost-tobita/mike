@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           0.9.0
+ * Version:           1.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '0.9.0' );
-define( 'SNSCS_DB_VERSION', '9' );
+define( 'SNSCS_VERSION', '1.0.0' );
+define( 'SNSCS_DB_VERSION', '10' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -46,6 +46,16 @@ require_once SNSCS_DIR . 'includes/class-snscs-articles-review.php';
 require_once SNSCS_DIR . 'includes/class-snscs-recommend.php';
 require_once SNSCS_DIR . 'includes/class-snscs-usage.php';
 require_once SNSCS_DIR . 'includes/class-snscs-invites.php';
+require_once SNSCS_DIR . 'includes/class-snscs-hub.php';
+require_once SNSCS_DIR . 'includes/class-snscs-personalize.php';
+require_once SNSCS_DIR . 'includes/class-snscs-trends.php';
+require_once SNSCS_DIR . 'includes/class-snscs-features.php';
+require_once SNSCS_DIR . 'includes/class-snscs-rankings.php';
+require_once SNSCS_DIR . 'includes/class-snscs-share.php';
+require_once SNSCS_DIR . 'includes/class-snscs-newsletter.php';
+require_once SNSCS_DIR . 'includes/class-snscs-tools.php';
+require_once SNSCS_DIR . 'includes/class-snscs-interviews.php';
+require_once SNSCS_DIR . 'includes/class-snscs-inquiries.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -65,6 +75,8 @@ function snscs_activate() {
 	SNSCS_Ads::add_rewrite_rules();
 	SNSCS_Articles::register();
 	SNSCS_Invites::add_rewrite_rule();
+	SNSCS_Features::add_rewrite_rule();
+	SNSCS_Share::add_rewrite_rules();
 	flush_rewrite_rules();
 }
 
@@ -74,6 +86,8 @@ function snscs_activate() {
 function snscs_deactivate() {
 	wp_clear_scheduled_hook( SNSCS_Scores::CRON_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Scores::CRON_HOOK . '_once' );
+	wp_clear_scheduled_hook( SNSCS_Newsletter::CRON_HOOK );
+	wp_clear_scheduled_hook( SNSCS_Newsletter::CRON_HOOK . '_more' );
 	flush_rewrite_rules();
 }
 
@@ -88,9 +102,16 @@ function snscs_install() {
 	SNSCS_Ads::install();
 	SNSCS_Tracking::install();
 	SNSCS_Usage::install();
+	SNSCS_Personalize::install();
+	SNSCS_Trends::install();
+	SNSCS_Rankings::install();
+	SNSCS_Newsletter::install();
+	SNSCS_Inquiries::install();
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
+	// 新しいURL（特集・バッジ・シェア画像）を使えるよう、次の読み込みでパーマリンクを更新する。
+	update_option( 'snscs_flush_rewrite', 1 );
 }
 
 /**
@@ -124,3 +145,13 @@ SNSCS_Articles_Review::init();
 SNSCS_Recommend::init();
 SNSCS_Usage::init();
 SNSCS_Invites::init();
+SNSCS_Hub::init();
+SNSCS_Personalize::init();
+SNSCS_Trends::init();
+SNSCS_Features::init();
+SNSCS_Rankings::init();
+SNSCS_Share::init();
+SNSCS_Newsletter::init();
+SNSCS_Tools::init();
+SNSCS_Interviews::init();
+SNSCS_Inquiries::init();

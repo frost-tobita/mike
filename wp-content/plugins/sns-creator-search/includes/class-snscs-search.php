@@ -69,12 +69,20 @@ class SNSCS_Search {
 	/**
 	 * 検索を実行する。
 	 *
-	 * @param array $raw         入力値（未整形でよい）。
-	 * @param bool  $with_counts SNSごとの人数（インデックス用）も数えるか。
-	 * @return array{items:array,total:int,page:int,per_page:int,total_pages:int,args:array,counts:array}
+	 * @param array      $raw         入力値（未整形でよい）。exclude（除く発信者IDの配列）も渡せる。
+	 * @param bool       $with_counts SNSごとの人数（インデックス用）も数えるか。
+	 * @param array|null $personal    一人ひとりに合わせるとき: profile（SNSCS_Personalize::profile()）、strength（0〜1、省略時は設定値）。
+	 *                                「おすすめ順」のときだけ使う。
+	 * @return array{items:array,total:int,page:int,per_page:int,total_pages:int,args:array,counts:array,personalized:bool}
 	 */
-	public static function run( array $raw, $with_counts = false ) {
-		$args    = self::normalize_args( $raw );
+	public static function run( array $raw, $with_counts = false, $personal = null ) {
+		$args            = self::normalize_args( $raw );
+		$args['exclude'] = isset( $raw['exclude'] ) ? array_slice( array_values( array_filter( array_map( 'absint', (array) $raw['exclude'] ) ) ), 0, 200 ) : array();
+		$args['personal_order'] = null;
+		if ( $personal && ! empty( $personal['profile'] ) && 'recommended' === $args['sort'] ) {
+			$strength               = isset( $personal['strength'] ) ? $personal['strength'] : SNSCS_Hub::setting( 'personal_strength' ) / 100;
+			$args['personal_order'] = SNSCS_Personalize::order_expression( $personal['profile'], $strength );
+		}
 		$backend = self::backend();
 		$result  = $backend->search( $args );
 		$ids    = $result['ids'];
@@ -99,6 +107,7 @@ class SNSCS_Search {
 			'total_pages' => (int) ceil( $result['total'] / $args['per_page'] ),
 			'args'        => $args,
 			'counts'      => $with_counts ? $backend->count_by_platform( $args ) : array(),
+			'personalized' => ! empty( $args['personal_order'] ),
 		);
 	}
 

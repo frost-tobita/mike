@@ -7,6 +7,7 @@
  *   view  : ページを表示した（同じ人・同じ発信者は1日1回だけ数える）
  *   dwell : ページを実際に見ていた秒数（画面に表示され、操作があった時間だけ。最大600秒）
  *   out   : SNSや外部リンクを押した（同じ人・同じ発信者は1日1回だけ数える）
+ *   fav   : お気に入りに登録した（その日にページを見た人だけ。同じ人・同じ発信者は1日1回だけ数える）
  *
  * 数えないもの: ロボット（スクリプトを動かさない）、発信者本人、運営のアカウント。
  * 訪問者はIPアドレスを保存せず、日付入りのハッシュで区別する（紹介リンクと同じ）。
@@ -58,6 +59,7 @@ class SNSCS_Tracking {
   dwell smallint(5) unsigned NOT NULL DEFAULT 0,
   article tinyint(1) unsigned NOT NULL DEFAULT 0,
   out_clicked tinyint(1) unsigned NOT NULL DEFAULT 0,
+  fav tinyint(1) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (creator_id,visitor_hash,day),
   KEY day (day)
 ) {$charset};"
@@ -75,6 +77,7 @@ class SNSCS_Tracking {
   dwell_sum int(10) unsigned NOT NULL DEFAULT 0,
   dwell_count int(10) unsigned NOT NULL DEFAULT 0,
   out_clicks int(10) unsigned NOT NULL DEFAULT 0,
+  favs int(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (creator_id,day),
   KEY day (day)
 ) {$charset};"
@@ -174,6 +177,8 @@ class SNSCS_Tracking {
 				self::record_dwell( $creator_id, $visitor, (int) $request->get_param( 's' ) );
 			} elseif ( 'out' === $type ) {
 				self::record_out( $creator_id, $visitor );
+			} elseif ( 'fav' === $type ) {
+				self::record_fav( $creator_id, $visitor );
 			}
 		}
 
@@ -240,13 +245,29 @@ class SNSCS_Tracking {
 	}
 
 	/**
+	 * お気に入り登録。その日にページを見た記録がある人だけ数える（見ずに押す機械的な登録を数えない）。
+	 */
+	public static function record_fav( $creator_id, $visitor, $day = null ) {
+		global $wpdb;
+
+		$visits = self::visits_table();
+		$day    = $day ? $day : current_time( 'Y-m-d' );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$first = (int) $wpdb->query( $wpdb->prepare( "UPDATE {$visits} SET fav = 1 WHERE creator_id = %d AND visitor_hash = %s AND day = %s AND fav = 0", $creator_id, $visitor, $day ) );
+		if ( $first ) {
+			self::bump( $creator_id, $day, array( 'favs' => 1 ) );
+		}
+	}
+
+	/**
 	 * 「発信者×日」の集計に足す。
 	 */
 	private static function bump( $creator_id, $day, array $add ) {
 		global $wpdb;
 
 		$daily   = self::daily_table();
-		$columns = array( 'views', 'article_views', 'dwell_sum', 'dwell_count', 'out_clicks' );
+		$columns = array( 'views', 'article_views', 'dwell_sum', 'dwell_count', 'out_clicks', 'favs' );
 		$values  = array();
 		$updates = array();
 		foreach ( $columns as $column ) {
@@ -260,7 +281,7 @@ class SNSCS_Tracking {
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$wpdb->query( $wpdb->prepare( "INSERT INTO {$daily} (creator_id, day, " . implode( ', ', $columns ) . ') VALUES (%d, %s, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE ' . implode( ', ', $updates ), array_merge( array( $creator_id, $day ), $values ) ) );
+		$wpdb->query( $wpdb->prepare( "INSERT INTO {$daily} (creator_id, day, " . implode( ', ', $columns ) . ') VALUES (%d, %s, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE ' . implode( ', ', $updates ), array_merge( array( $creator_id, $day ), $values ) ) );
 	}
 
 	/* --------------------------------------------------------------------
@@ -272,7 +293,7 @@ class SNSCS_Tracking {
 	 *
 	 * @param int   $days      直近何日分か。
 	 * @param float $half_life 何日前の閲覧を半分に数えるか。
-	 * @return array<int,array{views:int,weighted_views:float,article_views:int,dwell_sum:int,dwell_count:int,out_clicks:int}>
+	 * @return array<int,array{views:int,weighted_views:float,article_views:int,dwell_sum:int,dwell_count:int,out_clicks:int,favs:int,weighted_favs:float}>
 	 */
 	public static function totals( $days, $half_life ) {
 		global $wpdb;
@@ -284,7 +305,9 @@ class SNSCS_Tracking {
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT creator_id, SUM(views) AS views, SUM(views * POW(0.5, DATEDIFF(%s, day) / %f)) AS weighted_views, SUM(article_views) AS article_views, SUM(dwell_sum) AS dwell_sum, SUM(dwell_count) AS dwell_count, SUM(out_clicks) AS out_clicks FROM {$daily} WHERE day >= %s GROUP BY creator_id",
+				"SELECT creator_id, SUM(views) AS views, SUM(views * POW(0.5, DATEDIFF(%s, day) / %f)) AS weighted_views, SUM(article_views) AS article_views, SUM(dwell_sum) AS dwell_sum, SUM(dwell_count) AS dwell_count, SUM(out_clicks) AS out_clicks, SUM(favs) AS favs, SUM(favs * POW(0.5, DATEDIFF(%s, day) / %f)) AS weighted_favs FROM {$daily} WHERE day >= %s GROUP BY creator_id",
+				$today,
+				max( 1, (float) $half_life ),
 				$today,
 				max( 1, (float) $half_life ),
 				$since
@@ -301,6 +324,8 @@ class SNSCS_Tracking {
 				'dwell_sum'      => (int) $row['dwell_sum'],
 				'dwell_count'    => (int) $row['dwell_count'],
 				'out_clicks'     => (int) $row['out_clicks'],
+				'favs'           => (int) $row['favs'],
+				'weighted_favs'  => (float) $row['weighted_favs'],
 			);
 		}
 		return $totals;

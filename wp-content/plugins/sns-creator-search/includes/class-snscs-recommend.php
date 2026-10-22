@@ -88,18 +88,23 @@ class SNSCS_Recommend {
 	 * 発信者のカード一覧。
 	 *
 	 * @param string $heading 見出し。
-	 * @param array  $items   SNSCS_Search::format_creator() の配列。
+	 * @param array  $items   SNSCS_Search::format_creator() の配列（reason があれば「おすすめの理由」として出す）。
+	 * @param array  $options reasons（理由を出す）、compact（小さめ）、note（personal: 好みに合わせた説明とオフのリンク / popular）。
 	 * @return string
 	 */
-	public static function render( $heading, array $items ) {
+	public static function render( $heading, array $items, array $options = array() ) {
 		if ( ! $items ) {
 			return '';
 		}
+		$options = wp_parse_args( $options, array( 'reasons' => false, 'compact' => false, 'note' => '' ) );
 		wp_enqueue_style( 'snscs' );
 		ob_start();
 		?>
-		<section class="snscs-reco">
+		<section class="snscs-reco<?php echo $options['compact'] ? ' snscs-reco--compact' : ''; ?>">
 			<h2 class="snscs-reco__title"><?php echo esc_html( $heading ); ?></h2>
+			<?php if ( 'personal' === $options['note'] ) : ?>
+				<p class="snscs-reco__note">見た発信者や記事の傾向から選んでいます（この傾向はお使いのブラウザの中にだけ保存されています）。<button type="button" class="snscs-linklike" data-snscs-personal-off>おすすめのカスタマイズをやめる</button></p>
+			<?php endif; ?>
 			<ul class="snscs-reco__list">
 				<?php foreach ( $items as $item ) : ?>
 					<?php $main = $item['accounts'] ? $item['accounts'][0] : null; ?>
@@ -111,18 +116,38 @@ class SNSCS_Recommend {
 								<span class="snscs-reco__initial" aria-hidden="true"><?php echo esc_html( mb_substr( $item['name'], 0, 1 ) ); ?></span>
 							<?php endif; ?>
 							<strong><?php echo esc_html( $item['name'] ); ?></strong>
-							<?php if ( $item['genres'] ) : ?>
+							<?php if ( $options['reasons'] && ! empty( $item['reason'] ) ) : ?>
+								<span class="snscs-reco__reason"><?php echo esc_html( $item['reason'] ); ?></span>
+							<?php endif; ?>
+							<?php if ( $item['genres'] && ! $options['compact'] ) : ?>
 								<span class="snscs-reco__meta"><?php echo esc_html( implode( '・', $item['genres'] ) ); ?></span>
 							<?php endif; ?>
 							<?php if ( $main ) : ?>
 								<span class="snscs-reco__meta"><?php echo esc_html( $main['platform_label'] . ' ' . $main['followers_label'] ); ?></span>
 							<?php endif; ?>
 						</a>
+						<?php echo self::fav_button( $item['id'], true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?>
 					</li>
 				<?php endforeach; ?>
 			</ul>
 		</section>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * お気に入りのボタン（押すとブラウザに保存。snscs-personal.js が動かす）。
+	 *
+	 * @param int  $creator_id 発信者。
+	 * @param bool $small      カード用の小さいボタン（星だけ）。
+	 */
+	public static function fav_button( $creator_id, $small = false ) {
+		SNSCS_Personalize::enqueue_script();
+		return sprintf(
+			'<button type="button" class="snscs-fav%s" data-snscs-fav="%d" aria-pressed="false" aria-label="お気に入りに追加" hidden><span class="snscs-fav__star" aria-hidden="true">☆</span>%s</button>',
+			$small ? ' snscs-fav--small' : '',
+			(int) $creator_id,
+			$small ? '' : '<span class="snscs-fav__label">お気に入り</span>'
+		);
 	}
 }

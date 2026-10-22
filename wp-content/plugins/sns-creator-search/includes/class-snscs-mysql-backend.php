@@ -29,9 +29,11 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 				$order = 'top_followers DESC, p.ID DESC';
 				break;
 			default:
-				// おすすめ順: ①紹介流入と②フォロワー数を合わせた総合点（SNSCS_Scores）の高い順。
-				$order = 'top_score DESC, total_followers DESC, p.ID DESC';
+				// おすすめ順: 総合点（SNSCS_Scores）の高い順。
+				// 一人ひとりの好みがあるときは、総合点と好みとの近さを合わせた点の高い順（SNSCS_Personalize）。
+				$order = empty( $args['personal_order'] ) ? 'top_score DESC, total_followers DESC, p.ID DESC' : 'personal_rank DESC, top_score DESC, p.ID DESC';
 		}
+		$personal = empty( $args['personal_order'] ) ? '' : ', ' . $args['personal_order'] . ' AS personal_rank';
 
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
@@ -42,7 +44,7 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 		if ( $total > $offset ) {
 			$ids = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT p.ID, MAX(a.followers) AS top_followers, MAX(COALESCE(st.score, 0)) AS top_score, MAX(COALESCE(st.followers, 0)) AS total_followers {$from} GROUP BY p.ID ORDER BY {$order} LIMIT %d, %d",
+					"SELECT p.ID, MAX(a.followers) AS top_followers, MAX(COALESCE(st.score, 0)) AS top_score, MAX(COALESCE(st.followers, 0)) AS total_followers{$personal} {$from} GROUP BY p.ID ORDER BY {$order} LIMIT %d, %d",
 					array_merge( $params, array( $offset, $args['per_page'] ) )
 				)
 			);
@@ -130,6 +132,10 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 			$params[] = $like;
 			$params[] = $like;
 			$params[] = $like;
+		}
+
+		if ( ! empty( $args['exclude'] ) ) {
+			$where[] = 'p.ID NOT IN (' . implode( ',', array_map( 'intval', $args['exclude'] ) ) . ')';
 		}
 
 		$stats = SNSCS_Scores::table();

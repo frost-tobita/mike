@@ -183,3 +183,61 @@ function snscs_store_handle( $store, $value ) {
 	$value = ltrim( $value, '@' );
 	return preg_match( '/^[A-Za-z0-9_.-]{1,64}$/', $value ) ? $value : '';
 }
+
+/**
+ * ログインしていない人も使うフォーム（メールマガジン・お仕事の相談）の合言葉。
+ * ページがキャッシュされても使えるよう、作った時刻と署名だけを入れる（24時間有効）。
+ *
+ * @return string
+ */
+function snscs_form_token() {
+	$time = time();
+	return $time . '.' . substr( hash_hmac( 'sha256', 'snscs-form|' . $time, wp_salt( 'nonce' ) ), 0, 20 );
+}
+
+/**
+ * フォームの合言葉を確かめる。表示から $min_seconds 秒未満の送信（機械的な送信）も断る。
+ *
+ * @param string $token       snscs_form_token() の値。
+ * @param int    $min_seconds 表示から送信までの最短秒数。
+ * @return bool
+ */
+function snscs_check_form_token( $token, $min_seconds = 3 ) {
+	if ( ! preg_match( '/^(\d{9,11})\.([a-f0-9]{20})$/', (string) $token, $m ) ) {
+		return false;
+	}
+	$age = time() - (int) $m[1];
+	return $age >= $min_seconds && $age <= DAY_IN_SECONDS && hash_equals( substr( hash_hmac( 'sha256', 'snscs-form|' . $m[1], wp_salt( 'nonce' ) ), 0, 20 ), $m[2] );
+}
+
+/**
+ * 同じ人（日付入りのハッシュ）からの送信回数を数え、上限を超えたら true。
+ *
+ * @param string $action 何の送信か。
+ * @param int    $max    期間内の上限。
+ * @param int    $window 期間（秒）。
+ * @return bool
+ */
+function snscs_rate_limited( $action, $max, $window = HOUR_IN_SECONDS ) {
+	$key   = 'snscs_rl_' . md5( $action . '|' . SNSCS_Referrals::visitor_hash() );
+	$count = (int) get_transient( $key );
+	if ( $count >= $max ) {
+		return true;
+	}
+	set_transient( $key, $count + 1, $window );
+	return false;
+}
+
+/**
+ * メールの送り主の情報（規約ページの作成で入力した運営者情報）。
+ *
+ * @return array{operator:string,email:string,address:string}
+ */
+function snscs_operator_info() {
+	$info = wp_parse_args( (array) get_option( 'snscs_legal_info', array() ), array( 'operator' => '', 'address' => '', 'email' => '' ) );
+	return array(
+		'operator' => '' !== $info['operator'] ? $info['operator'] : wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
+		'email'    => '' !== $info['email'] ? $info['email'] : get_option( 'admin_email' ),
+		'address'  => $info['address'],
+	);
+}

@@ -124,6 +124,7 @@ class SNSCS_Articles {
 				<?php endif; ?>
 				<div>
 					<a class="snscs-author__name" href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>"><?php echo esc_html( get_the_title( $creator_id ) ); ?></a>
+					<?php echo SNSCS_Recommend::fav_button( $creator_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?>
 					<p class="snscs-author__bio"><?php echo esc_html( wp_trim_words( wp_strip_all_tags( get_post_field( 'post_content', $creator_id ) ), 50, '…' ) ); ?></p>
 				</div>
 			</div>
@@ -134,6 +135,8 @@ class SNSCS_Articles {
 		<?php
 		echo self::render_list( 'この発信者の他の記事', self::for_creator( $creator_id, 'publish', 4, array( $article_id ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。
 		echo SNSCS_Ads::render( 'article_bottom' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。
+		// 回遊: この人の好みに合う発信者と記事（あとから読み込む）。
+		echo SNSCS_Personalize::placeholder( 'foryou,posts' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return $content . ob_get_clean();
 	}
 

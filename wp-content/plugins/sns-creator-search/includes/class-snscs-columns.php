@@ -152,7 +152,17 @@ class SNSCS_Columns {
 	 * @return string
 	 */
 	public static function render( $heading, array $args ) {
-		$posts = self::find( $args );
+		return self::render_posts( $heading, self::find( $args ) );
+	}
+
+	/**
+	 * 記事（コラム・発信者の記事）のカード一覧。
+	 *
+	 * @param string    $heading 見出し。
+	 * @param WP_Post[] $posts   記事。
+	 * @return string
+	 */
+	public static function render_posts( $heading, array $posts ) {
 		if ( ! $posts ) {
 			return '';
 		}
@@ -163,7 +173,9 @@ class SNSCS_Columns {
 		<section class="snscs-columns" aria-label="<?php echo esc_attr( $heading ); ?>">
 			<div class="snscs-columns__head">
 				<h2 class="snscs-columns__title"><?php echo esc_html( $heading ); ?></h2>
-				<a class="snscs-columns__more" href="<?php echo esc_url( get_category_link( self::category_id() ) ); ?>">コラムをもっと読む</a>
+				<?php if ( self::category_id() ) : ?>
+					<a class="snscs-columns__more" href="<?php echo esc_url( get_category_link( self::category_id() ) ); ?>">コラムをもっと読む</a>
+				<?php endif; ?>
 			</div>
 			<ul class="snscs-columns__list">
 				<?php foreach ( $posts as $post ) : ?>
@@ -173,9 +185,11 @@ class SNSCS_Columns {
 								<?php echo get_the_post_thumbnail( $post, 'medium', array( 'class' => 'snscs-column-card__image', 'loading' => 'lazy', 'alt' => '' ) ); ?>
 							<?php endif; ?>
 							<span class="snscs-column-card__body">
-								<?php $sns = get_the_terms( $post, self::TAX_SNS ); ?>
+								<?php $sns = 'post' === $post->post_type ? get_the_terms( $post, self::TAX_SNS ) : null; ?>
 								<?php if ( $sns && ! is_wp_error( $sns ) ) : ?>
 									<span class="snscs-column-card__sns"><?php echo esc_html( implode( '・', wp_list_pluck( $sns, 'name' ) ) ); ?></span>
+								<?php elseif ( SNSCS_Articles::POST_TYPE === $post->post_type && SNSCS_Articles::creator_of( $post->ID ) ) : ?>
+									<span class="snscs-column-card__sns"><?php echo esc_html( get_the_title( SNSCS_Articles::creator_of( $post->ID ) ) ); ?>の記事</span>
 								<?php endif; ?>
 								<strong class="snscs-column-card__name"><?php echo esc_html( get_the_title( $post ) ); ?></strong>
 								<span class="snscs-column-card__date"><?php echo esc_html( get_the_date( 'Y年n月j日', $post ) ); ?></span>
@@ -268,6 +282,9 @@ class SNSCS_Columns {
 		<?php
 		echo SNSCS_Ads::render( 'column_bottom' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。
 		echo self::render( 'あわせて読みたいコラム', array( 'sns' => $sns && ! is_wp_error( $sns ) ? wp_list_pluck( $sns, 'slug' ) : array(), 'count' => 3, 'exclude' => array( $post_id ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。
+		// 回遊: この人の好みに合う発信者（あとから読み込む）とメールマガジン。
+		echo SNSCS_Personalize::placeholder( 'foryou' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Newsletter::mini_form(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return $content . ob_get_clean();
 	}
 
@@ -325,12 +342,25 @@ class SNSCS_Columns {
 			</table>
 
 			<h2>スターター記事</h2>
-			<p>集客の最初の一歩として、SNS運用の基本を解説した記事を6本用意しています。下書きとして追加されるので、内容を確認・追記してから公開してください（同じタイトルの記事があるものは追加しません）。</p>
+			<p>集客の最初の一歩として、SNS運用の基本を解説した記事を12本用意しています。下書きとして追加されるので、内容を確認・追記してから公開してください（同じタイトルの記事があるものは追加しません）。</p>
 			<ul style="list-style: disc; padding-left: 1.4em">
 				<?php foreach ( self::starters() as $starter ) : ?>
 					<li><?php echo esc_html( $starter['title'] ); ?></li>
 				<?php endforeach; ?>
 			</ul>
+			<h2>コラムのネタ帳</h2>
+			<p>続けて書くときのタイトル案です。検索でよく調べられる「〇〇 やり方」「〇〇 コツ」の形を意識しています。サイト内の「人気のキーワード」も、読者が知りたいことのヒントになります。</p>
+			<ul style="list-style: disc; padding-left: 1.4em; columns: 2; max-width: 1000px">
+				<?php foreach ( self::ideas() as $idea ) : ?>
+					<li><?php echo esc_html( $idea ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+			<?php $trends = SNSCS_Trends::lists( 10 ); ?>
+			<?php if ( $trends['popular'] ) : ?>
+				<p>いまサイトで人気のキーワード: <?php echo esc_html( implode( '、', $trends['popular'] ) ); ?></p>
+			<?php endif; ?>
+
+			<h2>スターター記事を追加</h2>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="snscs_add_starter_columns">
 				<?php wp_nonce_field( 'snscs_add_starter_columns', 'snscs_nonce' ); ?>
@@ -338,6 +368,43 @@ class SNSCS_Columns {
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * コラムのタイトル案。
+	 *
+	 * @return string[]
+	 */
+	public static function ideas() {
+		return apply_filters(
+			'snscs_column_ideas',
+			array(
+				'フォロワーが増えない原因と、今日からできる見直し方',
+				'投稿する時間帯はいつがいい？反応を見ながら決める方法',
+				'ハッシュタグの選び方の基本',
+				'プロフィールのリンク先は何にする？目的別の選び方',
+				'炎上を防ぐために、投稿前に確認したい5つのこと',
+				'写真が映える！スマホで撮るときの光と構図の基本',
+				'動画の編集をラクにする、撮影前の準備',
+				'ライブ配信を始めるときの準備とコツ',
+				'コメントへの返信で、ファンとの距離を縮める方法',
+				'SNSの数字はどこを見る？最初に見るべき3つの指標',
+				'発信のテーマが決まらない人のための、テーマの見つけ方',
+				'毎日投稿は必要？続けられるペースの決め方',
+				'ブログとSNSを組み合わせて、検索からも見つけてもらう方法',
+				'プレゼント企画の注意点と、上手な進め方',
+				'コラボ投稿で、お互いのフォロワーに知ってもらう方法',
+				'地域の情報発信で、地元のファンを増やすコツ',
+				'顔を出さずに発信を続ける方法',
+				'noteやBrainでコンテンツを販売する前に考えること',
+				'PR投稿の「広告」表示の正しい書き方',
+				'企業から声がかかる発信者のプロフィールの共通点',
+				'スランプのときに発信を続けるための考え方',
+				'子育て・仕事と両立して発信を続ける時間術',
+				'1年続けてわかった、発信を続けるコツ（発信者インタビュー）',
+				'ジャンル別：人気発信者に学ぶ投稿の工夫',
+			)
+		);
 	}
 
 	public static function starters() {

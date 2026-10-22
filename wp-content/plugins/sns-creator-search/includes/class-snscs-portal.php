@@ -101,6 +101,7 @@ class SNSCS_Portal {
 			'article_saved'     => array( 'success', '記事を下書きとして保存しました。' ),
 			'article_submitted' => array( 'success', '記事の審査を申請しました。運営が確認し、結果をメールでお知らせします。' ),
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
+			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
 			'withdrawn'      => array( 'success', '退会しました。登録情報と掲載情報はすべて削除しました。ご利用ありがとうございました。' ),
 			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
 			'withdraw_check' => array( 'error', '退会するには、「削除されることを理解しました」にチェックを入れてください。' ),
@@ -260,6 +261,8 @@ class SNSCS_Portal {
 		<?php if ( $published ) : ?>
 			<?php self::render_referral( $creator_id ); ?>
 			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
+			<?php SNSCS_Share::render_portal( $creator_id ); ?>
+			<?php SNSCS_Inquiries::render_portal( $creator_id ); ?>
 		<?php endif; ?>
 
 		<?php if ( $creator_id ) : ?>
@@ -290,6 +293,7 @@ class SNSCS_Portal {
 				<li>掲載ページ、SNSアカウント、プロフィール写真</li>
 				<li>申請と審査の記録、書いた記事</li>
 				<li>紹介リンクと、リンクから来た人の記録</li>
+				<li>届いたお仕事の相談の記録</li>
 			</ul>
 			<p>一時的に表示を止めたいだけなら、退会ではなく「掲載をやめる」をお使いください。</p>
 			<form class="snscs-fields" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( '退会すると、登録情報と掲載情報がすべて削除され、元に戻せません。本当に退会しますか？' );">
@@ -358,6 +362,10 @@ class SNSCS_Portal {
 					<div>
 						<dt>あなたのサイト利用（直近<?php echo (int) $days; ?>日）</dt>
 						<dd><?php echo esc_html( number_format_i18n( $standing['usage_days'] ) ); ?>日 <small>／ <?php echo esc_html( number_format_i18n( round( $standing['usage_time'] / 60 ) ) ); ?>分</small></dd>
+					</div>
+					<div>
+						<dt>お気に入りに登録した人（直近<?php echo (int) $days; ?>日）</dt>
+						<dd><?php echo esc_html( number_format_i18n( $standing['favs'] ) ); ?>人</dd>
 					</div>
 				<?php endif; ?>
 			</dl>

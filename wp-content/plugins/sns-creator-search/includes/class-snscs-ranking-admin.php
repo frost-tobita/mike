@@ -200,6 +200,7 @@ class SNSCS_Ranking_Admin {
 								'site_days' => number_format_i18n( $row['usage_days'] ) . '日',
 								'site_time' => number_format_i18n( round( $row['usage_time'] / 60 ) ) . '分',
 								'network'   => number_format_i18n( $row['invites'] ) . '人',
+								'favorites' => number_format_i18n( $row['favs'] ) . '人',
 							);
 							?>
 							<?php foreach ( $cells as $signal => $value ) : ?>

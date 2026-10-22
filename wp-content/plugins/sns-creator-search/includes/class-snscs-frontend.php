@@ -70,13 +70,39 @@ class SNSCS_Frontend {
 			}
 		}
 
-		$result = SNSCS_Search::run( $raw, true );
+		// おすすめ順は、閲覧の傾向があれば一人ひとりに合わせる（その場合はページをキャッシュさせない）。
+		$profile = SNSCS_Personalize::profile();
+		if ( $profile && ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		$result = SNSCS_Search::run( $raw, true, $profile ? array( 'profile' => $profile ) : null );
+		$args   = $result['args'];
+
+		// 検索の傾向（選んだ条件・キーワード）を、この人の好みの記録と人気キーワードに使う。
+		SNSCS_Personalize::set_search_context( $args );
+		SNSCS_Personalize::print_search_context();
+		if ( 1 === $args['page'] && '' !== $args['q'] ) {
+			SNSCS_Trends::record( $args['q'], $result['total'] );
+		}
+
+		// 何も指定していない最初の画面か。
+		$landing = '' === $args['q'] && '' === $args['genre'] && '' === $args['region'] && ! $args['min_followers'] && ! $args['max_followers'] && 1 === $args['page'];
 
 		ob_start();
+		echo SNSCS_Hub::quick_nav(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		self::render_index( $result );
-		self::render_form( $result['args'] );
+		self::render_form( $args );
+		if ( $landing ) {
+			echo SNSCS_Trends::render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+			echo SNSCS_Personalize::placeholder( 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		}
 		self::render_results( $result );
-		echo SNSCS_Columns::for_search( $result['args'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Features::related_html( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		if ( $result['items'] ) {
+			echo SNSCS_Personalize::placeholder( $landing ? 'foryou' : 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		}
+		echo SNSCS_Columns::for_search( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Newsletter::mini_form(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Legal::links_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return ob_get_clean();
 	}
@@ -188,46 +214,117 @@ class SNSCS_Frontend {
 			<p class="snscs-results__count">
 				<?php echo esc_html( sprintf( '%s人の発信者が見つかりました', number_format_i18n( $result['total'] ) ) ); ?>
 			</p>
+			<?php if ( ! empty( $result['personalized'] ) ) : ?>
+				<p class="snscs-results__personal">「おすすめ順」は、あなたがよく見るジャンルやSNSに合わせて並べています。<button type="button" class="snscs-linklike" data-snscs-personal-off>やめる</button></p>
+			<?php endif; ?>
 
 			<?php echo SNSCS_Ads::render( 'search_top' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?>
 
 			<?php if ( empty( $result['items'] ) ) : ?>
-				<p class="snscs-results__empty">条件に合う発信者がいません。条件をゆるめて探してみてください。</p>
+				<?php self::render_empty( $result['args'] ); ?>
 			<?php else : ?>
-				<ul class="snscs-cards">
-					<?php foreach ( $result['items'] as $index => $item ) : ?>
-						<li class="snscs-card">
-							<?php if ( $item['thumbnail'] ) : ?>
-								<img class="snscs-card__image" src="<?php echo esc_url( $item['thumbnail'] ); ?>" alt="" loading="lazy" width="64" height="64">
-							<?php endif; ?>
-							<div class="snscs-card__body">
-								<h3 class="snscs-card__name"><a href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['name'] ); ?></a></h3>
-								<?php if ( $item['genres'] || $item['regions'] ) : ?>
-									<p class="snscs-card__tags">
-										<?php foreach ( array_merge( $item['genres'], $item['regions'] ) as $tag ) : ?>
-											<span class="snscs-tag"><?php echo esc_html( $tag ); ?></span>
-										<?php endforeach; ?>
-									</p>
-								<?php endif; ?>
-								<?php if ( $item['excerpt'] ) : ?>
-									<p class="snscs-card__excerpt"><?php echo esc_html( wp_trim_words( $item['excerpt'], 60, '…' ) ); ?></p>
-								<?php endif; ?>
-								<?php self::render_accounts( $item['accounts'] ); ?>
-							</div>
-						</li>
-						<?php if ( $index + 1 === $infeed_after && $index + 1 < count( $result['items'] ) ) : ?>
-							<?php $ad = SNSCS_Ads::render( 'search_infeed' ); ?>
-							<?php if ( '' !== $ad ) : ?>
-								<li class="snscs-card snscs-card--ad"><?php echo $ad; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?></li>
-							<?php endif; ?>
-						<?php endif; ?>
-					<?php endforeach; ?>
-				</ul>
+				<?php self::render_cards( $result['items'], $infeed_after ); ?>
 				<?php self::render_pagination( $result ); ?>
 				<?php echo SNSCS_Ads::render( 'search_bottom' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?>
 			<?php endif; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * 発信者のカード一覧（検索結果・特集ページ・ランキングで使う）。
+	 *
+	 * @param array $items        SNSCS_Search::format_creator() の配列。
+	 * @param int   $infeed_after 何人目のあとに広告（一覧の途中）を出すか。0 なら出さない。
+	 * @param array $badges       発信者ID => カードの左上に出す文字（順位など）。
+	 * @param array $notes        発信者ID => 名前の下に出す一言（「先月から↑3」など）。
+	 */
+	public static function render_cards( array $items, $infeed_after = 0, array $badges = array(), array $notes = array() ) {
+		wp_enqueue_style( 'snscs' );
+		?>
+		<ul class="snscs-cards">
+			<?php foreach ( $items as $index => $item ) : ?>
+				<li class="snscs-card<?php echo isset( $badges[ $item['id'] ] ) ? ' snscs-card--ranked' : ''; ?>">
+					<?php if ( isset( $badges[ $item['id'] ] ) ) : ?>
+						<span class="snscs-card__rank"><?php echo esc_html( $badges[ $item['id'] ] ); ?></span>
+					<?php endif; ?>
+					<?php if ( $item['thumbnail'] ) : ?>
+						<img class="snscs-card__image" src="<?php echo esc_url( $item['thumbnail'] ); ?>" alt="" loading="lazy" width="64" height="64">
+					<?php endif; ?>
+					<div class="snscs-card__body">
+						<h3 class="snscs-card__name"><a href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['name'] ); ?></a> <?php echo SNSCS_Recommend::fav_button( $item['id'], true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?></h3>
+						<?php if ( isset( $notes[ $item['id'] ] ) ) : ?>
+							<p class="snscs-card__note"><?php echo esc_html( $notes[ $item['id'] ] ); ?></p>
+						<?php endif; ?>
+						<?php if ( $item['genres'] || $item['regions'] ) : ?>
+							<p class="snscs-card__tags">
+								<?php foreach ( array_merge( $item['genres'], $item['regions'] ) as $tag ) : ?>
+									<span class="snscs-tag"><?php echo esc_html( $tag ); ?></span>
+								<?php endforeach; ?>
+							</p>
+						<?php endif; ?>
+						<?php if ( $item['excerpt'] ) : ?>
+							<p class="snscs-card__excerpt"><?php echo esc_html( wp_trim_words( $item['excerpt'], 60, '…' ) ); ?></p>
+						<?php endif; ?>
+						<?php self::render_accounts( $item['accounts'] ); ?>
+					</div>
+				</li>
+				<?php if ( $infeed_after && $index + 1 === $infeed_after && $index + 1 < count( $items ) ) : ?>
+					<?php $ad = SNSCS_Ads::render( 'search_infeed' ); ?>
+					<?php if ( '' !== $ad ) : ?>
+						<li class="snscs-card snscs-card--ad"><?php echo $ad; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?></li>
+					<?php endif; ?>
+				<?php endif; ?>
+			<?php endforeach; ?>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * 結果が0人のとき: 条件を1つずつ外した場合の人数を示し、そのまま探し直せるようにする。
+	 */
+	private static function render_empty( array $args ) {
+		$relax = array(
+			'q'             => array( 'snscs_q', 'キーワード「%s」を外す' ),
+			'genre'         => array( 'snscs_genre', 'ジャンルの指定を外す' ),
+			'region'        => array( 'snscs_region', '地域の指定を外す' ),
+			'platform'      => array( 'snscs_platform', 'SNSを「すべて」にする' ),
+			'min_followers' => array( 'snscs_min', 'フォロワー数（以上）の指定を外す' ),
+			'max_followers' => array( 'snscs_max', 'フォロワー数（以下）の指定を外す' ),
+		);
+		$options = array();
+		foreach ( $relax as $key => $def ) {
+			if ( empty( $args[ $key ] ) ) {
+				continue;
+			}
+			$try          = $args;
+			$try[ $key ]  = is_int( $args[ $key ] ) ? 0 : '';
+			$try['page']  = 1;
+			$try['per_page'] = 1;
+			$total        = SNSCS_Search::backend()->search( array_merge( $try, array( 'exclude' => array(), 'personal_order' => null ) ) )['total'];
+			if ( $total > 0 ) {
+				$options[] = array(
+					'label' => sprintf( $def[1], $args[ $key ] ),
+					'url'   => remove_query_arg( array( $def[0], 'snscs_page' ) ),
+					'total' => $total,
+				);
+			}
+		}
+		?>
+		<div class="snscs-results__empty">
+			<p>条件に合う発信者がいません。</p>
+			<?php if ( $options ) : ?>
+				<p>条件をゆるめると見つかります:</p>
+				<ul class="snscs-chips">
+					<?php foreach ( $options as $option ) : ?>
+						<li><a class="snscs-chip" href="<?php echo esc_url( $option['url'] ); ?>"><?php echo esc_html( $option['label'] ); ?>（<?php echo esc_html( number_format_i18n( $option['total'] ) ); ?>人）</a></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+		</div>
+		<?php
+		echo SNSCS_Trends::render( 'ほかの人はこんな言葉で探しています' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Personalize::placeholder( 'foryou' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 	}
 
 	/**
@@ -320,15 +417,28 @@ class SNSCS_Frontend {
 
 		$accounts = SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( get_the_ID() ) );
 
+		$id = get_the_ID();
+
+		// 本文の前: パンくず（特集へ）と、お気に入り・シェアのボタン。
 		ob_start();
-		echo SNSCS_Invites::badge( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Features::creator_links_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Share::visitor_buttons( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		$before = ob_get_clean();
+
+		ob_start();
+		echo SNSCS_Invites::badge( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts );
-		self::render_links( SNSCS_Submissions::links_for( get_the_ID() ), SNSCS_Submissions::stores_for( get_the_ID() ) );
-		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( get_the_ID(), 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
-		echo SNSCS_Recommend::similar_html( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
-		echo SNSCS_Columns::for_creator( get_the_ID(), $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		self::render_links( SNSCS_Submissions::links_for( $id ), SNSCS_Submissions::stores_for( $id ) );
+		echo SNSCS_Inquiries::form_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( $id, 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Interviews::for_creator_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		// 回遊: 一緒に見られている発信者（予測）→ 似ている発信者 → 最近見た発信者（この人のブラウザの記録）。
+		echo SNSCS_Personalize::also_viewed_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Recommend::similar_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Personalize::placeholder( 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Columns::for_creator( $id, $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		$running = false;
-		return $content . ob_get_clean();
+		return $before . $content . ob_get_clean();
 	}
 }
