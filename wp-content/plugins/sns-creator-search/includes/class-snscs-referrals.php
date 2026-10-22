@@ -106,16 +106,22 @@ class SNSCS_Referrals {
 			exit;
 		}
 
-		if ( self::should_count( $creator_id ) ) {
-			self::record( $creator_id, self::visitor_hash() );
-		}
-
-		// この人がのちに発信者として登録したときに「招待」として結びつけるため（SNSCS_Invites）。
-		do_action( 'snscs_referral_visit', $creator_id, $code );
+		self::count_visit( $creator_id, $code );
 
 		nocache_headers();
 		wp_safe_redirect( get_permalink( $creator_id ), 302 );
 		exit;
+	}
+
+	/**
+	 * 発信者が配ったリンク（紹介リンク・マイリンク）からの訪問を数える。
+	 */
+	public static function count_visit( $creator_id, $code ) {
+		if ( self::should_count( $creator_id ) ) {
+			self::record( $creator_id, self::visitor_hash() );
+		}
+		// この人がのちに発信者として登録したときに「招待」として結びつけるため（SNSCS_Invites）。
+		do_action( 'snscs_referral_visit', $creator_id, $code );
 	}
 
 	/**

@@ -116,20 +116,21 @@ class SNSCS_Tracking {
 			return;
 		}
 
-		$hour = (int) floor( time() / HOUR_IN_SECONDS );
 		wp_enqueue_script( 'snscs-pageview', SNSCS_URL . 'assets/js/snscs-pageview.js', array(), SNSCS_VERSION, true );
-		wp_add_inline_script(
-			'snscs-pageview',
-			'window.snscsPageview = ' . wp_json_encode(
-				array(
-					'url'     => esc_url_raw( rest_url( 'snscs/v1/pageview' ) ),
-					'creator' => $creator_id,
-					'kind'    => $kind,
-					'hour'    => $hour,
-					'token'   => self::token( $creator_id, $kind, $hour ),
-				)
-			) . ';',
-			'before'
+		wp_add_inline_script( 'snscs-pageview', 'window.snscsPageview = ' . wp_json_encode( self::config( $creator_id, $kind ) ) . ';', 'before' );
+	}
+
+	/**
+	 * スクリプトに渡す設定（マイリンクのページのように、テーマを使わないページでも使う）。
+	 */
+	public static function config( $creator_id, $kind ) {
+		$hour = (int) floor( time() / HOUR_IN_SECONDS );
+		return array(
+			'url'     => esc_url_raw( rest_url( 'snscs/v1/pageview' ) ),
+			'creator' => (int) $creator_id,
+			'kind'    => $kind,
+			'hour'    => $hour,
+			'token'   => self::token( $creator_id, $kind, $hour ),
 		);
 	}
 
@@ -177,6 +178,8 @@ class SNSCS_Tracking {
 				self::record_dwell( $creator_id, $visitor, (int) $request->get_param( 's' ) );
 			} elseif ( 'out' === $type ) {
 				self::record_out( $creator_id, $visitor );
+				// どのリンクが押されたか（マイリンクの分析用）。
+				SNSCS_Biolink::record_click( $creator_id, (string) $request->get_param( 'l' ) );
 			} elseif ( 'fav' === $type ) {
 				self::record_fav( $creator_id, $visitor );
 			}

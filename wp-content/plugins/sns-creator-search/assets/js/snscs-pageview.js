@@ -67,7 +67,9 @@
 	document.addEventListener( 'click', function ( event ) {
 		var link = event.target.closest ? event.target.closest( '[data-snscs-out]' ) : null;
 		if ( link ) {
-			send( 'out' );
+			// data-snscs-out に名前があれば、どのリンクかも送る（マイリンクの分析用）。
+			var key = link.getAttribute( 'data-snscs-out' );
+			send( 'out', key && '1' !== key ? { l: key } : {} );
 			flush();
 		}
 	} );

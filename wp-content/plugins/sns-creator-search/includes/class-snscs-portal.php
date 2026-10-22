@@ -102,6 +102,7 @@ class SNSCS_Portal {
 			'article_submitted' => array( 'success', '記事の審査を申請しました。運営が確認し、結果をメールでお知らせします。' ),
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
+			'link_theme_saved'  => array( 'success', 'マイリンクのデザインを保存しました。' ),
 			'withdrawn'      => array( 'success', '退会しました。登録情報と掲載情報はすべて削除しました。ご利用ありがとうございました。' ),
 			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
 			'withdraw_check' => array( 'error', '退会するには、「削除されることを理解しました」にチェックを入れてください。' ),
@@ -218,6 +219,9 @@ class SNSCS_Portal {
 		?>
 		<div class="snscs-account-bar">
 			<span><?php echo esc_html( $user->user_email ); ?> でログイン中</span>
+			<?php if ( SNSCS_Hub::page_url( 'calendar' ) ) : ?>
+				<a href="<?php echo esc_url( SNSCS_Hub::page_url( 'calendar' ) ); ?>">発信カレンダー</a>
+			<?php endif; ?>
 			<a href="<?php echo esc_url( wp_logout_url( snscs_portal_url() ) ); ?>">ログアウト</a>
 		</div>
 
@@ -259,6 +263,7 @@ class SNSCS_Portal {
 		</section>
 
 		<?php if ( $published ) : ?>
+			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
 			<?php self::render_referral( $creator_id ); ?>
 			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
 			<?php SNSCS_Share::render_portal( $creator_id ); ?>
@@ -544,6 +549,12 @@ class SNSCS_Portal {
 						<?php endfor; ?>
 					</div>
 				</fieldset>
+
+				<label class="snscs-field">
+					<span>マイリンクのID（任意）</span>
+					<span class="snscs-linkname"><span class="snscs-linkname__prefix"><?php echo esc_html( untrailingslashit( preg_replace( '#^https?://#', '', home_url( '/' ) ) ) ); ?>/@</span><input type="text" name="snscs[linkname]" value="<?php echo esc_attr( isset( $data['linkname'] ) ? $data['linkname'] : '' ); ?>" maxlength="<?php echo (int) SNSCS_Biolink::MAX_NAME; ?>" pattern="[A-Za-z0-9_\-]{3,30}" placeholder="hanako"></span>
+					<span class="snscs-help">SNSのプロフィール欄に貼る「マイリンク」のURLになります。半角英数字・ハイフン・アンダーバーで3〜30文字。</span>
+				</label>
 
 				<p class="snscs-help">送信すると運営が審査します。<?php echo $creator_id ? '承認されるまで、掲載中の内容は変わりません。' : '承認されると検索結果に表示されます。'; ?></p>
 				<button type="submit" class="snscs-button snscs-button--primary"><?php echo esc_html( $button ); ?></button>

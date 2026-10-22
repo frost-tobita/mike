@@ -225,6 +225,11 @@ class SNSCS_Submissions {
 		SNSCS_Accounts::replace_for_creator( $creator_id, $accounts );
 		update_post_meta( $creator_id, '_snscs_links', $data['links'] );
 		update_post_meta( $creator_id, '_snscs_stores', $data['stores'] );
+		if ( '' !== $data['linkname'] ) {
+			update_post_meta( $creator_id, SNSCS_Biolink::META_NAME, $data['linkname'] );
+		} else {
+			delete_post_meta( $creator_id, SNSCS_Biolink::META_NAME );
+		}
 
 		$wpdb->update(
 			self::table(),
@@ -316,6 +321,7 @@ class SNSCS_Submissions {
 			'accounts'     => $accounts,
 			'links'        => self::links_for( $creator_id ),
 			'stores'       => self::stores_for( $creator_id ),
+			'linkname'     => (string) get_post_meta( $creator_id, SNSCS_Biolink::META_NAME, true ),
 		);
 	}
 
@@ -349,6 +355,7 @@ class SNSCS_Submissions {
 			'accounts'     => array(),
 			'links'        => array(),
 			'stores'       => array(),
+			'linkname'     => '',
 		);
 	}
 
@@ -412,6 +419,18 @@ class SNSCS_Submissions {
 				continue;
 			}
 			$data['stores'][ $key ] = $handle;
+		}
+
+		// マイリンクのID（/@ID）。URLに出るので、ほかの項目と同じく審査する。
+		$linkname = isset( $raw['linkname'] ) ? strtolower( trim( sanitize_text_field( $raw['linkname'] ) ) ) : '';
+		$linkname = ltrim( $linkname, '@' );
+		if ( '' !== $linkname ) {
+			$error = SNSCS_Biolink::validate_name( $linkname, self::creator_id_for_user( $user_id ) );
+			if ( '' !== $error ) {
+				$errors[] = $error;
+			} else {
+				$data['linkname'] = $linkname;
+			}
 		}
 
 		$raw_links = isset( $raw['links'] ) && is_array( $raw['links'] ) ? array_values( $raw['links'] ) : array();
@@ -533,6 +552,7 @@ class SNSCS_Submissions {
 			$links[] = $link['label'] . '（' . $link['url'] . '）';
 		}
 		$rows['その他のリンク'] = $links ? implode( "\n", $links ) : '（なし）';
+		$rows['マイリンクのID']  = '' !== $data['linkname'] ? '@' . $data['linkname'] : '（なし）';
 
 		return $rows;
 	}

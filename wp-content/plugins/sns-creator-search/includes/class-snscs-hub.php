@@ -3,7 +3,7 @@
  * 集客・回遊のための機能ページと、その設定（管理画面「発信者 → 集客・回遊」）。
  *
  * 機能ページ（固定ページにショートコードを書いたもの。ボタン1つでまとめて作れる）:
- *   ランキング / 特集（ジャンル×SNS×地域の自動ページ）/ 無料ツール / お気に入り / メールマガジン / 企業の方へ
+ *   ランキング / 特集（ジャンル×SNS×地域の自動ページ）/ 無料ツール / お気に入り / カレンダー / メールマガジン / 企業の方へ
  *
  * どのページの上にも「サイト内ナビ」（検索・ランキング・特集・ツール・お気に入り）を出し、ページ間を行き来しやすくする。
  */
@@ -36,6 +36,7 @@ class SNSCS_Hub {
 			'features'   => array( 'title' => '特集から探す', 'slug' => 'find', 'shortcode' => '[sns_features]', 'nav' => '特集' ),
 			'tools'      => array( 'title' => 'SNS運用の無料ツール', 'slug' => 'tools', 'shortcode' => '[sns_tools]', 'nav' => '無料ツール' ),
 			'favorites'  => array( 'title' => 'お気に入りの発信者', 'slug' => 'favorites', 'shortcode' => '[sns_favorites]', 'nav' => 'お気に入り' ),
+			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
 			'newsletter' => array( 'title' => 'メールマガジン', 'slug' => 'newsletter', 'shortcode' => '[sns_newsletter]', 'nav' => '' ),
 			'business'   => array( 'title' => '企業の方へ（お仕事のご相談）', 'slug' => 'business', 'shortcode' => '[sns_business]', 'nav' => '' ),
 		);
@@ -278,6 +279,7 @@ class SNSCS_Hub {
 					<tr><td><code>[sns_trending]</code></td><td>人気・急上昇の検索キーワード</td></tr>
 					<tr><td><code>[sns_spotlight]</code></td><td>今月の注目（急上昇の発信者と、招待ランキング上位のアンバサダー）</td></tr>
 					<tr><td><code>[sns_feature_links]</code></td><td>人気の特集ページへのリンク</td></tr>
+					<tr><td><code>[sns_calendar_link]</code></td><td>今日の日付と近い予定、「カレンダーを開いて予定を管理」ボタン</td></tr>
 					<tr><td><code>[sns_newsletter_form]</code></td><td>メールマガジンの登録欄（小さめ）</td></tr>
 					<tr><td><code>[sns_tool_engagement]</code> <code>[sns_tool_diagnosis]</code></td><td>無料ツールを個別に置く</td></tr>
 				</tbody>
