@@ -300,7 +300,7 @@ class SNSCS_Personalize {
 	 * @param float $strength 0〜1。
 	 * @return string|null 例: "(0.7 * MAX(COALESCE(st.score,0)) + 30 * (...))"
 	 */
-	public static function order_expression( array $profile, $strength ) {
+	public static function order_expression( array $profile, $strength, $score_column = 'st.score' ) {
 		global $wpdb;
 		$strength = min( 0.9, max( 0.0, (float) $strength ) );
 		if ( $strength <= 0 ) {
@@ -360,7 +360,8 @@ class SNSCS_Personalize {
 		if ( ! $parts ) {
 			return null;
 		}
-		return '(' . $num( 1 - $strength ) . ' * MAX(COALESCE(st.score, 0)) + ' . $num( 100 * $strength ) . ' * (' . implode( ' + ', $parts ) . '))';
+		$score_column = 'st.score_b' === $score_column ? 'COALESCE(st.score_b, st.score, 0)' : 'COALESCE(st.score, 0)';
+		return '(' . $num( 1 - $strength ) . ' * MAX(' . $score_column . ') + ' . $num( 100 * $strength ) . ' * (' . implode( ' + ', $parts ) . '))';
 	}
 
 	/* --------------------------------------------------------------------

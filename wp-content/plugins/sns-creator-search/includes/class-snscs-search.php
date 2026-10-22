@@ -78,14 +78,44 @@ class SNSCS_Search {
 	public static function run( array $raw, $with_counts = false, $personal = null ) {
 		$args            = self::normalize_args( $raw );
 		$args['exclude'] = isset( $raw['exclude'] ) ? array_slice( array_values( array_filter( array_map( 'absint', (array) $raw['exclude'] ) ) ), 0, 200 ) : array();
+		$backend         = self::backend();
+		$engine          = $backend instanceof SNSCS_MySQL_Backend;
+		$bucket          = $engine ? SNSCS_Learner::bucket() : 'a';
+
 		$args['personal_order'] = null;
 		if ( $personal && ! empty( $personal['profile'] ) && 'recommended' === $args['sort'] ) {
 			$strength               = isset( $personal['strength'] ) ? $personal['strength'] : SNSCS_Hub::setting( 'personal_strength' ) / 100;
-			$args['personal_order'] = SNSCS_Personalize::order_expression( $personal['profile'], $strength );
+			$args['personal_order'] = SNSCS_Personalize::order_expression( $personal['profile'], $strength, 'b' === $bucket ? 'st.score_b' : 'st.score' );
 		}
-		$backend = self::backend();
-		$result  = $backend->search( $args );
-		$ids    = $result['ids'];
+
+		// キーワードは索引で探す（関連度・言い換え・表記ゆれ）。索引の完成前は、これまでの方法で探す。
+		$rel    = array();
+		$intent = '';
+		if ( $engine && '' !== $args['q'] && SNSCS_Index::ready() ) {
+			$rel                   = SNSCS_Index::candidates( $args['q'] );
+			$intent                = SNSCS_Index::intent( $args['q'] );
+			$args['candidate_ids'] = array_keys( $rel );
+		}
+
+		$qid = '';
+		if ( $engine && 'recommended' === $args['sort'] ) {
+			$ranked = SNSCS_Ranker::rank(
+				$args,
+				$backend,
+				$rel,
+				array(
+					'bucket' => $bucket,
+					'intent' => $intent,
+					'log'    => ! empty( $raw['log'] ),
+					'has_q'  => '' !== $args['q'],
+				)
+			);
+			$result = array( 'ids' => $ranked['ids'], 'total' => $ranked['total'] );
+			$qid    = $ranked['qid'];
+		} else {
+			$result = $backend->search( $args );
+		}
+		$ids = $result['ids'];
 
 		_prime_post_caches( $ids );
 		update_object_term_cache( $ids, SNSCS_Post_Types::POST_TYPE );
@@ -108,6 +138,9 @@ class SNSCS_Search {
 			'args'        => $args,
 			'counts'      => $with_counts ? $backend->count_by_platform( $args ) : array(),
 			'personalized' => ! empty( $args['personal_order'] ),
+			'qid'          => $qid,
+			'intent'       => $intent,
+			'did_you_mean' => ( '' !== $args['q'] && ! $result['total'] && $engine ) ? SNSCS_Index::did_you_mean( $args['q'] ) : '',
 		);
 	}
 

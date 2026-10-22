@@ -111,7 +111,13 @@ Googleアドセンスを使う場合は「広告枠 → 設定」で `ads.txt` �
 4. メールマガジンは「発信者 → メールマガジン」でテスト送信して確認してから、「集客・回遊」で自動配信をオンにする
 5. シェア画像に日本語を入れるには、サーバーに日本語フォントが必要（無ければ「集客・回遊」でフォントファイルの場所を指定するか、プラグインの `assets/fonts/` に .ttf / .otf を置く）
 
-### 9. 動作確認用のダミーデータ
+### 9. 検索アルゴリズム（学習）を使う
+1. 管理画面「発信者 → 検索アルゴリズム」で「索引を作り直す」を押す（2万人で約1分。終わらなければ1時間ごとに自動で続きを作る）
+2. 「学習の使い方」は「自動」のままでよい（データが少ないうちは手の重みのまま。押された記録がたまると毎晩学習し、良くなったときだけ反映）
+3. 本人確認ができている確かな発信者は、発信者の編集画面で「信頼の起点にする」にチェック（つながりの信頼度の起点になる）
+4. AIの自動タグを使うときは、「記事の自動投稿」でAPIキーを入れてから、ここでオンにする（目安 1人1円前後）
+
+### 10. 動作確認用のダミーデータ
 ```
 wp snscs seed --count=10000   # ダミー発信者を1万人作る
 wp snscs delete-dummy         # ダミー発信者を全部消す
@@ -181,6 +187,14 @@ wp-content/plugins/sns-creator-search/
 │   ├── class-snscs-calendar.php    SNS発信カレンダー（予定の管理・お知らせ）
 │   ├── class-snscs-portal-top.php  ヤフー風のトップページとページテンプレート
 │   ├── class-snscs-autopost.php    記事の自動執筆・自動投稿（Claude API）
+│   ├── class-snscs-claude.php      Claude API の呼び出し（自動投稿・自動タグで共通）
+│   ├── class-snscs-text.php        文章を単語に分ける・表記をそろえる・言い換え辞書
+│   ├── class-snscs-index.php       検索の索引（BM25）・もしかして・入力中の候補
+│   ├── class-snscs-ranker.php      おすすめ順の並べ替え（関連度×総合点・多様さ・お試し表示）
+│   ├── class-snscs-feedback.php    検索結果での行動の記録と毎晩の集計
+│   ├── class-snscs-graph.php       つながりの信頼度（PageRank）
+│   ├── class-snscs-learner.php     重みの学習・A/Bテスト・管理画面「検索アルゴリズム」
+│   ├── class-snscs-tagger.php      AIの自動タグ
 │   └── legal/                      規約ページの文面（ひな形）
 │   └── functions.php               対応SNSの一覧など
 ├── templates/portal-full.php       ページテンプレート「SNS検索ポータル（全幅）」
@@ -189,6 +203,7 @@ wp-content/plugins/sns-creator-search/
 ├── assets/js/snscs-usage.js        発信者自身のサイト利用状況を送る小さなスクリプト
 ├── assets/js/snscs-personal.js     好みの記録・お気に入り・おすすめ欄の読み込み
 └── assets/js/snscs-calendar.js     カレンダーの画面
+    assets/js/snscs-search.js       検索の行動の記録・入力中の候補
 ```
 
 ## 動作環境

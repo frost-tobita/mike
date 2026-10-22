@@ -2,7 +2,7 @@
 /**
  * 表示順位（おすすめ順）のための点数計算。
  *
- * 10の「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
+ * 15の「信号」を、それぞれ全体の中での順位から 0〜100点にし、重みを付けて合わせる。
  *
  *   紹介リンク     : 紹介リンクから来た人数（最近の日ほど重く数える）
  *   フォロワー     : 全SNSの合計フォロワー数
@@ -14,6 +14,12 @@
  *   サイトの利用時間 : 発信者がログイン中にこのサイトを使っていた時間（1日30分まで、最近の日ほど重く数える）
  *   紹介ネットワーク : 招待して掲載された発信者（初期3段目まで）の人数と紹介リンク流入（SNSCS_Invites）
  *   お気に入り     : ページを見てお気に入りに登録した人数（最近の日ほど重く数える）
+ *   検索でのクリック率 : 検索結果で、表示された位置のわりによく押されるか（SNSCS_Feedback。位置の補正つき）
+ *   満足度         : 検索結果から押した人が、じっくり見たかすぐ戻ったか（SNSCS_Feedback）
+ *   つながりの信頼度 : 招待・一緒に見られている関係を流れる信頼の量（SNSCS_Graph。PageRank/TrustRank）
+ *   プロフィールの充実度 : 写真・紹介文・複数のSNS・リンク・記事・地域がそろっているか
+ *   更新の新しさ   : 掲載内容や記事を最近更新したか（60日で半分）
+ *   重みは、学習した重み（SNSCS_Learner）が良ければそれと混ぜて使う。
  *
  *   総合点 = Σ(信号の点 × 重み) ÷ Σ(重み)
  *   ※初期の重みは 25:25:15:15:10:10:5:5:10:5（紹介:フォロワー = 1:1 は変えない）
@@ -50,6 +56,10 @@ class SNSCS_Scores {
 	const SUSPECT_MIN_VIEWS     = 30;
 	const SUSPECT_MIN_DWELL     = 5;
 	const SUSPECT_PENALTY       = 0.5;
+
+	/** 急増の検知: 直近の1日がこの人数以上で、ふだん（中央値）から離れた度合いがこの値以上なら「要確認」。 */
+	const SPIKE_MIN   = 30;
+	const SPIKE_SCORE = 8;
 
 	/** 記事の活動を数える期間（日）。 */
 	const ARTICLE_DAYS = 90;
@@ -89,6 +99,7 @@ class SNSCS_Scores {
   network double NOT NULL DEFAULT 0,
   invites int(10) unsigned NOT NULL DEFAULT 0,
   favs int(10) unsigned NOT NULL DEFAULT 0,
+  score_b double DEFAULT NULL,
   tiers varchar(64) NOT NULL DEFAULT '',
   inflow_points double NOT NULL DEFAULT 0,
   follower_points double NOT NULL DEFAULT 0,
@@ -173,6 +184,36 @@ class SNSCS_Scores {
 				'label'   => 'お気に入り',
 				'desc'    => 'ページを見た人がお気に入りに登録した人数（最近ほど高く数える）',
 				'tip'     => 'SNSの投稿で「プロフィールを☆お気に入りしておいてね」と呼びかけてみましょう。',
+				'default' => 5,
+			),
+			'search_ctr' => array(
+				'label'   => '検索でのクリック率',
+				'desc'    => '検索結果で、表示された位置のわりによく押されるか',
+				'tip'     => '写真と、紹介文の最初の一文で「何を発信している人か」が伝わるようにしましょう（検索結果にはそこが表示されます）。',
+				'default' => 10,
+			),
+			'satisfaction' => array(
+				'label'   => '満足度',
+				'desc'    => '検索結果から来た人が、じっくり見たか（すぐ戻らなかったか）',
+				'tip'     => 'ページを開いた人が知りたいこと（発信のテーマ、どのSNSで何を出しているか）を、紹介文と記事で分かりやすく伝えましょう。',
+				'default' => 10,
+			),
+			'authority' => array(
+				'label'   => 'つながりの信頼度',
+				'desc'    => '招待や「一緒に見られている」つながりの中で、信頼できる発信者に近いか',
+				'tip'     => '同じジャンルの発信者と交流し、仲間を招待すると、つながりの中での信頼が高まります。',
+				'default' => 5,
+			),
+			'quality' => array(
+				'label'   => 'プロフィールの充実度',
+				'desc'    => '写真・紹介文・複数のSNS・リンク・記事・地域がそろっているか',
+				'tip'     => '写真と80字以上の紹介文、2つ以上のSNS、ブログなどのリンク、地域を登録し、記事を1本書いてみましょう。',
+				'default' => 5,
+			),
+			'freshness' => array(
+				'label'   => '更新の新しさ',
+				'desc'    => '掲載内容や記事を最近更新したか',
+				'tip'     => 'フォロワー数の更新や記事の公開など、2か月に1回は何かを更新しましょう。',
 				'default' => 5,
 			),
 		);
@@ -310,6 +351,10 @@ class SNSCS_Scores {
 		$traffic      = SNSCS_Tracking::totals( $days, $half_life );
 		$articles     = SNSCS_Articles::activity( self::ARTICLE_DAYS, $half_life * 2 );
 		$usage        = SNSCS_Usage::totals( $days, $half_life );
+		$feedback     = SNSCS_Feedback::for_creators( $creators );
+		$avg_sat      = (float) get_option( 'snscs_avg_sat', 0.5 );
+		list( $quality, $freshness ) = self::profile_values( $creators );
+		$spikes       = SNSCS_Learner::setting( 'spike' ) ? self::spikes() : array();
 
 		// 全体の平均（少ない人数の平均を寄せる先）。
 		$sum_dwell  = 0;
@@ -343,6 +388,12 @@ class SNSCS_Scores {
 			$values['site_days'][ $id ] = $u['weighted_days'];
 			$values['site_time'][ $id ] = $u['weighted_seconds'];
 			$values['favorites'][ $id ] = $t['weighted_favs'];
+			$f                           = isset( $feedback[ $id ] ) ? $feedback[ $id ] : null;
+			$values['search_ctr'][ $id ]   = $f ? $f['coec'] : 1.0;
+			$values['satisfaction'][ $id ] = ( $f && $f['clicks'] > 0 ) ? $f['sat'] : $avg_sat;
+			$values['authority'][ $id ]    = $f ? $f['authority'] : 1.0;
+			$values['quality'][ $id ]      = isset( $quality[ $id ] ) ? $quality[ $id ] : 0;
+			$values['freshness'][ $id ]    = isset( $freshness[ $id ] ) ? $freshness[ $id ] : 0;
 
 			$raw[ $id ] = array(
 				'inflow'     => isset( $referral_raw[ $id ] ) ? $referral_raw[ $id ] : 0,
@@ -368,6 +419,10 @@ class SNSCS_Scores {
 			if ( $raw[ $id ]['views'] >= self::SUSPECT_MIN_VIEWS && $raw[ $id ]['dwell_avg'] < self::SUSPECT_MIN_DWELL ) {
 				$flags[ $id ][] = 'short_dwell';
 			}
+			// ふだんより極端な急増（紹介リンク・閲覧）。
+			if ( isset( $spikes[ $id ] ) ) {
+				$flags[ $id ][] = 'spike';
+			}
 		}
 
 		// 紹介ネットワーク: 招待して掲載された人を、設定した段数までさかのぼって足す。
@@ -388,7 +443,9 @@ class SNSCS_Scores {
 			$points[ $signal ] = self::rank_points( $by_creator );
 		}
 
-		$weights = $settings['weights'];
+		// 学習した重みが良ければ混ぜて使う。A/Bテスト中は B組用の点数も計算する。
+		$weights   = SNSCS_Learner::active_weights( $settings['weights'] );
+		$weights_b = SNSCS_Learner::candidate_weights( $settings['weights'] );
 		$now     = current_time( 'mysql', true );
 		$table   = self::table();
 
@@ -406,10 +463,15 @@ class SNSCS_Scores {
 					$p['views']    = $p['views'] * self::SUSPECT_PENALTY;
 					$p['referral'] = $p['referral'] * self::SUSPECT_PENALTY;
 				}
+				if ( in_array( 'spike', $flags[ $id ], true ) ) {
+					$p['views']      = $p['views'] * self::SUSPECT_PENALTY;
+					$p['referral']   = $p['referral'] * self::SUSPECT_PENALTY;
+					$p['search_ctr'] = $p['search_ctr'] * self::SUSPECT_PENALTY;
+				}
 				$tiers = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
 
 				$rows[] = $wpdb->prepare(
-					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s)',
+					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s, %f)',
 					$id,
 					$raw[ $id ]['inflow'],
 					$values['followers'][ $id ],
@@ -428,11 +490,12 @@ class SNSCS_Scores {
 					wp_json_encode( array_map( 'floatval', $p ) ),
 					implode( ',', $flags[ $id ] ),
 					self::combine( $p, $weights ),
-					$now
+					$now,
+					self::combine( $p, null === $weights_b ? $weights : $weights_b )
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, favs, tiers, inflow_points, follower_points, points, flags, score, scored_at) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), favs = VALUES(favs), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, favs, tiers, inflow_points, follower_points, points, flags, score, scored_at, score_b) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE score_b = VALUES(score_b), inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), favs = VALUES(favs), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
@@ -441,6 +504,125 @@ class SNSCS_Scores {
 		update_option( 'snscs_scores_updated', time() );
 
 		return count( $creators );
+	}
+
+	/**
+	 * プロフィールの充実度（0〜6）と更新の新しさ（0〜1。60日で半分）。
+	 *
+	 * @param int[] $creators 発信者。
+	 * @return array{0:array<int,float>,1:array<int,float>}
+	 */
+	public static function profile_values( array $creators ) {
+		global $wpdb;
+		$quality   = array_fill_keys( $creators, 0.0 );
+		$freshness = array_fill_keys( $creators, 0.0 );
+		if ( ! $creators ) {
+			return array( $quality, $freshness );
+		}
+		$type     = SNSCS_Post_Types::POST_TYPE;
+		$accounts = SNSCS_Accounts::table();
+		$now      = strtotime( current_time( 'mysql' ) );
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, CHAR_LENGTH(post_content) AS bio, post_modified FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish'", $type ), ARRAY_A );
+		foreach ( $posts as $row ) {
+			$id = (int) $row['ID'];
+			if ( isset( $quality[ $id ] ) ) {
+				$quality[ $id ]  += (int) $row['bio'] >= 80 ? 1 : ( (int) $row['bio'] >= 30 ? 0.5 : 0 );
+				$freshness[ $id ] = strtotime( $row['post_modified'] );
+			}
+		}
+		$photo = $wpdb->get_col( $wpdb->prepare( "SELECT pm.post_id FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id AND p.post_type = %s WHERE pm.meta_key = '_thumbnail_id' AND pm.meta_value > 0", $type ) );
+		$links = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT pm.post_id FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id AND p.post_type = %s WHERE pm.meta_key IN ('_snscs_links', '_snscs_stores') AND pm.meta_value NOT IN ('', 'a:0:{}')", $type ) );
+		$multi = $wpdb->get_col( "SELECT creator_id FROM {$accounts} GROUP BY creator_id HAVING COUNT(DISTINCT platform) >= 2" );
+		$region = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT tr.object_id FROM {$wpdb->term_relationships} tr INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = %s", SNSCS_Post_Types::TAX_REGION ) );
+		$latest = $wpdb->get_results( $wpdb->prepare( "SELECT pm.meta_value AS creator_id, MAX(p.post_date) AS last FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id AND p.post_type = %s AND p.post_status = 'publish' WHERE pm.meta_key = '_snscs_creator_id' GROUP BY pm.meta_value", SNSCS_Articles::POST_TYPE ), ARRAY_A );
+		// phpcs:enable
+		foreach ( array( $photo, $links, $multi, $region ) as $list ) {
+			foreach ( $list as $id ) {
+				if ( isset( $quality[ (int) $id ] ) ) {
+					$quality[ (int) $id ] += 1;
+				}
+			}
+		}
+		foreach ( $latest as $row ) {
+			$id = (int) $row['creator_id'];
+			if ( isset( $quality[ $id ] ) ) {
+				$quality[ $id ]  += 1;
+				$freshness[ $id ] = max( $freshness[ $id ], strtotime( $row['last'] ) );
+			}
+		}
+		foreach ( $freshness as $id => $time ) {
+			$days             = $time ? max( 0, ( $now - $time ) / DAY_IN_SECONDS ) : 365;
+			$freshness[ $id ] = pow( 0.5, $days / 60 );
+		}
+		return array( $quality, $freshness );
+	}
+
+	/**
+	 * 急増の検知: 直近の1日の紹介リンク流入・閲覧が、ふだん（前の27日の中央値）から極端に離れた発信者。
+	 * 離れ具合 = (直近 − 中央値) ÷ (1.4826 × 中央値からのずれの中央値 + 1)
+	 *
+	 * @return array<int,bool>
+	 */
+	public static function spikes() {
+		global $wpdb;
+		$today  = current_time( 'Y-m-d' );
+		$since  = gmdate( 'Y-m-d', strtotime( $today . ' -27 days' ) );
+		$recent = gmdate( 'Y-m-d', strtotime( $today . ' -1 day' ) );
+		$ref    = SNSCS_Referrals::table();
+		$daily  = SNSCS_Tracking::daily_table();
+		$series = array();
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// 記録が14日分そろうまでは「ふだん」が分からないので調べない（公開直後に全員が急増あつかいになるのを防ぐ）。
+		$first = $wpdb->get_var( "SELECT MIN(clicked_on) FROM {$ref}" );
+		if ( ! $first || $first > gmdate( 'Y-m-d', strtotime( $today . ' -14 days' ) ) ) {
+			return array();
+		}
+		$hot = $wpdb->get_col( $wpdb->prepare( "SELECT creator_id FROM {$ref} WHERE clicked_on >= %s GROUP BY creator_id HAVING COUNT(*) >= %d UNION SELECT creator_id FROM {$daily} WHERE day >= %s GROUP BY creator_id HAVING MAX(views) >= %d", $recent, self::SPIKE_MIN, $recent, self::SPIKE_MIN ) );
+		if ( ! $hot ) {
+			return array();
+		}
+		$in   = implode( ',', array_map( 'intval', $hot ) );
+		$rows = array_merge(
+			$wpdb->get_results( $wpdb->prepare( "SELECT creator_id, clicked_on AS day, COUNT(*) AS n, 'r' AS k FROM {$ref} WHERE creator_id IN ({$in}) AND clicked_on >= %s GROUP BY creator_id, clicked_on", $since ), ARRAY_A ),
+			$wpdb->get_results( $wpdb->prepare( "SELECT creator_id, day, views AS n, 'v' AS k FROM {$daily} WHERE creator_id IN ({$in}) AND day >= %s", $since ), ARRAY_A )
+		);
+		// phpcs:enable
+		foreach ( $rows as $row ) {
+			$series[ (int) $row['creator_id'] ][ $row['k'] ][ $row['day'] ] = (int) $row['n'];
+		}
+		$out    = array();
+		$median = function ( array $values ) {
+			sort( $values );
+			$n = count( $values );
+			return $n ? ( $n % 2 ? $values[ intdiv( $n, 2 ) ] : ( $values[ $n / 2 - 1 ] + $values[ $n / 2 ] ) / 2 ) : 0;
+		};
+		foreach ( $series as $id => $kinds ) {
+			foreach ( $kinds as $days ) {
+				$latest = max( isset( $days[ $today ] ) ? $days[ $today ] : 0, isset( $days[ $recent ] ) ? $days[ $recent ] : 0 );
+				if ( $latest < self::SPIKE_MIN ) {
+					continue;
+				}
+				$history = array();
+				for ( $i = 2; $i <= 27; $i++ ) {
+					$d         = gmdate( 'Y-m-d', strtotime( $today . ' -' . $i . ' days' ) );
+					$history[] = isset( $days[ $d ] ) ? $days[ $d ] : 0;
+				}
+				$m   = $median( $history );
+				$mad = $median(
+					array_map(
+						function ( $v ) use ( $m ) {
+							return abs( $v - $m );
+						},
+						$history
+					)
+				);
+				if ( ( $latest - $m ) / ( 1.4826 * $mad + 1 ) >= self::SPIKE_SCORE ) {
+					$out[ $id ] = true;
+				}
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -572,6 +754,7 @@ class SNSCS_Scores {
 		return array(
 			'referral_without_views' => '紹介リンクのクリックに対して、ページの表示が少なすぎる',
 			'short_dwell'            => '閲覧は多いのに、滞在時間が極端に短い',
+			'spike'                  => '紹介リンクや閲覧が、ふだんより極端に急に増えた',
 		);
 	}
 }

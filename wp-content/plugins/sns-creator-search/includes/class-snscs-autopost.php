@@ -30,7 +30,6 @@ class SNSCS_Autopost {
 	const META_AI     = '_snscs_ai_written';
 	const MIN_CHARS   = 3500;
 	const MIN_H2      = 4;
-	const API_VERSION = '2026-10-21';
 	const MAX_TOKENS  = 16000;
 
 	public static function init() {
@@ -378,46 +377,8 @@ PROMPT
 	 * API の呼び出し
 	 * ------------------------------------------------------------------ */
 
-	private static function base_url() {
-		return untrailingslashit( defined( 'SNSCS_ANTHROPIC_BASE_URL' ) ? SNSCS_ANTHROPIC_BASE_URL : 'https://api.anthropic.com' );
-	}
-
-	/**
-	 * @return array|WP_Error JSON（JSON Lines の結果は 'raw' に文字列のまま）。
-	 */
 	private static function request( $method, $path, $body = null, array $extra_headers = array(), $timeout = 60 ) {
-		$key = self::api_key();
-		if ( '' === $key ) {
-			return new WP_Error( 'snscs_no_key', 'APIキーが設定されていません。' );
-		}
-		$args     = array(
-			'method'  => $method,
-			'timeout' => $timeout,
-			'headers' => array_merge(
-				array(
-					'x-api-key'         => $key,
-					'anthropic-version' => self::API_VERSION,
-					'content-type'      => 'application/json',
-				),
-				$extra_headers
-			),
-		);
-		if ( null !== $body ) {
-			$args['body'] = wp_json_encode( $body );
-		}
-		$response = wp_remote_request( self::base_url() . $path, $args );
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
-		$code = (int) wp_remote_retrieve_response_code( $response );
-		$raw  = (string) wp_remote_retrieve_body( $response );
-		if ( $code < 200 || $code >= 300 ) {
-			$data = json_decode( $raw, true );
-			$msg  = isset( $data['error']['message'] ) ? $data['error']['message'] : substr( $raw, 0, 200 );
-			return new WP_Error( 'snscs_api', sprintf( 'APIエラー（%d）: %s', $code, $msg ) );
-		}
-		$data = json_decode( $raw, true );
-		return is_array( $data ) ? $data : array( 'raw' => $raw );
+		return SNSCS_Claude::request( $method, $path, $body, $extra_headers, $timeout );
 	}
 
 	/**
@@ -476,16 +437,13 @@ PROMPT
 				$keep[] = $batch;
 				continue;
 			}
-			$results = self::request( 'GET', '/v1/messages/batches/' . rawurlencode( $batch['id'] ) . '/results', null, array(), 120 );
-			if ( is_wp_error( $results ) ) {
+			$rows = SNSCS_Claude::batch_results( $batch['id'] );
+			if ( is_wp_error( $rows ) ) {
 				$keep[] = $batch;
 				continue;
 			}
-			$raw = isset( $results['raw'] ) ? $results['raw'] : wp_json_encode( $results );
-			// 1行に1件（JSON Lines）。日本語を壊さないよう、改行の文字だけで区切る。
-			foreach ( explode( "\n", trim( $raw ) ) as $line ) {
-				$row = json_decode( trim( $line ), true );
-				if ( ! is_array( $row ) || empty( $row['custom_id'] ) || ! isset( $batch['items'][ $row['custom_id'] ] ) ) {
+			foreach ( $rows as $row ) {
+				if ( ! isset( $batch['items'][ $row['custom_id'] ] ) ) {
 					continue;
 				}
 				$item = $batch['items'][ $row['custom_id'] ];
@@ -549,13 +507,7 @@ PROMPT
 		if ( 'max_tokens' === $stop ) {
 			return new WP_Error( 'snscs_cut', '記事が長くなりすぎて途中で切れました' );
 		}
-		$text = '';
-		foreach ( (array) ( $message['content'] ?? array() ) as $block ) {
-			if ( 'text' === ( $block['type'] ?? '' ) ) {
-				$text .= $block['text'];
-			}
-		}
-		$data = json_decode( $text, true );
+		$data = json_decode( SNSCS_Claude::text_of( $message ), true );
 		if ( ! is_array( $data ) || empty( $data['title'] ) || empty( $data['body_html'] ) ) {
 			return new WP_Error( 'snscs_format', '返ってきた記事の形が正しくありません' );
 		}

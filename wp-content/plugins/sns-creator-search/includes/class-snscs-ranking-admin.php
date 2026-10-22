@@ -172,12 +172,14 @@ class SNSCS_Ranking_Admin {
 						<th style="text-align: right">利用日数</th>
 						<th style="text-align: right">利用時間</th>
 						<th style="text-align: right">招待</th>
+						<th style="text-align: right">お気に入り</th>
+						<th style="text-align: right" title="検索で押された割合・満足・つながりの信頼度・プロフィールの充実度・新しさ（毎晩の学習で決まる点）">検索の学習</th>
 						<th style="text-align: right">総合点</th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="12">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
+						<tr><td colspan="14">まだ点数がありません。「今すぐ計算し直す」を押してください。</td></tr>
 					<?php endif; ?>
 					<?php foreach ( $rows as $i => $row ) : ?>
 						<?php $p = json_decode( (string) $row['points'], true ); ?>
@@ -209,6 +211,13 @@ class SNSCS_Ranking_Admin {
 									<br><span class="description"><?php echo esc_html( number_format_i18n( isset( $p[ $signal ] ) ? $p[ $signal ] : 0, 1 ) ); ?>点</span>
 								</td>
 							<?php endforeach; ?>
+							<?php
+							$learned = 0;
+							foreach ( array( 'search_ctr', 'satisfaction', 'authority', 'quality', 'freshness' ) as $signal ) {
+								$learned += isset( $p[ $signal ] ) ? $p[ $signal ] : 0;
+							}
+							?>
+							<td style="text-align: right"><?php echo esc_html( number_format_i18n( $learned, 1 ) ); ?>点</td>
 							<td style="text-align: right"><strong><?php echo esc_html( number_format_i18n( $row['score'], 1 ) ); ?></strong></td>
 						</tr>
 					<?php endforeach; ?>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.3.0
+ * Version:           1.4.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.3.0' );
-define( 'SNSCS_DB_VERSION', '11' );
+define( 'SNSCS_VERSION', '1.4.0' );
+define( 'SNSCS_DB_VERSION', '12' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -60,6 +60,14 @@ require_once SNSCS_DIR . 'includes/class-snscs-biolink.php';
 require_once SNSCS_DIR . 'includes/class-snscs-calendar.php';
 require_once SNSCS_DIR . 'includes/class-snscs-portal-top.php';
 require_once SNSCS_DIR . 'includes/class-snscs-autopost.php';
+require_once SNSCS_DIR . 'includes/class-snscs-text.php';
+require_once SNSCS_DIR . 'includes/class-snscs-index.php';
+require_once SNSCS_DIR . 'includes/class-snscs-claude.php';
+require_once SNSCS_DIR . 'includes/class-snscs-tagger.php';
+require_once SNSCS_DIR . 'includes/class-snscs-feedback.php';
+require_once SNSCS_DIR . 'includes/class-snscs-graph.php';
+require_once SNSCS_DIR . 'includes/class-snscs-learner.php';
+require_once SNSCS_DIR . 'includes/class-snscs-ranker.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -95,6 +103,8 @@ function snscs_deactivate() {
 	wp_clear_scheduled_hook( SNSCS_Newsletter::CRON_HOOK . '_more' );
 	wp_clear_scheduled_hook( SNSCS_Calendar::CRON_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Autopost::CRON_HOOK );
+	wp_clear_scheduled_hook( 'snscs_nightly_engine' );
+	wp_clear_scheduled_hook( 'snscs_hourly_engine' );
 	flush_rewrite_rules();
 }
 
@@ -116,6 +126,8 @@ function snscs_install() {
 	SNSCS_Inquiries::install();
 	SNSCS_Biolink::install();
 	SNSCS_Calendar::install();
+	SNSCS_Index::install();
+	SNSCS_Feedback::install();
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
@@ -168,3 +180,8 @@ SNSCS_Biolink::init();
 SNSCS_Calendar::init();
 SNSCS_Portal_Top::init();
 SNSCS_Autopost::init();
+SNSCS_Index::init();
+SNSCS_Feedback::init();
+SNSCS_Graph::init();
+SNSCS_Learner::init();
+SNSCS_Tagger::init();

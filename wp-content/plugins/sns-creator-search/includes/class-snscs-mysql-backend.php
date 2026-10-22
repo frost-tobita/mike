@@ -57,6 +57,51 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 		);
 	}
 
+	/**
+	 * 条件に合う人数。
+	 */
+	public function count( array $args ) {
+		global $wpdb;
+		$query = $this->build_from( $args );
+		if ( null === $query ) {
+			return 0;
+		}
+		list( $from, $params ) = $query;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT p.ID) {$from}", $params ) );
+	}
+
+	/**
+	 * 並べ替えの候補（SNSCS_Ranker 用）: 発信者ID => 総合点（好みがあれば好みと合わせた点）。
+	 *
+	 * @param array  $args  検索条件。
+	 * @param int    $limit 最大人数（0 なら全員。キーワード検索の候補は最大2000人）。
+	 * @param string $score 総合点の列（score、A/Bテストの B組は score_b）。
+	 * @return array<int,float>
+	 */
+	public function rows( array $args, $limit, $score = 'score' ) {
+		global $wpdb;
+		$query = $this->build_from( $args );
+		if ( null === $query ) {
+			return array();
+		}
+		list( $from, $params ) = $query;
+		$col   = 'score_b' === $score ? 'COALESCE(st.score_b, st.score, 0)' : 'COALESCE(st.score, 0)';
+		$base  = empty( $args['personal_order'] ) ? "MAX({$col})" : $args['personal_order'];
+		$sql   = "SELECT p.ID, {$base} AS base {$from} GROUP BY p.ID ORDER BY base DESC, p.ID DESC";
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$params[] = (int) $limit;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+		$out  = array();
+		foreach ( $rows as $row ) {
+			$out[ (int) $row['ID'] ] = (float) $row['base'];
+		}
+		return $out;
+	}
+
 	public function count_by_platform( array $args ) {
 		global $wpdb;
 
@@ -125,7 +170,16 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 			$where[] = "EXISTS (SELECT 1 FROM {$wpdb->term_relationships} tr WHERE tr.object_id = p.ID AND tr.term_taxonomy_id IN (" . implode( ',', $tt_ids ) . '))';
 		}
 
-		foreach ( $this->keywords( $args['q'] ) as $word ) {
+		// 索引で集めた候補があれば、キーワードの条件はそれで置き換える（言い換え・表記ゆれ込み）。
+		if ( isset( $args['candidate_ids'] ) ) {
+			$ids = array_filter( array_map( 'intval', (array) $args['candidate_ids'] ) );
+			if ( ! $ids ) {
+				return null;
+			}
+			$where[] = 'p.ID IN (' . implode( ',', $ids ) . ')';
+		}
+
+		foreach ( isset( $args['candidate_ids'] ) ? array() : $this->keywords( $args['q'] ) as $word ) {
 			$like     = '%' . $wpdb->esc_like( $word ) . '%';
 			$where[]  = "(p.post_title LIKE %s OR p.post_excerpt LIKE %s OR p.post_content LIKE %s OR EXISTS (SELECT 1 FROM {$accounts} ah WHERE ah.creator_id = p.ID AND ah.handle LIKE %s))";
 			$params[] = $like;

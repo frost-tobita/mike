@@ -62,7 +62,7 @@ class SNSCS_Frontend {
 			update_option( 'snscs_search_page_id', get_the_ID() );
 		}
 
-		$raw = array( 'per_page' => $atts['per_page'] );
+		$raw = array( 'per_page' => $atts['per_page'], 'log' => true );
 		foreach ( self::PARAMS as $param => $key ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 閲覧用の検索フォームのため不要。
 			if ( isset( $_GET[ $param ] ) ) {
@@ -77,6 +77,7 @@ class SNSCS_Frontend {
 		}
 		$result = SNSCS_Search::run( $raw, true, $profile ? array( 'profile' => $profile ) : null );
 		$args   = $result['args'];
+		SNSCS_Feedback::enqueue_search( isset( $result['qid'] ) ? $result['qid'] : '' );
 
 		// 検索の傾向（選んだ条件・キーワード）を、この人の好みの記録と人気キーワードに使う。
 		SNSCS_Personalize::set_search_context( $args );
@@ -221,7 +222,7 @@ class SNSCS_Frontend {
 			<?php echo SNSCS_Ads::render( 'search_top' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 広告枠のHTML。 ?>
 
 			<?php if ( empty( $result['items'] ) ) : ?>
-				<?php self::render_empty( $result['args'] ); ?>
+				<?php self::render_empty( $result['args'], isset( $result['did_you_mean'] ) ? $result['did_you_mean'] : '' ); ?>
 			<?php else : ?>
 				<?php self::render_cards( $result['items'], $infeed_after ); ?>
 				<?php self::render_pagination( $result ); ?>
@@ -244,7 +245,7 @@ class SNSCS_Frontend {
 		?>
 		<ul class="snscs-cards">
 			<?php foreach ( $items as $index => $item ) : ?>
-				<li class="snscs-card<?php echo isset( $badges[ $item['id'] ] ) ? ' snscs-card--ranked' : ''; ?>">
+				<li class="snscs-card<?php echo isset( $badges[ $item['id'] ] ) ? ' snscs-card--ranked' : ''; ?>" data-snscs-cid="<?php echo (int) $item['id']; ?>">
 					<?php if ( isset( $badges[ $item['id'] ] ) ) : ?>
 						<span class="snscs-card__rank"><?php echo esc_html( $badges[ $item['id'] ] ); ?></span>
 					<?php endif; ?>
@@ -283,7 +284,7 @@ class SNSCS_Frontend {
 	/**
 	 * 結果が0人のとき: 条件を1つずつ外した場合の人数を示し、そのまま探し直せるようにする。
 	 */
-	private static function render_empty( array $args ) {
+	private static function render_empty( array $args, $did_you_mean = '' ) {
 		$relax = array(
 			'q'             => array( 'snscs_q', 'キーワード「%s」を外す' ),
 			'genre'         => array( 'snscs_genre', 'ジャンルの指定を外す' ),
@@ -313,6 +314,9 @@ class SNSCS_Frontend {
 		?>
 		<div class="snscs-results__empty">
 			<p>条件に合う発信者がいません。</p>
+			<?php if ( '' !== $did_you_mean ) : ?>
+				<p class="snscs-results__dym">もしかして: <a href="<?php echo esc_url( add_query_arg( 'snscs_q', rawurlencode( $did_you_mean ), remove_query_arg( 'snscs_page' ) ) ); ?>"><strong><?php echo esc_html( $did_you_mean ); ?></strong></a></p>
+			<?php endif; ?>
 			<?php if ( $options ) : ?>
 				<p>条件をゆるめると見つかります:</p>
 				<ul class="snscs-chips">
