@@ -173,41 +173,22 @@ class SNSCS_Biolink {
 	 * @return array<string,array{label:string,bg:string,text:string,muted:string,button:string,button_text:string,border:string}>
 	 */
 	public static function themes() {
-		return apply_filters(
-			'snscs_link_themes',
-			array(
-				'simple'  => array( 'label' => 'シンプル', 'bg' => '#f5f7fb', 'text' => '#111827', 'muted' => '#4b5563', 'button' => '#ffffff', 'button_text' => '#111827', 'border' => '#e5e7eb' ),
-				'dark'    => array( 'label' => 'ダーク', 'bg' => '#0f172a', 'text' => '#f8fafc', 'muted' => '#cbd5e1', 'button' => '#1e293b', 'button_text' => '#f8fafc', 'border' => '#334155' ),
-				'sakura'  => array( 'label' => 'さくら', 'bg' => 'linear-gradient(180deg,#fff1f5,#ffe4ec)', 'text' => '#4a1d2f', 'muted' => '#7a4a5d', 'button' => '#ffffff', 'button_text' => '#9d174d', 'border' => '#fbcfe8' ),
-				'forest'  => array( 'label' => 'フォレスト', 'bg' => 'linear-gradient(180deg,#ecfdf5,#d1fae5)', 'text' => '#064e3b', 'muted' => '#336b57', 'button' => '#065f46', 'button_text' => '#ffffff', 'border' => '#065f46' ),
-				'ocean'   => array( 'label' => 'オーシャン', 'bg' => 'linear-gradient(180deg,#1e3a8a,#2563eb)', 'text' => '#ffffff', 'muted' => '#dbeafe', 'button' => 'rgba(255,255,255,.14)', 'button_text' => '#ffffff', 'border' => 'rgba(255,255,255,.5)' ),
-				'sunset'  => array( 'label' => 'サンセット', 'bg' => 'linear-gradient(160deg,#f97316,#db2777)', 'text' => '#ffffff', 'muted' => '#ffedd5', 'button' => '#ffffff', 'button_text' => '#9a3412', 'border' => '#ffffff' ),
-				'lavender' => array( 'label' => 'ラベンダー', 'bg' => 'linear-gradient(180deg,#f5f3ff,#ede9fe)', 'text' => '#2e1065', 'muted' => '#5b4a86', 'button' => '#7c3aed', 'button_text' => '#ffffff', 'border' => '#7c3aed' ),
-				'mono'     => array( 'label' => 'モノクロ', 'bg' => '#ffffff', 'text' => '#000000', 'muted' => '#404040', 'button' => '#000000', 'button_text' => '#ffffff', 'border' => '#000000' ),
-				'citrus'   => array( 'label' => 'シトラス', 'bg' => 'linear-gradient(180deg,#fefce8,#fef08a)', 'text' => '#422006', 'muted' => '#6b4f1d', 'button' => '#ffffff', 'button_text' => '#854d0e', 'border' => '#ca8a04' ),
-			)
-		);
+		return SNSCS_Biolink_Design::themes();
 	}
 
 	public static function theme_for( $creator_id ) {
-		$theme = (string) get_post_meta( $creator_id, self::META_THEME, true );
-		return array_key_exists( $theme, self::themes() ) ? $theme : 'simple';
+		return SNSCS_Biolink_Design::style_for( $creator_id )['theme'];
 	}
 
 	/**
 	 * ボタンの形 => [表示名, 角の丸み]
 	 */
 	public static function shapes() {
-		return array(
-			'round'  => array( '角丸', '14px' ),
-			'pill'   => array( 'まる', '999px' ),
-			'square' => array( '四角', '4px' ),
-		);
+		return SNSCS_Biolink_Design::shapes();
 	}
 
 	public static function shape_for( $creator_id ) {
-		$shape = (string) get_post_meta( $creator_id, self::META_SHAPE, true );
-		return array_key_exists( $shape, self::shapes() ) ? $shape : 'round';
+		return SNSCS_Biolink_Design::style_for( $creator_id )['shape'];
 	}
 
 	/**
@@ -233,15 +214,12 @@ class SNSCS_Biolink {
 			wp_die( 'この操作は許可されていません。' );
 		}
 		$creator_id = SNSCS_Submissions::creator_id_for_user( get_current_user_id() );
-		$theme      = isset( $_POST['theme'] ) ? sanitize_key( $_POST['theme'] ) : '';
-		$shape      = isset( $_POST['shape'] ) ? sanitize_key( $_POST['shape'] ) : '';
-		if ( $creator_id && array_key_exists( $theme, self::themes() ) ) {
-			update_post_meta( $creator_id, self::META_THEME, $theme );
-		}
-		if ( $creator_id && array_key_exists( $shape, self::shapes() ) ) {
-			update_post_meta( $creator_id, self::META_SHAPE, $shape );
-		}
 		if ( $creator_id ) {
+			$in = array();
+			foreach ( array( 'theme', 'shape', 'button', 'font', 'ring', 'layout', 'bg', 'btn' ) as $key ) {
+				$in[ $key ] = isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
+			}
+			SNSCS_Biolink_Design::save( $creator_id, $in );
 			$pin  = isset( $_POST['pin'] ) ? sanitize_text_field( wp_unslash( $_POST['pin'] ) ) : '';
 			$tag  = isset( $_POST['pin_tag'] ) ? sanitize_key( $_POST['pin_tag'] ) : '';
 			$keys = wp_list_pluck( self::buttons( $creator_id ), 'key' );
@@ -620,8 +598,24 @@ class SNSCS_Biolink {
 		}
 		header( 'Content-Type: text/html; charset=utf-8' );
 		header( 'Vary: Accept-Language' );
-		echo self::page_html( $creator_id, $tracking, '', SNSCS_English::wants_english() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- page_html() の中でエスケープ済み。
+		echo self::page_html( $creator_id, $tracking, '', SNSCS_English::wants_english(), $preview ? self::preview_style( $creator_id ) : null ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- page_html() の中でエスケープ済み。
 		exit;
+	}
+
+	/**
+	 * 見本・マイページのプレビュー用に、URLで渡したデザインを重ねる（保存はしない）。
+	 */
+	public static function preview_style( $creator_id ) {
+		$style = SNSCS_Biolink_Design::style_for( $creator_id );
+		$map   = array( 'th' => 'theme', 'sh' => 'shape', 'bs' => 'button', 'fo' => 'font', 'ri' => 'ring', 'ly' => 'layout', 'cb' => 'bg', 'cc' => 'btn' );
+		foreach ( $map as $param => $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( isset( $_GET[ $param ] ) && '' !== $_GET[ $param ] ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$style[ $key ] = sanitize_text_field( wp_unslash( $_GET[ $param ] ) );
+			}
+		}
+		return SNSCS_Biolink_Design::normalize( $style );
 	}
 
 	/**
@@ -632,12 +626,12 @@ class SNSCS_Biolink {
 	 * @param string     $theme      デザイン（プレビュー用。省略時は保存したもの）。
 	 * @param bool       $english    英語で表示するか（日本語以外の閲覧者）。
 	 */
-	public static function page_html( $creator_id, $tracking = null, $theme = '', $english = false ) {
+	public static function page_html( $creator_id, $tracking = null, $theme = '', $english = false, $style = null ) {
 		$post     = get_post( $creator_id );
-		$themes   = self::themes();
-		$theme    = array_key_exists( $theme, $themes ) ? $theme : self::theme_for( $creator_id );
-		$t        = $themes[ $theme ];
-		$radius   = self::shapes()[ self::shape_for( $creator_id ) ][1];
+		$style    = is_array( $style ) ? $style : SNSCS_Biolink_Design::style_for( $creator_id );
+		if ( '' !== $theme && array_key_exists( $theme, self::themes() ) ) {
+			$style['theme'] = $theme;
+		}
 		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		$name     = get_the_title( $creator_id );
 		$photo    = get_the_post_thumbnail_url( $creator_id, 'medium' );
@@ -698,6 +692,20 @@ class SNSCS_Biolink {
 			}
 		}
 		$pin_tag = $pinned && '' !== $pin['tag'] ? self::PIN_TAGS[ $pin['tag'] ][ $english ? 1 : 0 ] : '';
+
+		// 並べ方「SNSはアイコンで上に並べる」: SNSのボタンを、名前の下の丸いアイコンにする。
+		$icons = array();
+		if ( 'icons' === $style['layout'] ) {
+			foreach ( $buttons as $i => $button ) {
+				if ( 0 === strpos( $button['key'], 'sns:' ) ) {
+					$icons[] = $button;
+					unset( $buttons[ $i ] );
+				}
+			}
+		}
+		$btn_inner = function ( $label, $sub, $key ) {
+			return '<span class="bio__btn__ico">' . SNSCS_Biolink_Design::icon( $key ) . '</span><span class="bio__btn__txt">' . esc_html( $label ) . ( '' !== $sub ? '<small>' . esc_html( $sub ) . '</small>' : '' ) . '</span>';
+		};
 
 		$similar = array();
 		if ( self::shows_similar( $creator_id ) ) {
@@ -765,45 +773,8 @@ class SNSCS_Biolink {
 <meta name="twitter:card" content="summary_large_image">
 <?php echo SNSCS_Brand::on() ? SNSCS_Brand::icons_html() : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 <script type="application/ld+json"><?php echo wp_json_encode( $ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ); ?></script>
-<style>
-*{box-sizing:border-box}
-html{min-height:100%;background:<?php echo esc_html( $t['bg'] ); ?>}
-body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,system-ui,sans-serif;line-height:1.6}
-.bio{max-width:560px;margin:0 auto;padding:40px 16px 32px;text-align:center}
-.bio__photo{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid <?php echo esc_html( $t['border'] ); ?>}
-.bio__initial{display:inline-flex;align-items:center;justify-content:center;width:104px;height:104px;border-radius:50%;background:<?php echo esc_html( $t['button'] ); ?>;color:<?php echo esc_html( $t['button_text'] ); ?>;font-size:44px;font-weight:700;border:3px solid <?php echo esc_html( $t['border'] ); ?>}
-.bio__name{margin:12px 0 4px;font-size:1.4em}
-.bio__genres{margin:0 0 8px;color:<?php echo esc_html( $t['muted'] ); ?>;font-size:.85em}
-.bio__badges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 12px;padding:0;list-style:none}
-.bio__badges li{padding:2px 10px;border:1px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;font-size:.78em;font-weight:700}
-.bio__text{margin:0 auto 24px;color:<?php echo esc_html( $t['muted'] ); ?>;font-size:.92em;text-align:left;max-width:30em}
-.bio__list{display:grid;gap:12px;margin:0 0 24px;padding:0;list-style:none}
-.bio__btn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58px;padding:10px 16px;border:2px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:<?php echo esc_html( $radius ); ?>;background:<?php echo esc_html( $t['button'] ); ?>;color:<?php echo esc_html( $t['button_text'] ); ?>;text-decoration:none;font-weight:700;transition:transform .1s}
-.bio__btn:hover,.bio__btn:focus-visible{transform:translateY(-2px)}
-.bio__btn small{font-weight:400;font-size:.8em;opacity:.8;word-break:break-all}
-.bio__btn--pinned{min-height:72px;font-size:1.08em;box-shadow:0 6px 18px rgba(0,0,0,.18);animation:bio-pop 2.4s ease-in-out 1s 2}
-.bio__tag{position:absolute;top:-10px;left:14px;padding:1px 10px;border-radius:999px;background:#ef4444;color:#fff;font-size:.72em;line-height:1.7}
-@keyframes bio-pop{0%,100%{transform:none}50%{transform:scale(1.03)}}
-@media (prefers-reduced-motion:reduce){.bio__btn--pinned{animation:none}.bio__btn{transition:none}}
-.bio__heading{margin:28px 0 10px;font-size:.95em;color:<?php echo esc_html( $t['muted'] ); ?>}
-.bio__similar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 8px;padding:0;list-style:none}
-.bio__similar a{display:block;color:<?php echo esc_html( $t['text'] ); ?>;font-size:.78em;text-decoration:none;line-height:1.4}
-.bio__similar img,.bio__similar span{display:block;width:56px;height:56px;margin:0 auto 4px;border-radius:50%;object-fit:cover;background:<?php echo esc_html( $t['button'] ); ?>;border:2px solid <?php echo esc_html( $t['border'] ); ?>}
-.bio__foot{margin-top:36px;padding-top:20px;border-top:1px solid <?php echo esc_html( $t['border'] ); ?>;font-size:.85em}
-.bio__foot a{color:<?php echo esc_html( $t['text'] ); ?>}
-.bio__foot p{margin:6px 0}
-.bio__brand a{display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none}
-.bio__brand img{border-radius:6px}
-.bio__make{display:inline-block;margin-top:8px;padding:6px 16px;border:1px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;text-decoration:none}
-.bio__actions{display:flex;justify-content:center;gap:8px;margin:0 0 16px}
-.bio__followform{margin:0}
-.bio__pill{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 18px;border:2px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;background:<?php echo esc_html( $t['button'] ); ?>;color:<?php echo esc_html( $t['button_text'] ); ?>;font:inherit;font-size:.9em;font-weight:700;text-decoration:none;cursor:pointer}
-.bio__pill--on{opacity:.75}
-.bio__notice{margin:0 0 16px;padding:10px 14px;border-radius:12px;background:rgba(16,185,129,.15);font-size:.9em}
-.bio__ask{position:fixed;left:12px;right:12px;bottom:12px;z-index:10;max-width:536px;margin:0 auto;padding:14px 16px;border-radius:16px;background:#111827;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92em;text-align:center}
-.bio__ask p{margin:0 0 10px}
-.bio__ask button{min-height:42px;padding:0 22px;border:0;border-radius:999px;background:#fff;color:#111827;font:inherit;font-weight:700;cursor:pointer}
-</style>
+<?php echo SNSCS_Biolink_Design::font_link( $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+<style><?php echo SNSCS_Biolink_Design::css( $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まった選択肢と、確かめた色だけで作ったCSS。 ?></style>
 </head>
 <body>
 <main class="bio">
@@ -827,6 +798,13 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 		<p class="bio__text"><?php echo esc_html( $bio ); ?></p>
 	<?php endif; ?>
 
+	<?php if ( $icons ) : ?>
+		<ul class="bio__icons">
+			<?php foreach ( $icons as $button ) : ?>
+				<li><a class="bio__icon" href="<?php echo esc_url( $button['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $button['key'] ); ?>" aria-label="<?php echo esc_attr( $button['label'] . ' ' . $button['sub'] ); ?>" title="<?php echo esc_attr( $button['label'] . ' ' . $button['sub'] ); ?>"><?php echo SNSCS_Biolink_Design::icon( $button['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったSVG。 ?></a></li>
+			<?php endforeach; ?>
+		</ul>
+	<?php endif; ?>
 	<?php if ( $followed ) : ?>
 		<p class="bio__notice" role="status"><?php echo esc_html( $l( 'フォローしました。新しい記事などを、会員ページでお知らせします。', 'Followed. You will get updates on your member page.' ) ); ?></p>
 	<?php endif; ?>
@@ -845,22 +823,22 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 
 	<ul class="bio__list">
 		<?php if ( $pinned ) : ?>
-			<li><a class="bio__btn bio__btn--pinned bio__btn--<?php echo esc_attr( $pinned['kind'] ); ?>" href="<?php echo esc_url( $pinned['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $pinned['key'] ); ?>"><?php if ( '' !== $pin_tag ) : ?><span class="bio__tag"><?php echo esc_html( $pin_tag ); ?></span><?php endif; ?><?php echo esc_html( $pinned['label'] ); ?><?php if ( '' !== $pinned['sub'] ) : ?><small><?php echo esc_html( $pinned['sub'] ); ?></small><?php endif; ?></a></li>
+			<li><a class="bio__btn bio__btn--pinned bio__btn--<?php echo esc_attr( $pinned['kind'] ); ?>" href="<?php echo esc_url( $pinned['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $pinned['key'] ); ?>"><?php if ( '' !== $pin_tag ) : ?><span class="bio__tag"><?php echo esc_html( $pin_tag ); ?></span><?php endif; ?><?php echo $btn_inner( $pinned['label'], $pinned['sub'], $pinned['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endif; ?>
 		<?php foreach ( $buttons as $button ) : ?>
-			<li><a class="bio__btn bio__btn--<?php echo esc_attr( $button['kind'] ); ?>" href="<?php echo esc_url( $button['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $button['key'] ); ?>"><?php echo esc_html( $button['label'] ); ?><?php if ( '' !== $button['sub'] ) : ?><small><?php echo esc_html( $button['sub'] ); ?></small><?php endif; ?></a></li>
+			<li><a class="bio__btn bio__btn--<?php echo esc_attr( $button['kind'] ); ?>" href="<?php echo esc_url( $button['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $button['key'] ); ?>"><?php echo $btn_inner( $button['label'], $button['sub'], $button['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endforeach; ?>
 		<?php if ( $inquiry ) : ?>
-			<li><a class="bio__btn" href="<?php echo esc_url( get_permalink( $creator_id ) . '#snscs-inquiry' ); ?>" data-snscs-out="inquiry:form"><?php echo esc_html( $l( 'お仕事の相談', 'Business inquiries' ) ); ?><small><?php echo esc_html( $l( '企業・団体の方はこちら', 'For brands and organizations (form in Japanese)' ) ); ?></small></a></li>
+			<li><a class="bio__btn" href="<?php echo esc_url( get_permalink( $creator_id ) . '#snscs-inquiry' ); ?>" data-snscs-out="inquiry:form"><?php echo $btn_inner( $l( 'お仕事の相談', 'Business inquiries' ), $l( '企業・団体の方はこちら', 'For brands and organizations (form in Japanese)' ), 'inquiry:form' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endif; ?>
-		<li><a class="bio__btn" href="<?php echo esc_url( $profile ); ?>" data-snscs-out="page:profile"><?php echo esc_html( $l( '詳しいプロフィール', 'Full profile' ) ); ?><small><?php echo esc_html( $site ); ?></small></a></li>
+		<li><a class="bio__btn" href="<?php echo esc_url( $profile ); ?>" data-snscs-out="page:profile"><?php echo $btn_inner( $l( '詳しいプロフィール', 'Full profile' ), $site, 'page:profile' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 	</ul>
 
 	<?php if ( $articles && ! $english ) : ?>
 		<h2 class="bio__heading">最新の記事</h2>
 		<ul class="bio__list">
 			<?php foreach ( $articles as $article ) : ?>
-				<li><a class="bio__btn" href="<?php echo esc_url( get_permalink( $article ) ); ?>" data-snscs-out="article:<?php echo (int) $article->ID; ?>"><?php echo esc_html( get_the_title( $article ) ); ?></a></li>
+				<li><a class="bio__btn" href="<?php echo esc_url( get_permalink( $article ) ); ?>" data-snscs-out="article:<?php echo (int) $article->ID; ?>"><?php echo $btn_inner( get_the_title( $article ), '', 'article:' . $article->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 			<?php endforeach; ?>
 		</ul>
 	<?php endif; ?>
@@ -968,7 +946,8 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 			array( '🔗', 'SNSをまとめて1ページに', 'X・Instagram・TikTok・YouTube・note などを、大きなボタンで並べます。' ),
 			array( '⭐', 'いちばん見てほしいリンクを目立たせる', '新作や販売中の商品を、「新着」「セール中」の札付きで一番上に出せます。' ),
 			array( '📊', 'どのSNSから来たか分かる', '開かれた数・押されたリンク・来たSNSを、マイページで確かめられます。' ),
-			array( '🎨', '9種類のデザイン', 'デザインとボタンの形を選ぶだけ。スマホで見やすく、表示も速いです。' ),
+			array( '🎨', '22種類のデザインとテンプレート', '背景・ボタン・書体・写真の枠を選ぶだけ。好きな色も使えます。右のプレビューで確かめながら作れます。' ),
+			array( '🖼️', 'ストーリーズ用の画像も自動で', 'あなたの色・写真・QRコード入りの画像（ストーリーズ用・シェア用・印刷用）を、ボタン1つで保存できます。' ),
 			array( '🏆', '受賞や順位のバッジ', 'アワードの受賞やジャンルでの順位が、自動でバッジになります。' ),
 			array( '🌏', '海外の人には英語で表示', '日本語以外の環境の人には、自動で英語の表示になります。' ),
 			array( '📱', 'QRコードで名刺やチラシにも', 'QRコードを保存して、名刺・チラシ・イベントのポップに。来た人数も数えます。' ),
@@ -1059,9 +1038,8 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 	 * ------------------------------------------------------------------ */
 
 	public static function render_portal( $creator_id ) {
+		wp_enqueue_script( 'snscs-bioed', SNSCS_URL . 'assets/js/snscs-bioed.js', array(), SNSCS_VERSION, true );
 		$url     = self::url( $creator_id );
-		$current = self::theme_for( $creator_id );
-		$shape   = self::shape_for( $creator_id );
 		$pin     = self::pin_for( $creator_id );
 		$own     = (string) get_post_meta( $creator_id, self::META_NAME, true );
 		$stats   = self::stats( $creator_id );
@@ -1099,6 +1077,31 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 					<p><a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'png', true ) ); ?>">画像（PNG）を保存</a> <a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'svg', true ) ); ?>">印刷用（SVG）を保存</a></p>
 				</div>
 			</div>
+			<h3 class="snscs-sharekit__heading">素材（マイリンクを広める画像と文）</h3>
+			<p class="snscs-help">あなたのデザインの色・写真・QRコードで、自動で作ります。デザインを変えると、画像も新しくなります。</p>
+			<div class="snscs-biokit">
+				<?php foreach ( SNSCS_Biolink_Kit::types() as $kit_type => $kit ) : ?>
+					<figure class="snscs-biokit__item snscs-biokit__item--<?php echo esc_attr( $kit_type ); ?>">
+						<a href="<?php echo esc_url( SNSCS_Biolink_Kit::url( $creator_id, $kit_type ) ); ?>" target="_blank" rel="noopener"><img src="<?php echo esc_url( SNSCS_Biolink_Kit::url( $creator_id, $kit_type ) ); ?>" alt="<?php echo esc_attr( $kit['label'] . 'の画像' ); ?>" loading="lazy" width="<?php echo (int) $kit['size'][0]; ?>" height="<?php echo (int) $kit['size'][1]; ?>"></a>
+						<figcaption><strong><?php echo esc_html( $kit['label'] ); ?></strong><span><?php echo esc_html( $kit['size'][0] . '×' . $kit['size'][1] . '・' . $kit['note'] ); ?></span><a class="snscs-button" href="<?php echo esc_url( SNSCS_Biolink_Kit::url( $creator_id, $kit_type, true ) ); ?>">保存</a></figcaption>
+					</figure>
+				<?php endforeach; ?>
+			</div>
+			<?php
+			$copies = array(
+				'プロフィールの一言（日本語）' => '▼SNS・お仕事のご依頼はこちら',
+				'リンクの前に置く一言'       => 'リンクまとめ👇 ' . $url,
+				'投稿で紹介するとき'         => 'SNSやブログのリンクを1ページにまとめました。ぜひのぞいてみてください！ ' . $url,
+				'ストーリーズの文字'         => 'リンクはここから👆 プロフィールのリンクにもあります',
+				'英語のプロフィール'         => 'All my links 👇 ' . $url,
+			);
+			?>
+			<ul class="snscs-biokit__copies">
+				<?php foreach ( $copies as $copy_label => $copy_text ) : ?>
+					<li><span class="snscs-biokit__clabel"><?php echo esc_html( $copy_label ); ?></span><input type="text" readonly value="<?php echo esc_attr( $copy_text ); ?>" onclick="this.select();" aria-label="<?php echo esc_attr( $copy_label ); ?>"><button type="button" class="snscs-button" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);this.textContent='コピーしました';">コピー</button></li>
+				<?php endforeach; ?>
+			</ul>
+
 			<?php if ( '' === $own ) : ?>
 				<p class="snscs-help">「@hanako」のような覚えやすいIDにしたいときは、下の掲載内容のフォームの「マイリンクのID」に入れて申請してください（審査のあとに切り替わります。今のURLもそのまま使えます）。</p>
 			<?php endif; ?>
@@ -1136,47 +1139,107 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 				<p class="snscs-help">SNSのアプリの画面は変わることがあります。見つからないときは「プロフィールを編集」の中を探してみてください。</p>
 			</details>
 
-			<h3 class="snscs-sharekit__heading">デザインと表示</h3>
-			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
-				<input type="hidden" name="action" value="snscs_link_theme">
-				<?php wp_nonce_field( 'snscs_link_theme', 'snscs_nonce' ); ?>
-				<div class="snscs-themes">
-					<?php foreach ( self::themes() as $key => $theme ) : ?>
-						<label class="snscs-theme">
-							<input type="radio" name="theme" value="<?php echo esc_attr( $key ); ?>" <?php checked( $current, $key ); ?>>
-							<span class="snscs-theme__swatch" style="background: <?php echo esc_attr( $theme['bg'] ); ?>"><span style="background: <?php echo esc_attr( $theme['button'] ); ?>; border-color: <?php echo esc_attr( $theme['border'] ); ?>"></span><span style="background: <?php echo esc_attr( $theme['button'] ); ?>; border-color: <?php echo esc_attr( $theme['border'] ); ?>"></span></span>
-							<span class="snscs-theme__label"><?php echo esc_html( $theme['label'] ); ?></span>
+			<h3 class="snscs-sharekit__heading">デザイン</h3>
+			<?php
+			$style   = SNSCS_Biolink_Design::style_for( $creator_id );
+			$preview = add_query_arg( 'snscs_preview', 1, $url );
+			$design  = array(
+				'button' => SNSCS_Biolink_Design::buttons(),
+				'font'   => wp_list_pluck( SNSCS_Biolink_Design::fonts(), 0 ),
+				'ring'   => SNSCS_Biolink_Design::rings(),
+				'layout' => SNSCS_Biolink_Design::layouts(),
+			);
+			$names   = array( 'button' => 'ボタンの見た目', 'font' => '書体', 'ring' => '写真の枠', 'layout' => '並べ方' );
+			?>
+			<div class="snscs-bioed" data-preview="<?php echo esc_url( $preview ); ?>">
+				<form class="snscs-bioed__form" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
+					<input type="hidden" name="action" value="snscs_link_theme">
+					<?php wp_nonce_field( 'snscs_link_theme', 'snscs_nonce' ); ?>
+
+					<fieldset class="snscs-bioed__group">
+						<legend>テンプレート（押すだけでまとめて変わります）</legend>
+						<div class="snscs-bioed__tpls">
+							<?php foreach ( SNSCS_Biolink_Design::templates() as $key => $tpl ) : ?>
+								<?php $tp = SNSCS_Biolink_Design::palette( array_merge( SNSCS_Biolink_Design::defaults(), $tpl ) ); ?>
+								<button type="button" class="snscs-bioed__tpl" data-tpl="<?php echo esc_attr( wp_json_encode( array_intersect_key( $tpl, SNSCS_Biolink_Design::defaults() ) ) ); ?>">
+									<span class="snscs-bioed__tplsw" style="background: <?php echo esc_attr( isset( $tp['pattern'] ) ? $tp['pattern'] . ',' . $tp['bg'] : $tp['bg'] ); ?>; background-size: <?php echo esc_attr( $tp['size'] ?? 'auto' ); ?>"><span style="background: <?php echo esc_attr( $tp['button'] ); ?>; border-color: <?php echo esc_attr( $tp['border'] ); ?>"></span><span style="background: <?php echo esc_attr( $tp['button'] ); ?>; border-color: <?php echo esc_attr( $tp['border'] ); ?>"></span></span>
+									<?php echo esc_html( $tpl['label'] ); ?>
+								</button>
+							<?php endforeach; ?>
+						</div>
+					</fieldset>
+
+					<fieldset class="snscs-bioed__group">
+						<legend>背景とテーマ</legend>
+						<?php foreach ( SNSCS_Biolink_Design::categories() as $cat => $cat_label ) : ?>
+							<p class="snscs-bioed__cat"><?php echo esc_html( $cat_label ); ?></p>
+							<div class="snscs-themes">
+								<?php foreach ( SNSCS_Biolink_Design::themes() as $key => $theme ) : ?>
+									<?php
+									if ( $cat !== $theme['cat'] ) {
+										continue;
+									}
+									?>
+									<label class="snscs-theme">
+										<input type="radio" name="theme" value="<?php echo esc_attr( $key ); ?>" <?php checked( $style['theme'], $key ); ?>>
+										<span class="snscs-theme__swatch" style="background: <?php echo esc_attr( 'custom' === $key ? 'conic-gradient(#f87171,#fbbf24,#34d399,#60a5fa,#a78bfa,#f87171)' : ( isset( $theme['pattern'] ) ? $theme['pattern'] . ',' . $theme['bg'] : $theme['bg'] ) ); ?>; background-size: <?php echo esc_attr( $theme['size'] ?? 'auto' ); ?>"><span style="background: <?php echo esc_attr( $theme['button'] ); ?>; border-color: <?php echo esc_attr( $theme['border'] ); ?>"></span><span style="background: <?php echo esc_attr( $theme['button'] ); ?>; border-color: <?php echo esc_attr( $theme['border'] ); ?>"></span></span>
+										<span class="snscs-theme__label"><?php echo esc_html( $theme['label'] ); ?></span>
+									</label>
+								<?php endforeach; ?>
+							</div>
+						<?php endforeach; ?>
+						<div class="snscs-bioed__custom"<?php echo 'custom' === $style['theme'] ? '' : ' hidden'; ?>>
+							<label>背景の色 <input type="color" name="bg" value="<?php echo esc_attr( $style['bg'] ); ?>"></label>
+							<label>ボタンの色 <input type="color" name="btn" value="<?php echo esc_attr( $style['btn'] ); ?>"></label>
+							<span class="snscs-help">文字の色は、見やすいように自動で白か黒になります。</span>
+						</div>
+					</fieldset>
+
+					<fieldset class="snscs-bioed__group">
+						<legend>ボタンの形</legend>
+						<?php foreach ( SNSCS_Biolink_Design::shapes() as $key => $info ) : ?>
+							<label class="snscs-biolink__shape"><input type="radio" name="shape" value="<?php echo esc_attr( $key ); ?>" <?php checked( $style['shape'], $key ); ?>> <span style="border-radius: <?php echo esc_attr( $info[1] ); ?>"><?php echo esc_html( $info[0] ); ?></span></label>
+						<?php endforeach; ?>
+					</fieldset>
+
+					<?php foreach ( $design as $field => $choices ) : ?>
+						<fieldset class="snscs-bioed__group">
+							<legend><?php echo esc_html( $names[ $field ] ); ?></legend>
+							<div class="snscs-bioed__chips">
+								<?php foreach ( $choices as $key => $label ) : ?>
+									<label class="snscs-bioed__chip"><input type="radio" name="<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $key ); ?>" <?php checked( $style[ $field ], $key ); ?>><span><?php echo esc_html( $label ); ?></span></label>
+								<?php endforeach; ?>
+							</div>
+						</fieldset>
+					<?php endforeach; ?>
+
+					<fieldset class="snscs-bioed__group">
+						<legend>いちばん見てほしいリンク</legend>
+						<p class="snscs-help">選んだリンクを、いちばん上に大きく出します。新しい動画や、販売中の商品のリンクにおすすめです。</p>
+						<label>リンク
+							<select name="pin">
+								<option value="">選ばない</option>
+								<?php foreach ( $buttons as $button ) : ?>
+									<option value="<?php echo esc_attr( $button['key'] ); ?>" <?php selected( $pin ? $pin['key'] : '', $button['key'] ); ?>><?php echo esc_html( $button['label'] . ( '' !== $button['sub'] ? '（' . $button['sub'] . '）' : '' ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
 						</label>
-					<?php endforeach; ?>
+						<label>札
+							<select name="pin_tag">
+								<?php foreach ( self::PIN_TAGS as $key => $labels ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $pin ? $pin['tag'] : '', $key ); ?>><?php echo esc_html( $labels[0] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</label>
+					</fieldset>
+					<label class="snscs-biolink__check"><input type="checkbox" name="similar" value="1" <?php checked( self::shows_similar( $creator_id ) ); ?>> ページの下に「こちらの発信者もおすすめ」を出す（あなたも、ほかの人のマイリンクで紹介されやすくなります）</label>
+					<p class="snscs-bioed__save"><button type="submit" class="snscs-button snscs-button--primary">このデザインで保存</button> <span class="snscs-help">右の画面は見本です。保存するまで、公開中のマイリンクは変わりません。</span></p>
+				</form>
+				<div class="snscs-bioed__preview" aria-label="プレビュー">
+					<div class="snscs-bioed__phone"><iframe src="<?php echo esc_url( $preview ); ?>" title="マイリンクのプレビュー" loading="lazy"></iframe></div>
+					<p class="snscs-help">プレビュー</p>
 				</div>
-				<fieldset class="snscs-biolink__field">
-					<legend>ボタンの形</legend>
-					<?php foreach ( self::shapes() as $key => $info ) : ?>
-						<label class="snscs-biolink__shape"><input type="radio" name="shape" value="<?php echo esc_attr( $key ); ?>" <?php checked( $shape, $key ); ?>> <span style="border-radius: <?php echo esc_attr( $info[1] ); ?>"><?php echo esc_html( $info[0] ); ?></span></label>
-					<?php endforeach; ?>
-				</fieldset>
-				<fieldset class="snscs-biolink__field">
-					<legend>いちばん見てほしいリンク</legend>
-					<p class="snscs-help">選んだリンクを、いちばん上に大きく出します。新しい動画や、販売中の商品のリンクにおすすめです。</p>
-					<label>リンク
-						<select name="pin">
-							<option value="">選ばない</option>
-							<?php foreach ( $buttons as $button ) : ?>
-								<option value="<?php echo esc_attr( $button['key'] ); ?>" <?php selected( $pin ? $pin['key'] : '', $button['key'] ); ?>><?php echo esc_html( $button['label'] . ( '' !== $button['sub'] ? '（' . $button['sub'] . '）' : '' ) ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</label>
-					<label>札
-						<select name="pin_tag">
-							<?php foreach ( self::PIN_TAGS as $key => $labels ) : ?>
-								<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $pin ? $pin['tag'] : '', $key ); ?>><?php echo esc_html( $labels[0] ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</label>
-				</fieldset>
-				<label class="snscs-biolink__check"><input type="checkbox" name="similar" value="1" <?php checked( self::shows_similar( $creator_id ) ); ?>> ページの下に「こちらの発信者もおすすめ」を出す（あなたも、ほかの人のマイリンクで紹介されやすくなります）</label>
-				<button type="submit" class="snscs-button">保存</button>
-			</form>
+			</div>
 
 			<h3 class="snscs-sharekit__heading">押されたリンク（直近30日）</h3>
 			<?php if ( $clicks ) : ?>
