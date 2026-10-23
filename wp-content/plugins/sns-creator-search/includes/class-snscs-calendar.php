@@ -474,7 +474,7 @@ class SNSCS_Calendar {
 						<?php endforeach; ?>
 					</ul>
 				<?php endif; ?>
-				<a class="snscs-button snscs-button--primary" href="<?php echo esc_url( $url ); ?>">カレンダーを開いて予定を管理</a>
+				<a class="snscs-button snscs-button--primary snscs-callink__open" href="<?php echo esc_url( $url ); ?>">カレンダーを開く</a>
 			</div>
 		</aside>
 		<?php

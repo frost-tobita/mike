@@ -312,7 +312,7 @@ class SNSCS_Hub {
 					<tr><td><code>[sns_trending]</code></td><td>人気・急上昇の検索キーワード</td></tr>
 					<tr><td><code>[sns_spotlight]</code></td><td>今月の注目（急上昇の発信者と、招待ランキング上位のアンバサダー）</td></tr>
 					<tr><td><code>[sns_feature_links]</code></td><td>人気の特集ページへのリンク</td></tr>
-					<tr><td><code>[sns_calendar_link]</code></td><td>今日の日付と近い予定、「カレンダーを開いて予定を管理」ボタン</td></tr>
+					<tr><td><code>[sns_calendar_link]</code></td><td>今日の日付と近い予定、「カレンダーを開く」ボタン</td></tr>
 					<tr><td><code>[sns_newsletter_form]</code></td><td>メールマガジンの登録欄（小さめ）</td></tr>
 					<tr><td><code>[sns_tool_engagement]</code> <code>[sns_tool_diagnosis]</code></td><td>無料ツールを個別に置く</td></tr>
 				</tbody>

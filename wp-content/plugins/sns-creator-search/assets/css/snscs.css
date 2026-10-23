@@ -1949,6 +1949,20 @@
 	font-weight: bold;
 }
 
+.snscs-callink .snscs-callink__open {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: bold;
+	line-height: 1.4;
+	text-align: center;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
 /* カレンダー */
 .snscs-calendar__guest {
 	padding: 10px 14px;
