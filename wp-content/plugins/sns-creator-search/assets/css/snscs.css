@@ -2672,27 +2672,33 @@ body.snscs-portal-body .snscs-pt-tab {
 }
 
 body.snscs-portal-body .snscs-pt-tab--x,
-body.snscs-portal-body .snscs-pt-tab--threads {
+body.snscs-portal-body .snscs-pt-tab--threads,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--x,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--threads {
 	--sns: #000;
 	--sns-bg: #000;
 }
 
-body.snscs-portal-body .snscs-pt-tab--youtube {
+body.snscs-portal-body .snscs-pt-tab--youtube,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--youtube {
 	--sns: #ff0000;
 	--sns-bg: #ff0000;
 }
 
-body.snscs-portal-body .snscs-pt-tab--instagram {
+body.snscs-portal-body .snscs-pt-tab--instagram,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--instagram {
 	--sns: #d62976;
 	--sns-bg: linear-gradient(45deg, #feda75 0%, #fa7e1e 25%, #d62976 55%, #962fbf 80%, #4f5bd5 100%);
 }
 
-body.snscs-portal-body .snscs-pt-tab--tiktok {
+body.snscs-portal-body .snscs-pt-tab--tiktok,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--tiktok {
 	--sns: #010101;
 	--sns-bg: #010101;
 }
 
-body.snscs-portal-body .snscs-pt-tab--substack {
+body.snscs-portal-body .snscs-pt-tab--substack,
+.snscs-portal-body .snscs-pt-snscard.snscs-pt-tab--substack {
 	--sns: #ff6719;
 	--sns-bg: #ff6719;
 }
@@ -3342,6 +3348,533 @@ body.snscs-portal-body .snscs-pt-cta__points li {
 
 .snscs-portal-body .snscs-pt-box--cta .snscs-pt-sublink {
 	color: #9a3412;
+}
+
+/* 1.17.2: 看板 */
+body.snscs-portal-body .snscs-pt-hero {
+	position: relative;
+	overflow: hidden;
+	margin: 0;
+	padding: 28px 28px 24px;
+	border-radius: 16px;
+	background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 55%, #7c3aed 100%);
+	color: #fff;
+}
+
+body.snscs-portal-body .snscs-pt-hero::after {
+	position: absolute;
+	top: -60px;
+	right: -40px;
+	width: 220px;
+	height: 220px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.08);
+	content: "";
+}
+
+body.snscs-portal-body p.snscs-pt-hero__title {
+	position: relative;
+	margin: 0 0 8px;
+	color: #fff;
+	font-size: 26px;
+	font-weight: 800;
+	line-height: 1.4;
+}
+
+body.snscs-portal-body p.snscs-pt-hero__text {
+	position: relative;
+	margin: 0 0 18px;
+	color: #e0e7ff;
+	font-size: 15px;
+}
+
+body.snscs-portal-body p.snscs-pt-hero__btns {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 0;
+}
+
+.snscs-portal-body .snscs-pt-hero__btn {
+	display: inline-flex;
+	align-items: center;
+	min-height: 46px;
+	padding: 0 24px;
+	border-radius: 999px;
+	background: #fff;
+	color: #1e3a8a;
+	font-size: 15px;
+	font-weight: 800;
+}
+
+.snscs-portal-body .snscs-pt-hero__btn:hover {
+	background: #eef2ff;
+	color: #1e3a8a;
+	text-decoration: none;
+}
+
+.snscs-portal-body .snscs-pt-hero__btn--sub {
+	border: 2px solid rgba(255, 255, 255, 0.7);
+	background: transparent;
+	color: #fff;
+}
+
+.snscs-portal-body .snscs-pt-hero__btn--sub:hover {
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+}
+
+body.snscs-portal-body ul.snscs-pt-hero__stats {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 22px;
+	margin: 18px 0 0;
+	color: #c7d2fe;
+	font-size: 13px;
+}
+
+.snscs-pt-hero__stats strong {
+	margin-right: 2px;
+	color: #fff;
+	font-size: 20px;
+}
+
+body.snscs-portal-body .snscs-pt-hero--compact {
+	padding: 20px 24px;
+}
+
+body.snscs-portal-body .snscs-pt-hero--compact p.snscs-pt-hero__title {
+	font-size: 21px;
+}
+
+/* 創設メンバー募集 */
+body.snscs-portal-body .snscs-pt-founders {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	margin: 0;
+	padding: 20px 22px;
+	border: 2px dashed #f59e0b;
+	border-radius: 14px;
+	background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+
+.snscs-pt-founders__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__tag {
+	display: inline-block;
+	margin: 0 0 6px;
+	padding: 0 10px;
+	border-radius: 999px;
+	background: #f59e0b;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 22px;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__title {
+	margin: 0 0 4px;
+	color: #78350f;
+	font-size: 18px;
+	font-weight: 800;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__text {
+	margin: 0 0 10px;
+	color: #92400e;
+	font-size: 13px;
+}
+
+.snscs-pt-founders__meter {
+	overflow: hidden;
+	height: 10px;
+	border-radius: 999px;
+	background: #fde68a;
+}
+
+.snscs-pt-founders__meter span {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #f59e0b, #ea580c);
+}
+
+body.snscs-portal-body p.snscs-pt-founders__left {
+	margin: 6px 0 0;
+	color: #92400e;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.snscs-portal-body .snscs-pt-founders__btn {
+	flex: 0 0 auto;
+	padding: 12px 22px;
+	border-radius: 999px;
+	background: #ea580c;
+	box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+	color: #fff;
+	font-weight: 800;
+	white-space: nowrap;
+}
+
+.snscs-portal-body .snscs-pt-founders__btn:hover {
+	background: #c2410c;
+	color: #fff;
+	text-decoration: none;
+}
+
+/* SNSから探す */
+body.snscs-portal-body .snscs-pt-snscards {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.snscs-portal-body .snscs-pt-snscard {
+	--sns: #1d4ed8;
+	--sns-bg: #1d4ed8;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-rows: auto auto;
+	column-gap: 10px;
+	align-items: center;
+	padding: 12px 14px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+	background-origin: border-box;
+	color: #111827;
+	transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.snscs-pt-snscard__ico {
+	display: inline-flex;
+	grid-row: 1 / 3;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: #f3f4f6;
+	color: var(--sns);
+}
+
+.snscs-pt-snscard__ico svg {
+	width: 22px;
+	height: 22px;
+}
+
+.snscs-pt-snscard__name {
+	font-weight: 800;
+	line-height: 1.3;
+}
+
+.snscs-pt-snscard__note {
+	overflow: hidden;
+	color: #6b7280;
+	font-size: 12px;
+	line-height: 1.4;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snscs-portal-body .snscs-pt-snscard:hover {
+	border-color: transparent;
+	background: var(--sns-bg);
+	box-shadow: 0 6px 16px rgba(17, 24, 39, 0.16);
+	color: #fff;
+	text-decoration: none;
+	transform: translateY(-1px);
+}
+
+.snscs-pt-snscard:hover .snscs-pt-snscard__ico {
+	background: rgba(255, 255, 255, 0.18);
+	color: #fff;
+}
+
+.snscs-pt-snscard:hover .snscs-pt-snscard__note {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+/* 読みもの */
+body.snscs-portal-body .snscs-pt-reads {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 12px;
+}
+
+.snscs-portal-body .snscs-pt-read {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 16px;
+	border-radius: 12px;
+	background: #f5f3ff;
+	color: #1f2937;
+	font-size: 13px;
+}
+
+.snscs-portal-body .snscs-pt-read:hover {
+	box-shadow: 0 4px 12px rgba(17, 24, 39, 0.08);
+	color: #1f2937;
+	text-decoration: none;
+}
+
+.snscs-pt-read strong {
+	font-size: 15px;
+	line-height: 1.45;
+}
+
+.snscs-pt-read__tag {
+	align-self: flex-start;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #7c3aed;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 800;
+	line-height: 20px;
+}
+
+.snscs-portal-body .snscs-pt-read--qa {
+	background: #ecfdf5;
+}
+
+.snscs-pt-read--qa .snscs-pt-read__tag {
+	background: #059669;
+}
+
+.snscs-portal-body .snscs-pt-read--trend,
+.snscs-portal-body .snscs-pt-read--tool {
+	background: #fff7ed;
+}
+
+.snscs-pt-read--trend .snscs-pt-read__tag,
+.snscs-pt-read--tool .snscs-pt-read__tag {
+	background: #ea580c;
+}
+
+.snscs-pt-read__words {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.snscs-pt-read__words span {
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #fff;
+	font-weight: 700;
+}
+
+/* はじめての方へ（読者・発信者の切り替え） */
+.snscs-pt-guide {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.snscs-pt-guide__radio {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+body.snscs-portal-body .snscs-pt-guide__tab {
+	padding: 6px 16px;
+	border: 1px solid #e5e7eb;
+	border-radius: 999px;
+	background: #fff;
+	color: #374151;
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.snscs-pt-guide__radio:checked + .snscs-pt-guide__tab {
+	border-color: #1d4ed8;
+	background: #1d4ed8;
+	color: #fff;
+}
+
+.snscs-pt-guide__radio:focus-visible + .snscs-pt-guide__tab {
+	outline: 3px solid #93c5fd;
+	outline-offset: 2px;
+}
+
+.snscs-pt-guide__panel {
+	display: none;
+	flex: 1 1 100%;
+	margin-top: 10px;
+}
+
+#snscs-pt-guide-reader:checked ~ .snscs-pt-guide__panel--reader,
+#snscs-pt-guide-creator:checked ~ .snscs-pt-guide__panel--creator {
+	display: block;
+}
+
+body.snscs-portal-body ol.snscs-pt-guide__steps {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+}
+
+body.snscs-portal-body .snscs-pt-guide__steps li {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px;
+	border-radius: 12px;
+	background: #f9fafb;
+	font-size: 13px;
+}
+
+.snscs-pt-guide__no {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background: #1d4ed8;
+	color: #fff;
+	font-weight: 800;
+}
+
+.snscs-pt-guide__steps strong {
+	font-size: 15px;
+}
+
+body.snscs-portal-body p.snscs-pt-guide__cta {
+	margin: 12px 0 0;
+	text-align: right;
+	font-weight: 700;
+}
+
+/* 新着・人気のマイリンク */
+body.snscs-portal-body .snscs-pt-mylinks {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.snscs-portal-body .snscs-pt-mylink {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 12px 6px;
+	border-radius: 12px;
+	color: #1f2937;
+	text-align: center;
+}
+
+.snscs-portal-body .snscs-pt-mylink:hover {
+	background: #f5f3ff;
+	text-decoration: none;
+}
+
+body.snscs-portal-body .snscs-pt-mylink img,
+.snscs-pt-mylink__initial {
+	width: 52px;
+	height: 52px;
+	margin-bottom: 4px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-pt-mylink__initial {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #c7d2fe, #f5d0fe);
+	color: #3730a3;
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.snscs-pt-mylink__name {
+	overflow: hidden;
+	width: 100%;
+	font-size: 13px;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snscs-pt-mylink__id {
+	overflow: hidden;
+	width: 100%;
+	color: #6b7280;
+	font-size: 11px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+body.snscs-portal-body p.snscs-pt-mylinks__cta {
+	margin: 10px 0 0;
+	text-align: right;
+	font-weight: 700;
+}
+
+/* 創設メンバーのバッジ（発信者ページ） */
+.snscs-badge--founder {
+	background: linear-gradient(135deg, #f59e0b, #ea580c);
+	color: #fff;
+}
+
+.snscs-founder {
+	margin: 0 0 12px;
+	font-size: 0.9em;
+}
+
+@media (max-width: 759px) {
+	body.snscs-portal-body .snscs-pt-hero {
+		padding: 22px 18px 18px;
+	}
+
+	body.snscs-portal-body p.snscs-pt-hero__title {
+		font-size: 21px;
+	}
+
+	body.snscs-portal-body .snscs-pt-founders {
+		flex-direction: column;
+		align-items: stretch;
+		padding: 18px 16px;
+	}
+
+	.snscs-portal-body .snscs-pt-founders__btn {
+		text-align: center;
+	}
+
+	body.snscs-portal-body .snscs-pt-snscards {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	body.snscs-portal-body ol.snscs-pt-guide__steps {
+		grid-template-columns: 1fr;
+	}
+
+	body.snscs-portal-body .snscs-pt-reads {
+		grid-template-columns: 1fr;
+	}
+
+	body.snscs-portal-body .snscs-pt-mylinks {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 4px;
+	}
+
+	body.snscs-portal-body .snscs-pt-mylink img,
+	.snscs-pt-mylink__initial {
+		width: 44px;
+		height: 44px;
+	}
 }
 
 /* 右の列のカレンダー・広告・コラム */

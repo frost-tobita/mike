@@ -674,6 +674,9 @@ class SNSCS_Biolink {
 		if ( '' !== $rank && ! $english ) {
 			$badges[] = array( '🏆', $rank );
 		}
+		if ( SNSCS_Portal_Top::is_founder( $creator_id ) ) {
+			$badges[] = array( '🌱', $l( '創設メンバー', 'Founding member' ) );
+		}
 		$buttons = self::buttons( $creator_id, $english );
 		foreach ( SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( $creator_id ) ) as $account ) {
 			if ( $account['verified'] ) {

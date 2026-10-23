@@ -104,6 +104,9 @@ class SNSCS_Hub {
 			'share_font'         => '',
 			'trend_min_visitors' => 3,
 			'search_trend_count' => 8,
+			'founders_limit'     => 100,
+			'hero_title'         => 'SNSで活躍する発信者が、きっと見つかる',
+			'hero_text'          => 'X・YouTube・Instagram・TikTokなどの発信者を、ジャンルやSNSから探せます。',
 			'trend_block'        => '',
 			'trend_alerts'       => 1,
 			'newsletter_auto'    => 0,
@@ -225,6 +228,13 @@ class SNSCS_Hub {
 		$settings['feature_min']        = min( 50, max( 1, (int) ( $in['feature_min'] ?? 3 ) ) );
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
 		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
+		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 100 ) ) );
+		$settings['hero_title']         = mb_substr( sanitize_text_field( (string) ( $in['hero_title'] ?? '' ) ), 0, 60 );
+		$settings['hero_text']          = mb_substr( sanitize_text_field( (string) ( $in['hero_text'] ?? '' ) ), 0, 120 );
+		if ( '' === $settings['hero_title'] ) {
+			$settings['hero_title'] = self::defaults()['hero_title'];
+		}
+		SNSCS_Portal_Top::forget_counts();
 		$settings['newsletter_day']     = min( 6, max( 0, (int) ( $in['newsletter_day'] ?? 1 ) ) );
 		$settings['newsletter_hour']    = min( 23, max( 0, (int) ( $in['newsletter_hour'] ?? 8 ) ) );
 		$settings['trend_block']        = sanitize_textarea_field( (string) ( $in['trend_block'] ?? '' ) );
@@ -356,6 +366,17 @@ class SNSCS_Hub {
 						<th scope="row"><label for="search_trend_count">検索窓の下のトレンドワード</label></th>
 						<td><input id="search_trend_count" type="number" name="search_trend_count" min="0" max="20" value="<?php echo (int) $s['search_trend_count']; ?>" class="small-text"> 個まで表示
 						<p class="description">トップページの検索窓のすぐ下に、いま検索が増えている言葉（急上昇）と人気の言葉を並べます。足りないときは発信者の多いジャンルで補います。0 にすると表示しません。初期値 8個。</p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="hero_title">トップの看板の見出し</label></th>
+						<td><input id="hero_title" type="text" name="hero_title" maxlength="60" value="<?php echo esc_attr( $s['hero_title'] ); ?>" class="regular-text">
+						<p><label for="hero_text">説明</label><br><input id="hero_text" type="text" name="hero_text" maxlength="120" value="<?php echo esc_attr( $s['hero_text'] ); ?>" class="large-text"></p>
+						<p class="description">トップページの中央のいちばん上に出す、サイトの紹介です。掲載が10人を超えると、人数・ジャンル数も出します。</p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="founders_limit">創設メンバーの人数</label></th>
+						<td>先着 <input id="founders_limit" type="number" name="founders_limit" min="0" max="100000" value="<?php echo (int) $s['founders_limit']; ?>" class="small-text"> 人
+						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 100人。</p></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="trend_block">表示しない言葉</label></th>

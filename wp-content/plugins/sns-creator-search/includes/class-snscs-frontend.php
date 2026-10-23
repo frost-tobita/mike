@@ -450,6 +450,7 @@ class SNSCS_Frontend {
 		$before = ob_get_clean();
 
 		ob_start();
+		echo SNSCS_Portal_Top::founder_badge( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Invites::badge( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts, true );

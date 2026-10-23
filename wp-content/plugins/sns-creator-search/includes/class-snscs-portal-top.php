@@ -10,7 +10,8 @@
  *       wp_head・wp_footer の処理の出力から <style> と CSSの <link> だけを取り除く（<script> などはそのまま）。
  *   [sns_portal_top]
  *       トップページの中身: 大きな検索窓（SNSのタブつき）・注目のキーワード / 左: カテゴリ・地域 /
- *       中央: 注目の発信者・あなたへのおすすめ・急上昇・特集・新着・コラム / 右: ログイン・発信者の方へ・カレンダー・
+ *       中央: 看板・創設メンバー募集・SNSから探す・注目の発信者・あなたへのおすすめ・急上昇・特集・新着・
+ *       読みもの（コラム・今日の用語・質問箱・急上昇の言葉）・はじめての方へ・マイリンク / 右: ログイン・発信者の方へ・カレンダー・
  *       トレンドワード・お知らせ・広告
  */
 
@@ -33,6 +34,7 @@ class SNSCS_Portal_Top {
 		add_shortcode( 'sns_portal_top', array( __CLASS__, 'shortcode' ) );
 		add_action( 'admin_post_snscs_portal_top', array( __CLASS__, 'handle_create' ) );
 		add_action( 'after_setup_theme', array( __CLASS__, 'register_menus' ), 20 );
+		add_action( 'transition_post_status', array( __CLASS__, 'on_status' ), 10, 3 );
 	}
 
 	/* --------------------------------------------------------------------
@@ -328,8 +330,202 @@ class SNSCS_Portal_Top {
 		return $out;
 	}
 
+	/* --------------------------------------------------------------------
+	 * 1.17.2: 発信者が少ないうちも空白にならない中央の列
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * 掲載中の発信者の数（10分ごとに数え直す）。
+	 */
+	public static function creator_total() {
+		$n = get_transient( 'snscs_pt_total' );
+		if ( false === $n ) {
+			$n = (int) wp_count_posts( SNSCS_Post_Types::POST_TYPE )->publish;
+			set_transient( 'snscs_pt_total', $n, 10 * MINUTE_IN_SECONDS );
+		}
+		return (int) $n;
+	}
+
+	/**
+	 * 創設メンバー（最初に掲載された人から、決めた人数まで）。
+	 *
+	 * @return array<int,true> 発信者ID
+	 */
+	public static function founders() {
+		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
+		if ( $limit <= 0 ) {
+			return array();
+		}
+		$cached = get_transient( 'snscs_pt_founders' );
+		if ( ! is_array( $cached ) ) {
+			global $wpdb;
+			$ids    = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date ASC, ID ASC LIMIT %d", SNSCS_Post_Types::POST_TYPE, $limit ) );
+			$cached = array_fill_keys( array_map( 'intval', $ids ), true );
+			set_transient( 'snscs_pt_founders', $cached, HOUR_IN_SECONDS );
+		}
+		return $cached;
+	}
+
+	public static function is_founder( $creator_id ) {
+		return isset( self::founders()[ (int) $creator_id ] );
+	}
+
+	public static function founder_badge( $creator_id ) {
+		return self::is_founder( $creator_id ) ? '<p class="snscs-founder"><span class="snscs-badge snscs-badge--founder">創設メンバー</span> サイトの立ち上げから参加している発信者です</p>' : '';
+	}
+
+	public static function on_status( $new, $old, $post ) {
+		if ( SNSCS_Post_Types::POST_TYPE === $post->post_type && ( 'publish' === $new || 'publish' === $old ) ) {
+			self::forget_counts();
+		}
+	}
+
+	public static function forget_counts() {
+		delete_transient( 'snscs_pt_total' );
+		delete_transient( 'snscs_pt_founders' );
+		delete_transient( 'snscs_pt_sns_counts' );
+	}
+
+	/** 1. 看板 */
+	private static function hero() {
+		$total  = self::creator_total();
+		$genres = (int) wp_count_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'hide_empty' => true ) );
+		$title  = (string) SNSCS_Hub::setting( 'hero_title' );
+		$text   = (string) SNSCS_Hub::setting( 'hero_text' );
+		$stats  = '';
+		if ( $total >= 10 ) {
+			$stats = '<ul class="snscs-pt-hero__stats"><li><strong>' . esc_html( number_format_i18n( $total ) ) . '</strong>人の発信者</li><li><strong>' . esc_html( number_format_i18n( max( 1, $genres ) ) ) . '</strong>ジャンル</li><li><strong>' . count( snscs_platforms() ) . '</strong>つのSNS</li></ul>';
+		}
+		return '<section class="snscs-pt-hero' . ( $total >= 300 ? ' snscs-pt-hero--compact' : '' ) . '"><p class="snscs-pt-hero__title">' . esc_html( $title ) . '</p>'
+			. ( '' !== $text ? '<p class="snscs-pt-hero__text">' . esc_html( $text ) . '</p>' : '' )
+			. '<p class="snscs-pt-hero__btns"><a class="snscs-pt-hero__btn" href="' . esc_url( snscs_search_url() ) . '">発信者を探す</a><a class="snscs-pt-hero__btn snscs-pt-hero__btn--sub" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a></p>'
+			. $stats . '</section>';
+	}
+
+	/** 2. 創設メンバー募集（掲載が決めた人数に届いたら消える） */
+	private static function founders_banner() {
+		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
+		$total = self::creator_total();
+		if ( $limit <= 0 || $total >= $limit ) {
+			return '';
+		}
+		$left = $limit - $total;
+		$rate = (int) round( $total / $limit * 100 );
+		return '<section class="snscs-pt-founders"><div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">創設メンバー募集中</p>'
+			. '<p class="snscs-pt-founders__title">' . esc_html( sprintf( '先着%d人に「創設メンバー」のバッジ', $limit ) ) . '</p>'
+			. '<p class="snscs-pt-founders__text">いま掲載すると、プロフィールとマイリンクにずっと「創設メンバー」のバッジが付きます。掲載・マイリンクの作成は無料です。</p>'
+			. '<div class="snscs-pt-founders__meter" role="img" aria-label="' . esc_attr( sprintf( '%d人中%d人が参加', $limit, $total ) ) . '"><span style="width:' . max( 2, $rate ) . '%"></span></div>'
+			. '<p class="snscs-pt-founders__left">' . esc_html( sprintf( '残り %s 人', number_format_i18n( $left ) ) ) . '</p></div>'
+			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a></section>';
+	}
+
+	/** 3. SNSから探す */
+	private static function sns_cards() {
+		$counts = get_transient( 'snscs_pt_sns_counts' );
+		if ( ! is_array( $counts ) ) {
+			$counts = SNSCS_Search::backend()->count_by_platform( SNSCS_Search::normalize_args( array() ) );
+			set_transient( 'snscs_pt_sns_counts', $counts, HOUR_IN_SECONDS );
+		}
+		$notes = array(
+			'x'         => 'いまの話題・速報',
+			'youtube'   => '動画・解説・Vlog',
+			'instagram' => '写真・リール',
+			'threads'   => 'ゆるい交流・日常',
+			'tiktok'    => 'ショート動画',
+			'substack'  => 'ニュースレター',
+		);
+		$cards = '';
+		foreach ( snscs_platforms() as $key => $label ) {
+			$n      = (int) ( $counts[ $key ] ?? 0 );
+			$cards .= '<a class="snscs-pt-snscard snscs-pt-tab--' . esc_attr( $key ) . '" href="' . esc_url( add_query_arg( 'snscs_platform', $key, snscs_search_url() ) ) . '">'
+				. '<span class="snscs-pt-snscard__ico">' . self::sns_icon( $key ) . '</span><span class="snscs-pt-snscard__name">' . esc_html( $label ) . '</span>'
+				. '<span class="snscs-pt-snscard__note">' . esc_html( $n >= 5 ? number_format_i18n( $n ) . '人' : ( $notes[ $key ] ?? '' ) ) . '</span></a>';
+		}
+		return self::box( 'SNSから探す', '<div class="snscs-pt-snscards">' . $cards . '</div>' );
+	}
+
+	/** 5. 読みもの（今日の用語・質問箱・急上昇の言葉） */
+	private static function reading_picks() {
+		$cards = '';
+		$terms = SNSCS_Hub::page_id( 'glossary' ) ? SNSCS_Glossary::all() : array();
+		if ( $terms ) {
+			$t      = $terms[ (int) floor( current_time( 'timestamp' ) / DAY_IN_SECONDS ) % count( $terms ) ];
+			$cards .= '<a class="snscs-pt-read snscs-pt-read--term" href="' . esc_url( SNSCS_Glossary::url( $t['slug'] ) ) . '"><span class="snscs-pt-read__tag">今日の用語</span><strong>' . esc_html( $t['name'] ) . 'とは？</strong><span>' . esc_html( $t['short'] ) . '</span></a>';
+		}
+		if ( SNSCS_Hub::page_id( 'qa' ) ) {
+			$qs = SNSCS_QA::list_questions( 'new', '', 0, 1 );
+			if ( $qs ) {
+				$cards .= '<a class="snscs-pt-read snscs-pt-read--qa" href="' . esc_url( SNSCS_QA::url( (int) $qs[0]['id'] ) ) . '"><span class="snscs-pt-read__tag">質問箱の新着</span><strong>' . esc_html( $qs[0]['title'] ) . '</strong><span>' . esc_html( (int) $qs[0]['answers'] ? '回答' . (int) $qs[0]['answers'] . '件' : 'まだ回答がありません。答えてみませんか？' ) . '</span></a>';
+			} else {
+				$cards .= '<a class="snscs-pt-read snscs-pt-read--qa" href="' . esc_url( SNSCS_Hub::page_url( 'qa' ) ) . '"><span class="snscs-pt-read__tag">質問箱</span><strong>SNS運用の悩みを、発信者に聞いてみよう</strong><span>だれでも無料で質問できます</span></a>';
+			}
+		}
+		$hot = array_values(
+			array_filter(
+				SNSCS_Trends::ranking( '', 10 ),
+				function ( $row ) {
+					return $row['hot'];
+				}
+			)
+		);
+		if ( $hot ) {
+			$words = '';
+			foreach ( array_slice( $hot, 0, 4 ) as $row ) {
+				$words .= '<span>' . esc_html( $row['term'] ) . '</span>';
+			}
+			$cards .= '<a class="snscs-pt-read snscs-pt-read--trend" href="' . esc_url( SNSCS_Trends::page_url() ) . '"><span class="snscs-pt-read__tag">急上昇の言葉</span><strong>いま検索が増えている言葉</strong><span class="snscs-pt-read__words">' . $words . '</span></a>';
+		} elseif ( SNSCS_Hub::page_id( 'profile-check' ) ) {
+			$cards .= '<a class="snscs-pt-read snscs-pt-read--tool" href="' . esc_url( SNSCS_Hub::page_url( 'profile-check' ) ) . '"><span class="snscs-pt-read__tag">無料ツール</span><strong>SNSプロフィールAI診断</strong><span>あなたのプロフィールをAIが点数と書き直し案で診断します</span></a>';
+		}
+		return self::box( '読みもの', $cards ? '<div class="snscs-pt-reads">' . $cards . '</div>' : '' );
+	}
+
+	/** 4. はじめての方へ（読者向け・発信者向けを切り替え） */
+	private static function guide() {
+		$steps = array(
+			'reader'  => array( '読者の方', array( array( '探す', 'ジャンルやSNSから、好きな発信者を探します。' ), array( 'フォロー', '無料の会員登録で、気になる発信者をフォロー。' ), array( '新着が届く', '新しい記事や話題を、お知らせで受け取れます。' ) ), SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_search_url(), '無料で会員登録' ),
+			'creator' => array( '発信者の方', array( array( '登録', 'SNSアカウントを入れて、無料で掲載を申し込みます。' ), array( 'マイリンク', 'SNSのプロフィールに貼るリンクまとめを作ります。' ), array( '相談が届く', '企業からのお仕事の相談や、新しいファンが増えます。' ) ), snscs_portal_url(), '無料で掲載する' ),
+		);
+		$html = '<div class="snscs-pt-guide">';
+		$i    = 0;
+		foreach ( $steps as $key => $g ) {
+			$html .= '<input type="radio" name="snscs_pt_guide" id="snscs-pt-guide-' . $key . '" class="snscs-pt-guide__radio"' . ( 0 === $i ? ' checked' : '' ) . '><label for="snscs-pt-guide-' . $key . '" class="snscs-pt-guide__tab">' . esc_html( $g[0] ) . '</label>';
+			$i++;
+		}
+		foreach ( $steps as $key => $g ) {
+			$html .= '<div class="snscs-pt-guide__panel snscs-pt-guide__panel--' . $key . '"><ol class="snscs-pt-guide__steps">';
+			foreach ( $g[1] as $n => $st ) {
+				$html .= '<li><span class="snscs-pt-guide__no">' . ( $n + 1 ) . '</span><strong>' . esc_html( $st[0] ) . '</strong><span>' . esc_html( $st[1] ) . '</span></li>';
+			}
+			$html .= '</ol><p class="snscs-pt-guide__cta"><a href="' . esc_url( $g[2] ) . '">' . esc_html( $g[3] ) . '</a></p></div>';
+		}
+		return self::box( 'はじめての方へ', $html . '</div>' );
+	}
+
+	/** 6. 新着・人気のマイリンク */
+	private static function mylinks() {
+		$week  = SNSCS_Biolink::top_week( 8 );
+		$title = '今週よく見られたマイリンク';
+		$ids   = array_keys( $week );
+		if ( count( $ids ) < 4 ) {
+			$title = '新着のマイリンク';
+			$ids   = get_posts( array( 'post_type' => SNSCS_Post_Types::POST_TYPE, 'post_status' => 'publish', 'numberposts' => 8, 'fields' => 'ids', 'orderby' => 'date', 'order' => 'DESC' ) );
+		}
+		if ( ! $ids ) {
+			return '';
+		}
+		$items = '';
+		foreach ( $ids as $id ) {
+			$photo  = get_the_post_thumbnail_url( $id, 'thumbnail' );
+			$name   = get_the_title( $id );
+			$items .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $id ) ) . '">' . ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="52" height="52" loading="lazy">' : '<span class="snscs-pt-mylink__initial" aria-hidden="true">' . esc_html( mb_substr( $name, 0, 1 ) ) . '</span>' ) . '<span class="snscs-pt-mylink__name">' . esc_html( $name ) . '</span><span class="snscs-pt-mylink__id">@' . esc_html( SNSCS_Biolink::name_for( $id ) ) . '</span></a>';
+		}
+		$more = SNSCS_Hub::page_url( 'mylink' );
+		return self::box( $title, '<div class="snscs-pt-mylinks">' . $items . '</div>' . ( $more ? '<p class="snscs-pt-mylinks__cta"><a href="' . esc_url( $more ) . '">あなたもマイリンクを作る（無料）</a></p>' : '' ) );
+	}
+
 	private static function center_column() {
-		$out = '';
+		$out = self::hero() . self::founders_banner() . self::sns_cards();
 
 		// 注目の発信者（総合点の上位）。
 		$top = SNSCS_Search::run( array( 'sort' => 'recommended', 'per_page' => 6 ) );
@@ -406,7 +602,10 @@ class SNSCS_Portal_Top {
 			$out .= self::box( '話題の記事', SNSCS_Social::render_list( $items ), SNSCS_Stories::stories_url() );
 		}
 
+		$out .= self::reading_picks();
 		$out .= SNSCS_Columns::render( 'SNS運用コラム', array( 'count' => 3 ) );
+		$out .= self::guide();
+		$out .= self::mylinks();
 		return $out;
 	}
 
