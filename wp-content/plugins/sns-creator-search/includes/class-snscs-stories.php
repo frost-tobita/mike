@@ -38,6 +38,7 @@ class SNSCS_Stories {
 		add_action( 'init', array( __CLASS__, 'register' ) );
 		add_filter( 'the_content', array( __CLASS__, 'decorate' ), 5 );
 		add_filter( 'the_content', array( __CLASS__, 'append_spread' ), 22 );
+		add_filter( 'the_content', array( __CLASS__, 'append_next_reads' ), 24 );
 		add_shortcode( 'sns_stories', array( __CLASS__, 'shortcode' ) );
 		add_shortcode( 'sns_trending_articles', array( __CLASS__, 'trending_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'count_via_repost' ) );
@@ -235,6 +236,16 @@ class SNSCS_Stories {
 	/**
 	 * 記事の下: この記事を広めた発信者（ひとこと付きリポスト）と、リポストから読まれた数。
 	 */
+	/**
+	 * 記事の下: 次に読むおすすめ（SNSCS_Feed。この記事と一緒に読まれている記事を中心に）。
+	 */
+	public static function append_next_reads( $content ) {
+		if ( ! is_singular( SNSCS_Articles::POST_TYPE ) || ! in_the_loop() || ! is_main_query() || get_the_ID() !== get_queried_object_id() ) {
+			return $content;
+		}
+		return $content . SNSCS_Feed::next_reads( get_the_ID() );
+	}
+
 	public static function append_spread( $content ) {
 		if ( ! is_singular( array( SNSCS_Articles::POST_TYPE, 'post' ) ) || ! in_the_loop() || ! is_main_query() || get_the_ID() !== get_queried_object_id() ) {
 			return $content;
@@ -425,7 +436,7 @@ class SNSCS_Stories {
 	public static function shortcode() {
 		wp_enqueue_style( 'snscs' );
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$view = isset( $_GET['view'] ) && 'new' === $_GET['view'] ? 'new' : 'hot';
+		$view = isset( $_GET['view'] ) && in_array( $_GET['view'], array( 'new', 'hot' ), true ) ? sanitize_key( $_GET['view'] ) : 'foryou';
 		$tag  = isset( $_GET['tag'] ) ? sanitize_title( wp_unslash( $_GET['tag'] ) ) : '';
 		$page = isset( $_GET['pg'] ) ? max( 1, absint( $_GET['pg'] ) ) : 1;
 		// phpcs:enable
@@ -433,8 +444,21 @@ class SNSCS_Stories {
 		if ( '' !== $tag && ! $term ) {
 			$tag = '';
 		}
-		$per = SNSCS_Social::PER_PAGE;
-		if ( 'hot' === $view ) {
+		$per  = SNSCS_Social::PER_PAGE;
+		$feed = array();
+		if ( 'foryou' === $view && '' !== $tag ) {
+			$view = 'hot';
+		}
+		if ( 'foryou' === $view ) {
+			// 一人ひとりに合わせるので、ページをキャッシュさせない。
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
+			$all  = SNSCS_Feed::items();
+			$feed = array_slice( $all, ( $page - 1 ) * $per, $per );
+			$ids  = count( $all ) > $page * $per ? array_fill( 0, $per + 1, 0 ) : array();
+			$note = 'おすすめの記事はまだありません。新着の記事を見てみましょう。';
+		} elseif ( 'hot' === $view ) {
 			$ids  = array_slice( array_keys( self::trending( 100, $tag ) ), ( $page - 1 ) * $per, $per + 1 );
 			$note = '話題の記事はまだありません。新着の記事を見てみましょう。';
 		} else {
@@ -455,13 +479,16 @@ class SNSCS_Stories {
 				<p class="snscs-stories__tag">#<?php echo esc_html( $term->name ); ?> の記事 <a href="<?php echo esc_url( self::stories_url( array( 'view' => $view ) ) ); ?>">（タグを外す）</a></p>
 			<?php endif; ?>
 			<nav class="snscs-member__tabs" aria-label="記事の並べ方">
-				<a class="snscs-chip" href="<?php echo esc_url( self::stories_url( $base ) ); ?>" <?php echo 'hot' === $view ? 'aria-current="page"' : ''; ?>>話題</a>
+				<?php if ( '' === $tag ) : ?>
+					<a class="snscs-chip" href="<?php echo esc_url( self::stories_url() ); ?>" <?php echo 'foryou' === $view ? 'aria-current="page"' : ''; ?>>おすすめ</a>
+				<?php endif; ?>
+				<a class="snscs-chip" href="<?php echo esc_url( self::stories_url( array_merge( $base, array( 'view' => 'hot' ) ) ) ); ?>" <?php echo 'hot' === $view ? 'aria-current="page"' : ''; ?>>話題</a>
 				<a class="snscs-chip" href="<?php echo esc_url( self::stories_url( array_merge( $base, array( 'view' => 'new' ) ) ) ); ?>" <?php echo 'new' === $view ? 'aria-current="page"' : ''; ?>>新着</a>
 				<?php if ( SNSCS_Social::member_url() ) : ?>
 					<a class="snscs-chip" href="<?php echo esc_url( SNSCS_Social::member_url() ); ?>">フォロー中</a>
 				<?php endif; ?>
 			</nav>
-			<?php echo SNSCS_Social::render_list( $items, $note ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+			<?php echo 'foryou' === $view ? SNSCS_Feed::render( $feed, $note ) : SNSCS_Social::render_list( $items, $note ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 			<p class="snscs-member__pager">
 				<?php if ( $page > 1 ) : ?>
 					<a href="<?php echo esc_url( self::stories_url( array_merge( $base, array( 'view' => $view, 'pg' => $page - 1 ) ) ) ); ?>">← 前へ</a>

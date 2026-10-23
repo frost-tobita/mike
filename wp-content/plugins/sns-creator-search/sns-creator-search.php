@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.12.0
+ * Version:           1.13.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.12.0' );
-define( 'SNSCS_DB_VERSION', '22' );
+define( 'SNSCS_VERSION', '1.13.0' );
+define( 'SNSCS_DB_VERSION', '23' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -54,6 +54,8 @@ require_once SNSCS_DIR . 'includes/class-snscs-trend-alerts.php';
 require_once SNSCS_DIR . 'includes/class-snscs-quiz.php';
 require_once SNSCS_DIR . 'includes/class-snscs-column-kinds.php';
 require_once SNSCS_DIR . 'includes/class-snscs-autolink.php';
+require_once SNSCS_DIR . 'includes/class-snscs-feed.php';
+require_once SNSCS_DIR . 'includes/class-snscs-feed-admin.php';
 require_once SNSCS_DIR . 'includes/class-snscs-features.php';
 require_once SNSCS_DIR . 'includes/class-snscs-rankings.php';
 require_once SNSCS_DIR . 'includes/class-snscs-share.php';
@@ -161,6 +163,7 @@ function snscs_install() {
 	SNSCS_Personalize::install();
 	SNSCS_Trends::install();
 	SNSCS_Trend_Alerts::install();
+	SNSCS_Feed::install();
 	SNSCS_Rankings::install();
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
@@ -222,6 +225,8 @@ SNSCS_Trend_Alerts::init();
 SNSCS_Quiz::init();
 SNSCS_Column_Kinds::init();
 SNSCS_Autolink::init();
+SNSCS_Feed::init();
+SNSCS_Feed_Admin::init();
 SNSCS_Features::init();
 SNSCS_Rankings::init();
 SNSCS_Share::init();

@@ -3924,3 +3924,33 @@ a.snscs-autolink {
 	font-size: 0.85em;
 	opacity: 0.9;
 }
+
+/* 記事のおすすめ（SNSCS_Feed） */
+.snscs-feed__reason {
+	color: #4f46e5;
+}
+
+.snscs-feed__hide {
+	display: inline-block;
+	margin: 4px 0 0;
+	padding: 2px 10px;
+	color: #6b7280;
+	font-size: 0.75em;
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid #e5e7eb;
+	border-radius: 999px;
+}
+
+.snscs-feed__hide:hover,
+.snscs-feed__hide:focus-visible {
+	color: #111827;
+	border-color: #9ca3af;
+}
+
+.snscs-feed__hidden {
+	margin: 0;
+	padding: 8px 0;
+	color: #6b7280;
+	font-size: 0.9em;
+}

@@ -104,6 +104,9 @@ class SNSCS_Frontend {
 			} // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		}
 		self::render_results( $result );
+		if ( 1 === $args['page'] && '' !== $args['q'] ) {
+			echo SNSCS_Feed::render_search( $args['q'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		}
 		echo SNSCS_Features::related_html( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		if ( $result['items'] ) {
 			echo SNSCS_Personalize::placeholder( $landing ? 'foryou' : 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。

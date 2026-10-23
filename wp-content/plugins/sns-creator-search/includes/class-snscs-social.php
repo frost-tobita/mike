@@ -625,7 +625,8 @@ class SNSCS_Social {
 	 * 記事の一覧（会員ページ・みんなの記事・発信者ページ用）。
 	 *
 	 * @param array $items [['id' => 記事ID, 'note' => 上に出す一言, 'comment' => ひとこと, 'rp' => リポストした発信者ID,
-	 *                       'progress' => 読んだ割合（ブックマーク）, 'read' => 読み終えたか], ...]
+	 *                       'progress' => 読んだ割合（ブックマーク）, 'read' => 読み終えたか,
+	 *                       'reason' => おすすめの理由, 'track' => URLに付ける記録用の値, 'hide' => 「興味がない」を出すか], ...]
 	 */
 	public static function render_list( array $items, $empty = '' ) {
 		if ( ! $items ) {
@@ -640,10 +641,15 @@ class SNSCS_Social {
 			$d      = self::card_data( $item['id'] );
 			$counts = self::counts( $item['id'] );
 			$url    = ! empty( $item['rp'] ) ? add_query_arg( 'rp', (int) $item['rp'], $d['url'] ) : ( ! empty( $item['ru'] ) ? add_query_arg( 'ru', (int) $item['ru'], $d['url'] ) : $d['url'] );
+			if ( ! empty( $item['track'] ) ) {
+				$url = add_query_arg( $item['track'], $url );
+			}
 			$marked = ! empty( $mine[ $item['id'] ][ self::BOOKMARK ] );
 			$html  .= '<li class="snscs-feed__item">';
 			if ( ! empty( $item['note'] ) ) {
 				$html .= '<p class="snscs-feed__note">↻ ' . esc_html( $item['note'] ) . '</p>';
+			} elseif ( ! empty( $item['reason'] ) ) {
+				$html .= '<p class="snscs-feed__note snscs-feed__reason">' . esc_html( ( false !== strpos( $item['reason'], 'リポスト' ) ? '↻ ' : '' ) . $item['reason'] ) . '</p>';
 			}
 			if ( ! empty( $item['comment'] ) ) {
 				$html .= '<p class="snscs-feed__comment">' . esc_html( $item['comment'] ) . '</p>';
@@ -674,6 +680,9 @@ class SNSCS_Social {
 			$html .= '</div>';
 			if ( isset( $item['progress'] ) && empty( $item['read'] ) && $item['progress'] > 0 ) {
 				$html .= '<p class="snscs-feed__resume"><a href="' . esc_url( $d['url'] . '#snscs-resume' ) . '">続きから読む →</a></p>';
+			}
+			if ( ! empty( $item['hide'] ) ) {
+				$html .= '<button type="button" class="snscs-feed__hide" data-snscs-hide="' . (int) $item['id'] . '">興味がない</button>';
 			}
 			$html .= '</li>';
 		}
@@ -862,6 +871,7 @@ class SNSCS_Social {
 		$unread = SNSCS_Inbox::unread_count( $user_id );
 		$tabs   = array(
 			'inbox'     => 'お知らせ' . ( $unread ? '（' . $unread . '）' : '' ),
+			'foryou'    => 'おすすめ',
 			'timeline'  => 'フォロー中の新着',
 			'bookmarks' => 'ブックマーク',
 			'likes'     => 'いいねした記事',
@@ -897,6 +907,19 @@ class SNSCS_Social {
 		}
 		if ( 'following' === $tab ) {
 			self::render_following( $user_id );
+			return;
+		}
+		if ( 'foryou' === $tab ) {
+			$all = SNSCS_Feed::items( array( 'user' => $user_id ) );
+			echo SNSCS_Feed::render( array_slice( $all, ( $page - 1 ) * self::PER_PAGE, self::PER_PAGE ), 'まだおすすめできる記事がありません。' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+			echo '<p class="snscs-member__pager">';
+			if ( $page > 1 ) {
+				echo '<a href="' . esc_url( self::member_url( array( 'tab' => $tab, 'pg' => $page - 1 ) ) ) . '">← 前へ</a> ';
+			}
+			if ( count( $all ) > $page * self::PER_PAGE ) {
+				echo '<a href="' . esc_url( self::member_url( array( 'tab' => $tab, 'pg' => $page + 1 ) ) ) . '">次へ →</a>';
+			}
+			echo '</p>';
 			return;
 		}
 		if ( 'timeline' === $tab ) {
