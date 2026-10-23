@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.17.3
+ * Version:           1.17.4
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.17.3' );
+define( 'SNSCS_VERSION', '1.17.4' );
 define( 'SNSCS_DB_VERSION', '26' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
@@ -83,6 +83,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-qr.php';
 require_once SNSCS_DIR . 'includes/class-snscs-biolink.php';
 require_once SNSCS_DIR . 'includes/class-snscs-calendar.php';
 require_once SNSCS_DIR . 'includes/class-snscs-portal-top.php';
+require_once SNSCS_DIR . 'includes/class-snscs-timeline.php';
 require_once SNSCS_DIR . 'includes/class-snscs-autopost.php';
 require_once SNSCS_DIR . 'includes/class-snscs-text.php';
 require_once SNSCS_DIR . 'includes/class-snscs-index.php';
@@ -278,6 +279,7 @@ SNSCS_Inquiries::init();
 SNSCS_Biolink::init();
 SNSCS_Calendar::init();
 SNSCS_Portal_Top::init();
+SNSCS_Timeline::init();
 SNSCS_Autopost::init();
 SNSCS_Index::init();
 SNSCS_Feedback::init();

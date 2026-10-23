@@ -113,6 +113,8 @@ class SNSCS_Portal_Top {
 			return;
 		}
 		wp_enqueue_style( 'snscs' );
+		// 左右の列がスクロールについてくる動き（トップのタイムラインの読み込みも同じファイル）。
+		wp_enqueue_script( 'snscs-timeline', SNSCS_URL . 'assets/js/snscs-timeline.js', array(), SNSCS_VERSION, true );
 		$theme_urls = array_unique( array( get_template_directory_uri(), get_stylesheet_directory_uri() ) );
 		foreach ( wp_styles()->queue as $handle ) {
 			$src = (string) ( wp_styles()->registered[ $handle ]->src ?? '' );
@@ -553,28 +555,6 @@ class SNSCS_Portal_Top {
 		return self::box( 'はじめての方へ', $html . '</div>' );
 	}
 
-	/** 6. 新着・人気のマイリンク */
-	private static function mylinks() {
-		$week  = SNSCS_Biolink::top_week( 8 );
-		$title = '今週よく見られたマイリンク';
-		$ids   = array_keys( $week );
-		if ( count( $ids ) < 4 ) {
-			$title = '新着のマイリンク';
-			$ids   = get_posts( array( 'post_type' => SNSCS_Post_Types::POST_TYPE, 'post_status' => 'publish', 'numberposts' => 8, 'fields' => 'ids', 'orderby' => 'date', 'order' => 'DESC' ) );
-		}
-		if ( ! $ids ) {
-			return '';
-		}
-		$items = '';
-		foreach ( $ids as $id ) {
-			$photo  = get_the_post_thumbnail_url( $id, 'thumbnail' );
-			$name   = get_the_title( $id );
-			$items .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $id ) ) . '">' . ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="52" height="52" loading="lazy">' : '<span class="snscs-pt-mylink__initial" aria-hidden="true">' . esc_html( mb_substr( $name, 0, 1 ) ) . '</span>' ) . '<span class="snscs-pt-mylink__name">' . esc_html( $name ) . '</span><span class="snscs-pt-mylink__id">@' . esc_html( SNSCS_Biolink::name_for( $id ) ) . '</span></a>';
-		}
-		$more = SNSCS_Hub::page_url( 'mylink' );
-		return self::box( $title, '<div class="snscs-pt-mylinks">' . $items . '</div>' . ( $more ? '<p class="snscs-pt-mylinks__cta"><a href="' . esc_url( $more ) . '">あなたもマイリンクを作る（無料）</a></p>' : '' ) );
-	}
-
 	private static function center_column() {
 		$out = self::hero() . self::founders_banner() . self::sns_cards();
 
@@ -656,7 +636,8 @@ class SNSCS_Portal_Top {
 		$out .= self::reading_picks();
 		$out .= SNSCS_Columns::render( 'SNS運用コラム', array( 'count' => 3 ) );
 		$out .= self::guide();
-		$out .= self::mylinks();
+		// ここから下は、記事・発信者・マイリンク・広告が延々と続くタイムライン。
+		$out .= SNSCS_Timeline::render();
 		return $out;
 	}
 

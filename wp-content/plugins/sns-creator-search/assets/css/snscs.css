@@ -6416,3 +6416,189 @@ body.snscs-portal-body .snscs-button--primary:hover {
 		flex: 0 0 auto;
 	}
 }
+
+/* ---------------------------------------------------------------------
+ * 1.17.4: あなたへのおすすめ（下へ延々と続くタイムライン）
+ * ------------------------------------------------------------------- */
+
+body.snscs-portal-body h2.snscs-tl__title,
+.snscs-tl__title {
+	margin: 8px 0 12px !important;
+	padding: 0 0 0 10px !important;
+	border: 0 !important;
+	border-left: 4px solid #1d4ed8 !important;
+	background: none !important;
+	color: #111827 !important;
+	font-size: 18px !important;
+	line-height: 1.4 !important;
+}
+
+.snscs-tl__list {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.snscs-tl__block {
+	box-sizing: border-box;
+	padding: 16px 18px;
+	border: 1px solid #e8eaee;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+.snscs-tl__block--articles {
+	padding: 6px 18px;
+}
+
+.snscs-tl__block--articles .snscs-feed {
+	margin: 0;
+}
+
+.snscs-tl__block--ad {
+	padding: 10px;
+	text-align: center;
+}
+
+.snscs-tl__block--ad .snscs-ad {
+	margin: 0 auto;
+}
+
+body.snscs-portal-body p.snscs-tl__label,
+.snscs-tl__label {
+	margin: 0 0 10px;
+	color: #6b7280;
+	font-size: 13px;
+	font-weight: 800;
+}
+
+.snscs-tl__picks {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.snscs-tl__status {
+	padding: 18px 0 8px;
+	text-align: center;
+}
+
+.snscs-tl__spinner {
+	display: inline-block;
+	width: 26px;
+	height: 26px;
+	border: 3px solid #dbeafe;
+	border-top-color: #1d4ed8;
+	border-radius: 50%;
+	animation: snscs-spin 0.8s linear infinite;
+}
+
+.snscs-tl__spinner[hidden] {
+	display: none;
+}
+
+@keyframes snscs-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.snscs-tl__spinner {
+		animation-duration: 2.4s;
+	}
+}
+
+body.snscs-portal-body .snscs-tl__more {
+	min-height: 44px;
+	padding: 0 28px;
+	border: 1px solid #d1d5db;
+	border-radius: 999px;
+	background: #fff;
+	color: #1f2937;
+	font: inherit;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.snscs-tl__more[hidden],
+.snscs-tl__end[hidden] {
+	display: none;
+}
+
+body.snscs-portal-body p.snscs-tl__end {
+	margin: 0;
+	color: #6b7280;
+	font-size: 13px;
+}
+
+/* 「はじめての方へ」の切り替えの丸（ラジオボタン）は、どのテーマでも見せない */
+body .snscs-pt-guide input.snscs-pt-guide__radio {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	border: 0 !important;
+	opacity: 0 !important;
+	clip-path: inset(50%) !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
+}
+
+@media (max-width: 759px) {
+	.snscs-tl__picks {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.snscs-tl__picks .snscs-pt-pick:nth-child(3) {
+		display: none;
+	}
+
+	.snscs-tl__block {
+		padding: 14px;
+	}
+
+	.snscs-tl__block--articles {
+		padding: 4px 14px;
+	}
+}
+
+.snscs-pt-guide {
+	position: relative;
+}
+
+/* タイムラインの記事: 1件ずつ区切って、理由の札は小さく */
+.snscs-tl .snscs-feed {
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body .snscs-tl li.snscs-feed__item {
+	margin: 0 !important;
+	padding: 14px 0 !important;
+	border-bottom: 1px solid #eef0f3 !important;
+}
+
+body .snscs-tl li.snscs-feed__item:last-child {
+	border-bottom: 0 !important;
+}
+
+body.snscs-portal-body .snscs-tl p.snscs-feed__note,
+.snscs-tl p.snscs-feed__note {
+	display: inline-block;
+	margin: 0 0 4px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #eef2ff;
+	color: #4338ca;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 20px;
+}
+
+.snscs-tl .snscs-feed__hide {
+	margin-top: 6px;
+}
