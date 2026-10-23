@@ -39,6 +39,23 @@
 		} catch ( e ) {}
 	}
 
+	/**
+	 * このタブで押した発信者を、タブを閉じると消えるクッキー（snscs_ss・最大5人）に覚える。
+	 * 次の検索で、その人に近い発信者を上の方へ寄せる（SNSCS_Ranker）。
+	 * 「好みに合わせる」をオフにしている人・ブラウザで「追跡しない」を選んでいる人は覚えない。
+	 */
+	function rememberSession( creator ) {
+		if ( /(?:^|; )snscs_pf_off=1/.test( document.cookie ) || ( navigator.globalPrivacyControl && ! /(?:^|; )snscs_pf_off=0/.test( document.cookie ) ) ) {
+			return;
+		}
+		var match = document.cookie.match( /(?:^|; )snscs_ss=([^;]*)/ );
+		var ids = match ? decodeURIComponent( match[ 1 ] ).split( ',' ).filter( Boolean ) : [];
+		ids = [ String( creator ) ].concat( ids.filter( function ( id ) {
+			return id !== String( creator );
+		} ) ).slice( 0, 5 );
+		document.cookie = 'snscs_ss=' + encodeURIComponent( ids.join( ',' ) ) + '; path=/; SameSite=Lax' + ( 'https:' === location.protocol ? '; Secure' : '' );
+	}
+
 	/* ------------------------------------------------------------------
 	 * 検索結果のページ
 	 * ---------------------------------------------------------------- */
@@ -66,6 +83,7 @@
 			}
 			var card = link.closest( '[data-snscs-cid]' );
 			var creator = card.getAttribute( 'data-snscs-cid' );
+			rememberSession( creator );
 			// SNSへ直接進んだ場合も「押して満足した」とみなす。
 			var external = link.hasAttribute( 'data-snscs-out' );
 			beacon( 'click', config.qid, config.tok, creator );

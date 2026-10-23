@@ -128,6 +128,31 @@ class SNSCS_MySQL_Backend implements SNSCS_Search_Backend {
 	}
 
 	/**
+	 * 絞り込みの件数（1.21）: ジャンル・地域ごとの人数（多い順）。その分類の絞り込みは外して数える。
+	 *
+	 * @return array<int,int> term_id => 人数
+	 */
+	public function count_by_term( array $args, $taxonomy, $limit = 12 ) {
+		global $wpdb;
+		$key   = SNSCS_Post_Types::TAX_GENRE === $taxonomy ? 'genre' : 'region';
+		$query = $this->build_from( array_merge( $args, array( $key => '' ) ) );
+		if ( null === $query ) {
+			return array();
+		}
+		list( $from, $params ) = $query;
+		// 最初の WHERE（いちばん外側）の前に、分類のつながりを足す。
+		$from   = preg_replace( '/ WHERE /', " INNER JOIN {$wpdb->term_relationships} trf ON trf.object_id = p.ID INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = trf.term_taxonomy_id AND tt.taxonomy = %s WHERE ", $from, 1 );
+		$params = array_merge( array( $taxonomy ), $params, array( (int) $limit ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT tt.term_id, COUNT(DISTINCT p.ID) AS total {$from} GROUP BY tt.term_id ORDER BY total DESC LIMIT %d", $params ), ARRAY_A );
+		$out  = array();
+		foreach ( $rows as $row ) {
+			$out[ (int) $row['term_id'] ] = (int) $row['total'];
+		}
+		return $out;
+	}
+
+	/**
 	 * 検索条件から FROM 〜 WHERE 部分を組み立てる。
 	 *
 	 * @param array $args 検索条件。

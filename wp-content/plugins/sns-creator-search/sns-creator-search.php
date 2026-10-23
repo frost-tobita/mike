@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.20.0
+ * Version:           1.21.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.20.0' );
-define( 'SNSCS_DB_VERSION', '27' );
+define( 'SNSCS_VERSION', '1.21.0' );
+define( 'SNSCS_DB_VERSION', '28' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -97,6 +97,12 @@ require_once SNSCS_DIR . 'includes/class-snscs-feedback.php';
 require_once SNSCS_DIR . 'includes/class-snscs-graph.php';
 require_once SNSCS_DIR . 'includes/class-snscs-learner.php';
 require_once SNSCS_DIR . 'includes/class-snscs-ranker.php';
+require_once SNSCS_DIR . 'includes/class-snscs-query.php';
+require_once SNSCS_DIR . 'includes/class-snscs-search-cache.php';
+require_once SNSCS_DIR . 'includes/class-snscs-search-quality.php';
+require_once SNSCS_DIR . 'includes/class-snscs-search-ui.php';
+require_once SNSCS_DIR . 'includes/class-snscs-business.php';
+require_once SNSCS_DIR . 'includes/class-snscs-promo.php';
 require_once SNSCS_DIR . 'includes/class-snscs-integrity.php';
 require_once SNSCS_DIR . 'includes/class-snscs-social.php';
 require_once SNSCS_DIR . 'includes/class-snscs-inbox.php';
@@ -202,6 +208,10 @@ function snscs_install() {
 	SNSCS_Calendar::install();
 	SNSCS_Index::install();
 	SNSCS_Feedback::install();
+	SNSCS_Query::install();
+	SNSCS_Search_Quality::install();
+	SNSCS_Search_UI::install();
+	SNSCS_Promo::install();
 	SNSCS_Integrity::install();
 	SNSCS_Social::install();
 	SNSCS_Inbox::install();
@@ -293,6 +303,12 @@ SNSCS_Index::init();
 SNSCS_Feedback::init();
 SNSCS_Graph::init();
 SNSCS_Learner::init();
+SNSCS_Query::init();
+SNSCS_Search_Cache::init();
+SNSCS_Search_Quality::init();
+SNSCS_Search_UI::init();
+SNSCS_Business::init();
+SNSCS_Promo::init();
 SNSCS_Tagger::init();
 SNSCS_Integrity::init();
 SNSCS_Social::init();

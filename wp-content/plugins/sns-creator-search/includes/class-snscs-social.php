@@ -888,6 +888,7 @@ class SNSCS_Social {
 			'likes'     => 'いいねした記事',
 			'reposts'   => 'リポストした記事',
 			'following' => 'フォロー中の発信者',
+			'saved'     => '保存した検索',
 			'account'   => 'アカウント',
 		);
 		$tab  = isset( $tabs[ $tab ] ) ? $tab : 'timeline';
@@ -920,6 +921,10 @@ class SNSCS_Social {
 		}
 		if ( 'following' === $tab ) {
 			self::render_following( $user_id );
+			return;
+		}
+		if ( 'saved' === $tab ) {
+			SNSCS_Search_UI::render_saved( $user_id );
 			return;
 		}
 		if ( 'lists' === $tab ) {

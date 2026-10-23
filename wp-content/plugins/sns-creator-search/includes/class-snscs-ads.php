@@ -234,6 +234,9 @@ class SNSCS_Ads {
 			'title'    => (string) get_post_meta( $id, '_snscs_ad_title', true ),
 			'desc'     => (string) get_post_meta( $id, '_snscs_ad_desc', true ),
 			'price'    => (string) get_post_meta( $id, '_snscs_ad_price', true ),
+			// 内容に合わせて出す（1.21）: 検索の言葉・ジャンルに合うときだけ出す（空ならどこでも）。
+			'keywords' => array_values( array_filter( explode( ',', (string) get_post_meta( $id, '_snscs_ad_keywords', true ) ) ) ),
+			'genres'   => array_values( array_filter( explode( ',', (string) get_post_meta( $id, '_snscs_ad_genres', true ) ) ) ),
 		);
 	}
 
@@ -261,13 +264,74 @@ class SNSCS_Ads {
 		delete_transient( self::CACHE_KEY );
 	}
 
+	/** いまのページの内容（検索の言葉・ジャンル。内容に合う広告を選ぶため）。 */
+	private static $context = array( 'words' => array(), 'genres' => array() );
+
+	/**
+	 * 内容を伝える（検索ページ・発信者ページから）。
+	 *
+	 * @param string[] $words  言葉。
+	 * @param string[] $genres ジャンルのスラッグ。
+	 */
+	public static function set_context( array $words, array $genres ) {
+		self::$context = array(
+			'words'  => array_values( array_filter( array_map( array( 'SNSCS_Text', 'normalize' ), $words ) ) ),
+			'genres' => array_values( array_filter( array_map( 'sanitize_title', $genres ) ) ),
+		);
+	}
+
+	/**
+	 * 広告が、いまのページの内容に合うか。
+	 */
+	private static function matches( array $ad ) {
+		foreach ( $ad['genres'] as $genre ) {
+			if ( in_array( $genre, self::$context['genres'], true ) ) {
+				return true;
+			}
+		}
+		foreach ( array_filter( array_map( array( 'SNSCS_Text', 'normalize' ), $ad['keywords'] ) ) as $kw ) {
+			foreach ( self::$context['words'] as $w ) {
+				if ( false !== mb_strpos( $w, $kw ) || ( mb_strlen( $w ) >= 2 && false !== mb_strpos( $kw, $w ) ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 押された割合の効き目（直近30日。画像・コンテンツ販売の広告だけ。ふつうの広告と比べた倍率 0.5〜2）。
+	 *
+	 * @return array<int,float>
+	 */
+	private static function ctr_factors() {
+		$factors = get_transient( 'snscs_ad_ctr' );
+		if ( is_array( $factors ) ) {
+			return $factors;
+		}
+		$factors = array();
+		$stats   = self::stats( 30 );
+		$imp     = array_sum( wp_list_pluck( $stats, 'impressions' ) );
+		$clk     = array_sum( wp_list_pluck( $stats, 'clicks' ) );
+		$avg     = ( $clk + 1 ) / ( $imp + 100 );
+		foreach ( $stats as $id => $s ) {
+			$factors[ $id ] = min( 2.0, max( 0.5, ( ( $s['clicks'] + 100 * $avg ) / ( $s['impressions'] + 100 ) ) / $avg ) );
+		}
+		set_transient( 'snscs_ad_ctr', $factors, HOUR_IN_SECONDS );
+		return $factors;
+	}
+
 	/**
 	 * 枠に出す広告を1つ選ぶ（表示の割合に応じてランダム。同じページで出したものは除く）。
+	 *
+	 * 1.21: 言葉・ジャンルを決めた広告は、内容が合うページにだけ出し、合うときは優先する（8割はその中から選ぶ）。
+	 *       よく押される広告ほど少し多く出す（画像・コンテンツ販売の広告。0.5〜2倍）。
 	 */
 	public static function pick( $slot ) {
-		$today      = current_time( 'Y-m-d' );
-		$candidates = array();
-		$total      = 0;
+		$today    = current_time( 'Y-m-d' );
+		$targeted = array();
+		$general  = array();
+		$factors  = self::ctr_factors();
 
 		foreach ( self::active_ads() as $ad ) {
 			if ( ! in_array( $slot, $ad['slots'], true ) || in_array( $ad['id'], self::$shown, true ) ) {
@@ -276,17 +340,24 @@ class SNSCS_Ads {
 			if ( ( $ad['start'] && $today < $ad['start'] ) || ( $ad['end'] && $today > $ad['end'] ) ) {
 				continue;
 			}
-			$candidates[] = $ad;
-			$total       += $ad['weight'];
+			$ad['score'] = $ad['weight'] * ( self::is_linked_type( $ad['type'] ) ? ( $factors[ $ad['id'] ] ?? 1.0 ) : 1.0 );
+			if ( ! empty( $ad['keywords'] ) || ! empty( $ad['genres'] ) ) {
+				if ( self::matches( $ad ) ) {
+					$targeted[] = $ad;
+				}
+				continue;
+			}
+			$general[] = $ad;
 		}
 
+		$candidates = $targeted && ( ! $general || wp_rand( 1, 100 ) <= 80 ) ? $targeted : $general;
 		if ( ! $candidates ) {
 			return null;
 		}
-
-		$roll = wp_rand( 1, $total );
+		$total = array_sum( wp_list_pluck( $candidates, 'score' ) );
+		$roll  = wp_rand( 1, max( 1, (int) round( $total * 1000 ) ) ) / 1000;
 		foreach ( $candidates as $ad ) {
-			$roll -= $ad['weight'];
+			$roll -= $ad['score'];
 			if ( $roll <= 0 ) {
 				return $ad;
 			}

@@ -175,16 +175,34 @@ class SNSCS_Index {
 		$wpdb->delete( self::docs_table(), array( 'creator_id' => (int) $creator_id ), array( '%d' ) );
 	}
 
+	/** 処理の最後にまとめて索引に入れ直す発信者（1.21。同じ人を何度も入れ直さないため）。 */
+	private static $queue = array();
+
+	public static function queue( $creator_id ) {
+		if ( ! self::$queue ) {
+			add_action( 'shutdown', array( __CLASS__, 'flush_queue' ), 5 );
+		}
+		self::$queue[ (int) $creator_id ] = true;
+	}
+
+	public static function flush_queue() {
+		$ids         = array_keys( self::$queue );
+		self::$queue = array();
+		foreach ( $ids as $id ) {
+			self::index_creator( $id );
+		}
+	}
+
 	public static function on_approved( $submission_id ) {
 		$row = SNSCS_Submissions::get( $submission_id );
 		if ( $row && $row['creator_id'] ) {
-			self::index_creator( $row['creator_id'] );
+			self::queue( $row['creator_id'] );
 		}
 	}
 
 	public static function on_save( $post_id ) {
 		if ( ! wp_is_post_revision( $post_id ) ) {
-			self::index_creator( $post_id );
+			self::queue( $post_id );
 		}
 	}
 
@@ -192,7 +210,7 @@ class SNSCS_Index {
 		if ( SNSCS_Articles::POST_TYPE === $post->post_type && $new !== $old ) {
 			$creator = SNSCS_Articles::creator_of( $post->ID );
 			if ( $creator ) {
-				self::index_creator( $creator );
+				self::queue( $creator );
 			}
 		}
 	}

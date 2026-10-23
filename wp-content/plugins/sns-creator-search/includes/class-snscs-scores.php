@@ -99,6 +99,7 @@ class SNSCS_Scores {
   network double NOT NULL DEFAULT 0,
   invites int(10) unsigned NOT NULL DEFAULT 0,
   favs int(10) unsigned NOT NULL DEFAULT 0,
+  growth double NOT NULL DEFAULT 0,
   score_b double DEFAULT NULL,
   tiers varchar(64) NOT NULL DEFAULT '',
   inflow_points double NOT NULL DEFAULT 0,
@@ -137,6 +138,12 @@ class SNSCS_Scores {
 				'desc'    => '全SNSの合計フォロワー数',
 				'tip'     => 'フォロワー数が増えたら、変更を申請して最新の数にしましょう。',
 				'default' => 25,
+			),
+			'growth'    => array(
+				'label'   => '伸び率',
+				'desc'    => 'ここ1か月ほどの、フォロワーの増え方（増えた割合。少ない人の小さな増減は控えめに数える）',
+				'tip'     => '投稿を続けてフォロワーが増えたら、変更を申請して最新の数にしましょう（SNSを連携すると毎日自動で更新されます）。',
+				'default' => 5,
 			),
 			'views'     => array(
 				'label'   => 'ページ閲覧',
@@ -365,6 +372,7 @@ class SNSCS_Scores {
 		list( $quality, $freshness ) = self::profile_values( $creators );
 		$spikes       = SNSCS_Learner::setting( 'spike' ) ? self::spikes() : array();
 		$penalties    = SNSCS_Integrity::detect( $creators );
+		$growth       = self::growth_values();
 
 		// 全体の平均（少ない人数の平均を寄せる先）。
 		$sum_dwell  = 0;
@@ -389,6 +397,7 @@ class SNSCS_Scores {
 
 			$values['referral'][ $id ]  = isset( $referral_w[ $id ] ) ? $referral_w[ $id ] : 0.0;
 			$values['followers'][ $id ] = isset( $all_followers[ $id ] ) ? (int) $all_followers[ $id ] : 0;
+			$values['growth'][ $id ]    = isset( $growth[ $id ] ) ? $growth[ $id ] : 0.0;
 			$values['views'][ $id ]     = $t['weighted_views'];
 			// まだ誰にも見られていない人は、平均値の信号では最下位扱い（-1）。
 			$values['dwell'][ $id ]    = $t['dwell_count'] ? ( $t['dwell_sum'] + self::PRIOR_DWELL * $avg_dwell ) / ( $t['dwell_count'] + self::PRIOR_DWELL ) : -1;
@@ -460,7 +469,7 @@ class SNSCS_Scores {
 		foreach ( $values as $signal => $by_creator ) {
 			$points[ $signal ] = self::rank_points( $by_creator );
 			// 保存に使う値（フォロワー・記事・紹介ネットワーク）だけ残す。
-			if ( ! in_array( $signal, array( 'followers', 'articles', 'network' ), true ) ) {
+			if ( ! in_array( $signal, array( 'followers', 'articles', 'network', 'growth' ), true ) ) {
 				unset( $values[ $signal ] );
 			}
 		}
@@ -494,7 +503,7 @@ class SNSCS_Scores {
 				$tiers  = isset( $tier_counts[ $id ] ) ? $tier_counts[ $id ] : array_fill( 0, min( SNSCS_Invites::MAX_TIERS, max( 1, (int) $settings['tiers'] ) ), 0 );
 
 				$rows[] = $wpdb->prepare(
-					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s, %f)',
+					'(%d, %d, %d, %d, %f, %f, %f, %d, %d, %f, %d, %d, %s, %f, %f, %s, %s, %f, %s, %f, %f)',
 					$id,
 					$raw[ $id ]['inflow'],
 					$values['followers'][ $id ],
@@ -514,11 +523,12 @@ class SNSCS_Scores {
 					implode( ',', $flags[ $id ] ),
 					self::combine( $p, $weights ) * $factor,
 					$now,
-					self::combine( $p, null === $weights_b ? $weights : $weights_b ) * $factor
+					self::combine( $p, null === $weights_b ? $weights : $weights_b ) * $factor,
+					$values['growth'][ $id ]
 				);
 			}
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, favs, tiers, inflow_points, follower_points, points, flags, score, scored_at, score_b) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE score_b = VALUES(score_b), inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), favs = VALUES(favs), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
+			$wpdb->query( "INSERT INTO {$table} (creator_id, inflow, followers, views, dwell_avg, click_rate, articles, usage_days, usage_time, network, invites, favs, tiers, inflow_points, follower_points, points, flags, score, scored_at, score_b, growth) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE score_b = VALUES(score_b), growth = VALUES(growth), inflow = VALUES(inflow), followers = VALUES(followers), views = VALUES(views), dwell_avg = VALUES(dwell_avg), click_rate = VALUES(click_rate), articles = VALUES(articles), usage_days = VALUES(usage_days), usage_time = VALUES(usage_time), network = VALUES(network), invites = VALUES(invites), favs = VALUES(favs), tiers = VALUES(tiers), inflow_points = VALUES(inflow_points), follower_points = VALUES(follower_points), points = VALUES(points), flags = VALUES(flags), score = VALUES(score), scored_at = VALUES(scored_at)' );
 		}
 
 		SNSCS_Referrals::purge_old();
@@ -527,6 +537,36 @@ class SNSCS_Scores {
 		update_option( 'snscs_scores_updated', time() );
 
 		return count( $creators );
+	}
+
+	/**
+	 * フォロワーの伸び率（1.21）: いまのフォロワー数を、7〜60日前のいちばん新しい記録と比べ、30日あたりの増えた割合にする。
+	 * 比べるのは、その記録にあったSNSだけ（あとから足したSNSで伸びたように見えないように）。
+	 * 少ない人の小さな増減で大きく動かないよう、割る数は 300人 以上にする。
+	 * 自動更新していないSNSの記録も残るよう、週に1回、全員のいまの数を記録する（SNSCS_Report::snapshot_followers）。
+	 *
+	 * @return array<int,float> 発信者ID => 30日あたりの伸び率（0.1 = 10%）。
+	 */
+	public static function growth_values() {
+		global $wpdb;
+		$today = current_time( 'Y-m-d' );
+		if ( (string) get_option( 'snscs_growth_snap' ) < gmdate( 'Y-m-d', strtotime( $today . ' -6 days' ) ) ) {
+			SNSCS_Report::snapshot_followers();
+			update_option( 'snscs_growth_snap', $today, false );
+		}
+		$history  = SNSCS_Sync::history_table();
+		$accounts = SNSCS_Accounts::table();
+		$from     = gmdate( 'Y-m-d', strtotime( $today . ' -60 days' ) );
+		$to       = gmdate( 'Y-m-d', strtotime( $today . ' -7 days' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT h.creator_id, m.d AS day, SUM(h.followers) AS base, SUM(COALESCE(a.followers, 0)) AS now FROM {$history} h INNER JOIN (SELECT creator_id, MAX(day) AS d FROM {$history} WHERE day BETWEEN %s AND %s GROUP BY creator_id) m ON m.creator_id = h.creator_id AND m.d = h.day LEFT JOIN {$accounts} a ON a.creator_id = h.creator_id AND a.platform = h.platform GROUP BY h.creator_id, m.d", $from, $to ), ARRAY_A );
+		$out = array();
+		foreach ( $rows as $r ) {
+			$days = max( 7, ( strtotime( $today ) - strtotime( $r['day'] ) ) / DAY_IN_SECONDS );
+			$rate = ( (float) $r['now'] - (float) $r['base'] ) / max( 300.0, (float) $r['base'] ) * 30 / $days;
+			$out[ (int) $r['creator_id'] ] = round( max( -1.0, min( 5.0, $rate ) ), 5 );
+		}
+		return $out;
 	}
 
 	/**

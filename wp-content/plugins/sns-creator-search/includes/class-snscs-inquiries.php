@@ -203,7 +203,7 @@ class SNSCS_Inquiries {
 		$back( 'sent' );
 	}
 
-	private static function notify( $creator_id, array $row ) {
+	public static function notify( $creator_id, array $row ) {
 		$site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		$creator = get_the_title( $creator_id );
 		$from    = ( '' !== $row['company'] ? $row['company'] . ' ' : '' ) . $row['name'];
@@ -333,6 +333,8 @@ class SNSCS_Inquiries {
 			echo '<h2 class="snscs-feature-links__title">お仕事の相談を受け付けている発信者</h2>';
 			SNSCS_Frontend::render_cards( SNSCS_Personalize::items( $ids ) );
 		}
+		echo SNSCS_Business::plan_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Promo::plan_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		return ob_get_clean();
 	}
 

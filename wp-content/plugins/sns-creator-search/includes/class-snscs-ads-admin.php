@@ -153,6 +153,19 @@ class SNSCS_Ads_Admin {
 				</td>
 			</tr>
 			<tr>
+				<th scope="row">内容に合わせて出す</th>
+				<td>
+					<label for="snscs-ad-keywords">言葉（カンマ区切り）</label><br>
+					<input type="text" id="snscs-ad-keywords" name="snscs_ad[keywords]" class="large-text" value="<?php echo esc_attr( implode( ', ', $ad['keywords'] ) ); ?>" placeholder="キャンプ, アウトドア, ソロキャンプ">
+					<p style="margin: 8px 0 4px">ジャンル</p>
+					<?php $snscs_genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'hide_empty' => false, 'number' => 200 ) ); ?>
+					<?php foreach ( is_wp_error( $snscs_genres ) ? array() : $snscs_genres as $snscs_g ) : ?>
+						<label style="display: inline-block; margin: 0 12px 4px 0"><input type="checkbox" name="snscs_ad[genres][]" value="<?php echo esc_attr( $snscs_g->slug ); ?>" <?php checked( in_array( $snscs_g->slug, $ad['genres'], true ) ); ?>> <?php echo esc_html( $snscs_g->name ); ?></label>
+					<?php endforeach; ?>
+					<p class="description">どちらかを決めると、その言葉で検索したページ・そのジャンルの検索や発信者のページにだけ出します（合うページでは、ほかの広告より優先）。空ならどのページにも出します。</p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row">掲載期間</th>
 				<td>
 					<label><input type="date" name="snscs_ad[start]" value="<?php echo esc_attr( $ad['start'] ); ?>"> から</label>
@@ -257,6 +270,15 @@ class SNSCS_Ads_Admin {
 		update_post_meta( $post_id, '_snscs_ad_title', isset( $in['title'] ) ? sanitize_text_field( $in['title'] ) : '' );
 		update_post_meta( $post_id, '_snscs_ad_desc', isset( $in['desc'] ) ? sanitize_text_field( $in['desc'] ) : '' );
 		update_post_meta( $post_id, '_snscs_ad_price', isset( $in['price'] ) ? sanitize_text_field( $in['price'] ) : '' );
+		$keywords = array();
+		foreach ( preg_split( '/[,、，\n]+/u', isset( $in['keywords'] ) ? (string) $in['keywords'] : '' ) as $word ) {
+			$word = SNSCS_Text::normalize( mb_substr( trim( sanitize_text_field( $word ) ), 0, 20 ) );
+			if ( '' !== $word && false === strpos( $word, ',' ) ) {
+				$keywords[] = $word;
+			}
+		}
+		update_post_meta( $post_id, '_snscs_ad_keywords', implode( ',', array_slice( array_unique( $keywords ), 0, 30 ) ) );
+		update_post_meta( $post_id, '_snscs_ad_genres', implode( ',', array_filter( array_map( 'sanitize_title', isset( $in['genres'] ) ? (array) $in['genres'] : array() ) ) ) );
 
 		SNSCS_Ads::flush_cache();
 	}

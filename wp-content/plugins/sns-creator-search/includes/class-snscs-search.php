@@ -82,6 +82,18 @@ class SNSCS_Search {
 		$engine          = $backend instanceof SNSCS_MySQL_Backend;
 		$bucket          = $engine ? SNSCS_Learner::bucket() : 'a';
 
+		// 普通の文章で検索（「大阪のカフェ好きで、インスタ1万人以上」）を、絞り込みと言葉に読み解く（SNSCS_Query）。
+		$original_q = $args['q'];
+		$understood = array();
+		if ( '' !== $args['q'] && empty( $raw['exact'] ) && ! empty( $raw['understand'] ) && 'name' !== ( SNSCS_Index::ready() ? SNSCS_Index::intent( $args['q'] ) : '' ) ) {
+			$parsed = SNSCS_Query::parse( $args['q'], $args );
+			if ( $parsed ) {
+				$args       = array_merge( $args, $parsed['set'] );
+				$args['q']  = $parsed['q'];
+				$understood = $parsed['labels'];
+			}
+		}
+
 		$args['personal_order'] = null;
 		if ( $personal && ! empty( $personal['profile'] ) && 'recommended' === $args['sort'] ) {
 			$strength               = isset( $personal['strength'] ) ? $personal['strength'] : SNSCS_Hub::setting( 'personal_strength' ) / 100;
@@ -92,22 +104,30 @@ class SNSCS_Search {
 		$rel    = array();
 		$intent = '';
 		if ( $engine && '' !== $args['q'] && SNSCS_Index::ready() ) {
-			$rel                   = SNSCS_Index::candidates( $args['q'] );
-			$intent                = SNSCS_Index::intent( $args['q'] );
+			// 言葉で集めた候補と関連度は、少しのあいだ覚えて使い回す（SNSCS_Search_Cache）。
+			$cand = SNSCS_Search_Cache::get( 'cand', $args['q'] );
+			if ( ! is_array( $cand ) ) {
+				$cand = array( SNSCS_Index::candidates( $args['q'] ), SNSCS_Index::intent( $args['q'] ) );
+				SNSCS_Search_Cache::set( 'cand', $args['q'], $cand, count( $cand[0] ) );
+			}
+			list( $rel, $intent )  = $cand;
 			$args['candidate_ids'] = array_keys( $rel );
 		}
 
-		$qid = '';
+		$qid    = '';
+		$ranked = array( 'explore' => array(), 'boosts' => array(), 'session' => array() );
 		if ( $engine && 'recommended' === $args['sort'] ) {
 			$ranked = SNSCS_Ranker::rank(
 				$args,
 				$backend,
 				$rel,
 				array(
-					'bucket' => $bucket,
-					'intent' => $intent,
-					'log'    => ! empty( $raw['log'] ),
-					'has_q'  => '' !== $args['q'],
+					'bucket'  => $bucket,
+					'intent'  => $intent,
+					'log'     => ! empty( $raw['log'] ),
+					'has_q'   => '' !== $args['q'],
+					'qhash'   => '' !== $args['q'] ? SNSCS_Text::hash( SNSCS_Text::normalize( $args['q'] ) ) : 0,
+					'session' => ! empty( $raw['log'] ) ? self::session_ids() : array(),
 				)
 			);
 			$result = array( 'ids' => $ranked['ids'], 'total' => $ranked['total'] );
@@ -141,7 +161,28 @@ class SNSCS_Search {
 			'qid'          => $qid,
 			'intent'       => $intent,
 			'did_you_mean' => ( '' !== $args['q'] && ! $result['total'] && $engine ) ? SNSCS_Index::did_you_mean( $args['q'] ) : '',
+			'original_q'   => $original_q,
+			'understood'   => $understood,
+			'explore'      => $ranked['explore'],
+			'boosts'       => $ranked['boosts'],
+			'session'      => $ranked['session'],
 		);
+	}
+
+	/**
+	 * このタブで押した発信者（検索結果のページの小さなクッキー snscs_ss。タブを閉じると消える）。
+	 * 「好みに合わせる」をオフにしている人・ブラウザで「追跡しない」を選んでいる人は使わない。
+	 *
+	 * @return int[]
+	 */
+	public static function session_ids() {
+		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- 数字だけを取り出す。
+		if ( empty( $_COOKIE['snscs_ss'] ) || ! empty( $_COOKIE[ SNSCS_Personalize::OFF_COOKIE ] ) || ! SNSCS_Personalize::enabled() || ! empty( $_SERVER['HTTP_SEC_GPC'] ) ) {
+			return array();
+		}
+		$ids = array_slice( array_values( array_unique( array_filter( array_map( 'absint', explode( ',', (string) wp_unslash( $_COOKIE['snscs_ss'] ) ) ) ) ) ), 0, 5 );
+		// phpcs:enable
+		return $ids;
 	}
 
 	/**

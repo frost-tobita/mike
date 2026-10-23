@@ -122,6 +122,8 @@ class SNSCS_Portal {
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
 			'link_theme_saved'  => array( 'success', 'マイリンクのデザインと表示を保存しました。' ),
 			'link_extra_saved'  => array( 'success', 'マイリンクのボタンと機能を保存しました。' ),
+			'promo_saved'       => array( 'success', 'PR枠の申し込みを保存しました。キーワードを変えたときは、運営が確かめてから掲載します。' ),
+			'promo_invalid'     => array( 'error', 'キーワードかジャンルを1つ以上選び、1クリックの上限を最低の料金以上、1日の予算を上限以上にしてください。' ),
 			'link_extra_partly' => array( 'warning', '保存しました。ただし、使えないURL（決まったサービス以外）や、終わりが始まりより前の期間は保存していません。' ),
 			'sync_linked'    => array( 'success', '連携しました。フォロワー数は毎日自動で最新になり、発信者ページに「本人確認済み」の印が付きます。' ),
 			'sync_unlinked'  => array( 'success', '連携を解除しました。' ),
@@ -299,6 +301,7 @@ class SNSCS_Portal {
 			<?php SNSCS_Line::render_settings( get_current_user_id() ); ?>
 			<?php SNSCS_Sync::render_portal( $creator_id ); ?>
 			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
+			<?php SNSCS_Promo::render_portal( $creator_id ); ?>
 			<?php self::render_referral( $creator_id ); ?>
 			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
 			<?php SNSCS_Share::render_portal( $creator_id ); ?>

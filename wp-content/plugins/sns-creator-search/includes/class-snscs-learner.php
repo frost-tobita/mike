@@ -47,6 +47,8 @@ class SNSCS_Learner {
 			'ai_tags'         => 0,
 			'ai_tags_per_day' => 200,
 			'spike'           => 1,
+			'ai_expand'         => 0,
+			'ai_expand_per_day' => 100,
 		);
 	}
 
@@ -134,7 +136,7 @@ class SNSCS_Learner {
 	 * A/Bテストの B組に使う重み（ab のときだけ）。
 	 */
 	public static function candidate_weights( array $manual ) {
-		return 'ab' === self::setting( 'mode' ) ? self::blended( $manual )['weights'] : null;
+		return in_array( self::setting( 'mode' ), array( 'ab', 'interleave' ), true ) ? self::blended( $manual )['weights'] : null;
 	}
 
 	/**
@@ -143,7 +145,7 @@ class SNSCS_Learner {
 	public static function rel_share( $bucket ) {
 		$mode    = self::setting( 'mode' );
 		$learned = self::learned();
-		if ( ( 'auto' === $mode && ! empty( $learned['adopt'] ) ) || ( 'ab' === $mode && 'b' === $bucket ) ) {
+		if ( ( 'auto' === $mode && ! empty( $learned['adopt'] ) ) || ( in_array( $mode, array( 'ab', 'interleave' ), true ) && 'b' === $bucket ) ) {
 			// 学習の結果がどうであれ、言葉との一致は3割より軽くしない（検索した言葉と関係ない人が並ばないように）。
 			return max( 0.3, self::blended( SNSCS_Scores::settings()['weights'] )['rel_share'] );
 		}
@@ -389,7 +391,7 @@ class SNSCS_Learner {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verify() で確認済み。
 		$in = wp_unslash( $_POST );
 		$s  = self::settings();
-		$s['mode']            = in_array( $in['mode'] ?? '', array( 'manual', 'auto', 'ab' ), true ) ? $in['mode'] : 'manual';
+		$s['mode']            = in_array( $in['mode'] ?? '', array( 'manual', 'auto', 'ab', 'interleave' ), true ) ? $in['mode'] : 'manual';
 		$s['blend']           = min( 100, max( 0, (int) ( $in['blend'] ?? 50 ) ) );
 		$s['rel_share']       = min( 95, max( 5, (int) ( $in['rel_share'] ?? 60 ) ) );
 		$s['explore_slots']   = min( 5, max( 0, (int) ( $in['explore_slots'] ?? 2 ) ) );
@@ -401,6 +403,8 @@ class SNSCS_Learner {
 		$s['ai_tags']         = empty( $in['ai_tags'] ) ? 0 : 1;
 		$s['ai_tags_per_day'] = min( 2000, max( 10, (int) ( $in['ai_tags_per_day'] ?? 200 ) ) );
 		$s['spike']           = empty( $in['spike'] ) ? 0 : 1;
+		$s['ai_expand']         = empty( $in['ai_expand'] ) ? 0 : 1;
+		$s['ai_expand_per_day'] = min( 1000, max( 10, (int) ( $in['ai_expand_per_day'] ?? 100 ) ) );
 		// phpcs:enable
 		$synonyms_changed = trim( $s['synonyms'] ) !== trim( str_replace( array( "\r\n", "\r" ), "\n", (string) self::setting( 'synonyms' ) ) );
 		update_option( self::OPTION, $s, false );
@@ -572,7 +576,8 @@ class SNSCS_Learner {
 						<td>
 							<label><input type="radio" name="mode" value="manual" <?php checked( $s['mode'], 'manual' ); ?>> 手で決めた重みだけを使う</label><br>
 							<label><input type="radio" name="mode" value="auto" <?php checked( $s['mode'], 'auto' ); ?>> 学習した重みが良ければ自動で使う（おすすめ。データが少ないうちは手の重みのまま）</label><br>
-							<label><input type="radio" name="mode" value="ab" <?php checked( $s['mode'], 'ab' ); ?>> A/Bテストをする（訪問者の半分だけ学習した重みで並べ、結果を比べる）</label>
+							<label><input type="radio" name="mode" value="ab" <?php checked( $s['mode'], 'ab' ); ?>> A/Bテストをする（訪問者の半分だけ学習した重みで並べ、結果を比べる）</label><br>
+							<label><input type="radio" name="mode" value="interleave" <?php checked( $s['mode'], 'interleave' ); ?>> 混ぜて比べる（インターリーブ。1ページ目を、いまの並びと学習した並びから交互に選び、どちらの人が押されたかで比べる。A/Bテストより少ない検索数で答えが出ます。結果は「検索の品質」の画面）</label>
 						</td>
 					</tr>
 					<tr>
@@ -624,6 +629,14 @@ class SNSCS_Learner {
 							<label><input type="checkbox" name="ai_tags" value="1" <?php checked( $s['ai_tags'] ); ?>> 発信者の紹介文や記事から、AIが細かいタグ（例: 時短レシピ、キャンプ飯）を付けて、検索で見つかりやすくする</label><br>
 							1日に <input type="number" name="ai_tags_per_day" min="10" max="2000" value="<?php echo (int) $s['ai_tags_per_day']; ?>" class="small-text"> 人まで
 							<p class="description">APIキーは「記事の自動投稿」と同じものを使います。料金の目安は1人あたり1円前後（まとめて依頼する方式）。紹介文が変わった人は付け直します。</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">AIの言い換え</th>
+						<td>
+							<label><input type="checkbox" name="ai_expand" value="ai_expand" <?php checked( $s['ai_expand'] ); ?>> 結果が少なかった言葉に、AIが意味の近い言葉（例: 「ゆる家事」→ 時短家事・ずぼら家事）を作り、その言葉でも探す</label><br>
+							1日に <input type="number" name="ai_expand_per_day" min="10" max="1000" value="<?php echo (int) $s['ai_expand_per_day']; ?>" class="small-text"> 語まで
+							<p class="description">2人以上が調べて結果が10人未満だった言葉を、1時間ごとにまとめて依頼します。同じ言葉は二度と依頼しないので、料金は少しずつ減ります。作った言葉は「探されているのに、いない」の画面で数を確かめられます。</p>
 						</td>
 					</tr>
 				</table>

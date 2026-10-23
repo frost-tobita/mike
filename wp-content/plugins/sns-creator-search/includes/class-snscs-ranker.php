@@ -11,6 +11,12 @@
  *   お試し表示: まだ表示の少ない人を、決まった枠に出す（トンプソン・サンプリング。
  *              押された割合の「ありえる範囲」からくじを引き、可能性のある人に機会を与える）
  * 表示した結果は、検索ごとのランダムな番号（qid）と一緒に記録し、学習に使う（SNSCS_Feedback）。
+ * 1.21:
+ *   言葉ごとの選ばれやすさ: その言葉で探した人によく選ばれている人の点を上げる（SNSCS_Feedback::query_boosts。0.7〜1.6倍）
+ *   さっき見た人に近い人  : このタブで押した発信者と同じジャンル・一緒に見られている人を、上の方へ寄せる
+ *   並べ方を混ぜて比べる  : 「インターリーブ」モードでは、1ページ目をいまの並び（A）と学習した並び（B）から交互に選び、
+ *                           どちらの並びから来た人が押されたかで、少ない検索数でも良し悪しを比べる
+ *   結果を覚える          : 同じ条件の検索は、並べた結果を5分覚えて使い回す（SNSCS_Search_Cache）
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,49 +32,60 @@ class SNSCS_Ranker {
 	 * @param array                $args    SNSCS_Search::normalize_args() に candidate_ids などを足したもの。
 	 * @param SNSCS_MySQL_Backend  $backend 検索エンジン部分。
 	 * @param array<int,float>     $rel     発信者ID => 関連度（キーワードがあるとき）。
-	 * @param array                $context bucket、intent、log（表示を記録するか）、has_q。
-	 * @return array{ids:int[],total:int,qid:string,explore:int[]}
+	 * @param array                $context bucket、intent、log（表示を記録するか）、has_q、qhash（言葉の番号）、session（このタブで押した発信者）。
+	 * @return array{ids:int[],total:int,qid:string,explore:int[],boosts:array,session:int[]}
 	 */
 	public static function rank( array $args, SNSCS_MySQL_Backend $backend, array $rel, array $context ) {
 		$per_page = (int) $args['per_page'];
 		$page     = (int) $args['page'];
 		$offset   = ( $page - 1 ) * $per_page;
-		$score    = 'b' === $context['bucket'] ? 'score_b' : 'score';
+		$bucket   = $context['bucket'];
+		$qhash    = (int) ( $context['qhash'] ?? 0 );
+		$session  = array_slice( array_map( 'intval', (array) ( $context['session'] ?? array() ) ), 0, 5 );
+		// 並べ方を混ぜて比べる（インターリーブ）: 1ページ目で、一人ひとりに合わせていない検索だけ。
+		$interleave = 'interleave' === SNSCS_Learner::setting( 'mode' ) && 1 === $page && empty( $args['personal_order'] ) && ! $session && $per_page >= 6;
+		$cacheable  = empty( $args['personal_order'] ) && ! $session;
+		$cache_key  = array( array_diff_key( $args, array_flip( array( 'page' ) ) ), $bucket, $qhash );
 
-		$total = $backend->count( $args );
-		if ( ! $total ) {
-			return array( 'ids' => array(), 'total' => 0, 'qid' => '', 'explore' => array() );
-		}
-		$limit = $rel ? 0 : max( self::BROWSE_POOL, $offset + $per_page * 2 );
-		$rows  = $backend->rows( $args, $limit, $score );
-
-		// 2段目: 最終点。
-		$final = array();
-		if ( $rel ) {
-			$share = SNSCS_Learner::rel_share( $context['bucket'] );
-			if ( 'name' === $context['intent'] ) {
-				$share = max( $share, 0.85 );
-			} elseif ( in_array( $context['intent'], array( 'genre', 'region' ), true ) ) {
-				$share *= 0.6;
-			}
-			$max = max( 0.000001, max( array_intersect_key( $rel, $rows ) ?: array( 1 ) ) ); // phpcs:ignore WordPress.PHP.DisallowShortTernary.Found
-			// 不正対策で下げている人は、言葉との一致の点にも同じ倍率を掛ける（総合点には計算のときに掛け済み）。
-			$penalties = SNSCS_Integrity::penalties();
-			foreach ( $rows as $id => $base ) {
-				$factor       = isset( $penalties[ $id ] ) ? $penalties[ $id ] : 1.0;
-				$final[ $id ] = $share * ( isset( $rel[ $id ] ) ? $rel[ $id ] : 0 ) / $max * 100 * $factor + ( 1 - $share ) * $base;
-			}
+		$cached = $cacheable ? SNSCS_Search_Cache::get( 'rank', $cache_key ) : null;
+		$boosts = $qhash ? SNSCS_Feedback::query_boosts( $qhash ) : array();
+		$boosted_session = array();
+		if ( is_array( $cached ) ) {
+			list( $total, $order, $explore, $final_top ) = $cached;
 		} else {
-			$final = $rows;
-		}
-		arsort( $final );
-		$order = array_keys( $final );
+			$total = $backend->count( $args );
+			if ( ! $total ) {
+				return array( 'ids' => array(), 'total' => 0, 'qid' => '', 'explore' => array(), 'boosts' => array(), 'session' => array() );
+			}
+			$limit = $rel ? 0 : max( self::BROWSE_POOL, $offset + $per_page * 2 );
+			$final = self::final_scores( $args, $backend, $rel, $limit, $bucket, $boosts, $context );
 
-		// 1ページ目の多様さとお試し表示（2ページ目以降も同じ計算をして、1ページ目に出た人を除く）。
-		$explore = array();
-		if ( $per_page >= 6 ) {
-			list( $first, $explore ) = self::first_page( $order, $final, $args, $per_page, $context );
-			$order                   = array_merge( $first, array_values( array_diff( $order, $first ) ) );
+			// このタブで押した発信者に近い人を、上の方へ寄せる（さっき見た人と同じジャンル・一緒に見られている人）。
+			if ( $session ) {
+				$boosted_session = self::session_boost( $final, $session );
+			}
+			arsort( $final );
+			$order = array_keys( $final );
+
+			// 1ページ目の多様さとお試し表示（2ページ目以降も同じ計算をして、1ページ目に出た人を除く）。
+			$explore = array();
+			if ( $per_page >= 6 ) {
+				list( $first, $explore ) = self::first_page( $order, $final, $args, $per_page, $context );
+				$order                   = array_merge( $first, array_values( array_diff( $order, $first ) ) );
+			}
+			$final_top = array_slice( $final, 0, 200, true );
+			if ( $cacheable ) {
+				SNSCS_Search_Cache::set( 'rank', $cache_key, array( $total, array_slice( $order, 0, 2000 ), $explore, $final_top ), max( $total, count( $rel ) ) );
+			}
+		}
+
+		$teams = array();
+		if ( $interleave ) {
+			// B の並び（学習した重み）を作り、A（いまの並び）と交互に取る（チーム・ドラフト方式）。
+			$final_b = self::final_scores( $args, $backend, $rel, $rel ? 0 : max( self::BROWSE_POOL, $per_page * 2 ), 'b', $boosts, $context );
+			arsort( $final_b );
+			list( $first, $teams ) = self::team_draft( array_slice( $order, 0, $per_page * 2 ), array_slice( array_keys( $final_b ), 0, $per_page * 2 ), $per_page );
+			$order                 = array_merge( $first, array_values( array_diff( $order, $first ) ) );
 		}
 
 		if ( ! $rel && $offset + $per_page > count( $order ) && $offset + $per_page <= $total ) {
@@ -84,13 +101,141 @@ class SNSCS_Ranker {
 			$qid    = SNSCS_Feedback::new_qid();
 			$events = array();
 			foreach ( $ids as $i => $id ) {
-				$events[] = array( $id, $offset + $i + 1, in_array( $id, $explore, true ), isset( $rel[ $id ] ) ? $rel[ $id ] : 0 );
+				$row = array( $id, $offset + $i + 1, in_array( $id, $explore, true ), isset( $rel[ $id ] ) ? $rel[ $id ] : 0 );
+				if ( isset( $teams[ $id ] ) ) {
+					$row[] = $teams[ $id ];
+				}
+				$events[] = $row;
 			}
-			if ( ! SNSCS_Feedback::log_impressions( $qid, $events, $context['bucket'], ! empty( $context['has_q'] ) ) ) {
+			if ( ! SNSCS_Feedback::log_impressions( $qid, $events, $bucket, ! empty( $context['has_q'] ), $qhash ) ) {
 				$qid = '';
 			}
 		}
-		return array( 'ids' => $ids, 'total' => $total, 'qid' => $qid, 'explore' => $explore );
+		return array(
+			'ids'     => $ids,
+			'total'   => $total,
+			'qid'     => $qid,
+			'explore' => $explore,
+			'boosts'  => array_intersect_key( $boosts, array_flip( $ids ) ),
+			'session' => array_values( array_intersect( $boosted_session, $ids ) ),
+		);
+	}
+
+	/**
+	 * 2段目の最終点（並べる前）。
+	 *
+	 * @return array<int,float>
+	 */
+	private static function final_scores( array $args, SNSCS_MySQL_Backend $backend, array $rel, $limit, $bucket, array $boosts, array $context ) {
+		$rows  = $backend->rows( $args, $limit, 'b' === $bucket ? 'score_b' : 'score' );
+		$final = array();
+		if ( $rel ) {
+			$share = SNSCS_Learner::rel_share( $bucket );
+			if ( 'name' === $context['intent'] ) {
+				$share = max( $share, 0.85 );
+			} elseif ( in_array( $context['intent'], array( 'genre', 'region' ), true ) ) {
+				$share *= 0.6;
+			}
+			$max = max( 0.000001, max( array_intersect_key( $rel, $rows ) ?: array( 1 ) ) ); // phpcs:ignore WordPress.PHP.DisallowShortTernary.Found
+			// 不正対策で下げている人は、言葉との一致の点にも同じ倍率を掛ける（総合点には計算のときに掛け済み）。
+			$penalties = SNSCS_Integrity::penalties();
+			foreach ( $rows as $id => $base ) {
+				$factor       = isset( $penalties[ $id ] ) ? $penalties[ $id ] : 1.0;
+				$final[ $id ] = $share * ( isset( $rel[ $id ] ) ? $rel[ $id ] : 0 ) / $max * 100 * $factor + ( 1 - $share ) * $base;
+			}
+		} else {
+			$final = $rows;
+		}
+		// その言葉で探した人によく選ばれている人を上げ、表示されても選ばれない人を少し下げる。
+		foreach ( $boosts as $id => $boost ) {
+			if ( isset( $final[ $id ] ) ) {
+				$final[ $id ] *= $boost;
+			}
+		}
+		return $final;
+	}
+
+	/**
+	 * このタブで押した発信者に近い人の点を上げる。
+	 *
+	 * @param array<int,float> $final 最終点（書き換える）。
+	 * @param int[]            $seeds 押した発信者（新しい順）。
+	 * @return int[] 上げた人。
+	 */
+	private static function session_boost( array &$final, array $seeds ) {
+		arsort( $final );
+		$pool   = array_slice( array_keys( $final ), 0, 80 );
+		$genres = array();
+		foreach ( $seeds as $id ) {
+			$terms = get_the_terms( $id, SNSCS_Post_Types::TAX_GENRE );
+			foreach ( $terms && ! is_wp_error( $terms ) ? $terms : array() as $term ) {
+				$genres[ (int) $term->term_id ] = true;
+			}
+		}
+		$co      = SNSCS_Personalize::predict( $seeds, 60 );
+		$co_max  = $co ? max( $co ) : 1;
+		$top     = $final ? max( $final ) : 100;
+		$boosted = array();
+		update_object_term_cache( $pool, SNSCS_Post_Types::POST_TYPE );
+		foreach ( $pool as $id ) {
+			if ( in_array( $id, $seeds, true ) ) {
+				continue;
+			}
+			$bonus = 0.0;
+			$terms = get_the_terms( $id, SNSCS_Post_Types::TAX_GENRE );
+			foreach ( $terms && ! is_wp_error( $terms ) ? $terms : array() as $term ) {
+				if ( isset( $genres[ (int) $term->term_id ] ) ) {
+					$bonus += 0.06;
+					break;
+				}
+			}
+			if ( isset( $co[ $id ] ) ) {
+				$bonus += 0.08 * $co[ $id ] / max( 1e-9, $co_max );
+			}
+			if ( $bonus > 0 ) {
+				$final[ $id ] += $bonus * $top;
+				$boosted[]     = $id;
+			}
+		}
+		return $boosted;
+	}
+
+	/**
+	 * チーム・ドラフト方式で2つの並びを混ぜる（どちらの並びから選んだかを覚える）。
+	 *
+	 * @return array{0:int[],1:array<int,string>} [混ぜた並び, 発信者ID => 'a' | 'b']
+	 */
+	public static function team_draft( array $a, array $b, $limit ) {
+		$out   = array();
+		$teams = array();
+		$count = array( 'a' => 0, 'b' => 0 );
+		$lists = array( 'a' => $a, 'b' => $b );
+		while ( count( $out ) < $limit && ( $lists['a'] || $lists['b'] ) ) {
+			// 選んだ数が少ない方から。同じならくじで決める。
+			if ( $count['a'] === $count['b'] ) {
+				$team = wp_rand( 0, 1 ) ? 'a' : 'b';
+			} else {
+				$team = $count['a'] < $count['b'] ? 'a' : 'b';
+			}
+			if ( ! $lists[ $team ] ) {
+				$team = 'a' === $team ? 'b' : 'a';
+			}
+			while ( $lists[ $team ] && isset( $teams[ $lists[ $team ][0] ] ) ) {
+				array_shift( $lists[ $team ] );
+			}
+			if ( ! $lists[ $team ] ) {
+				$count[ $team ] = PHP_INT_MAX;
+				if ( PHP_INT_MAX === $count['a'] && PHP_INT_MAX === $count['b'] ) {
+					break;
+				}
+				continue;
+			}
+			$id            = array_shift( $lists[ $team ] );
+			$out[]         = $id;
+			$teams[ $id ]  = $team;
+			$count[ $team ]++;
+		}
+		return array( $out, $teams );
 	}
 
 	/**

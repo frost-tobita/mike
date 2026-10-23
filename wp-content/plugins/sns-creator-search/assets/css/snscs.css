@@ -145,6 +145,9 @@
 
 .snscs-card__image {
 	flex: 0 0 64px;
+	align-self: flex-start;
+	width: 64px;
+	height: 64px;
 	border-radius: 50%;
 	object-fit: cover;
 }
@@ -7116,5 +7119,383 @@ body .snscs-quicknav a.snscs-quicknav__link {
 
 	.snscs-bioextra__table input[type="datetime-local"] {
 		width: 100%;
+	}
+}
+
+/* 検索の改良（1.21） */
+.snscs-understood {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 8px;
+	align-items: center;
+	margin: 8px 0 12px;
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: #eef2ff;
+	color: #1f2a6b;
+	font-size: 14px;
+}
+
+.snscs-understood a {
+	color: #1B27B0;
+	font-size: 13px;
+}
+
+.snscs-facets {
+	display: grid;
+	gap: 6px;
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.snscs-facets__row {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+}
+
+.snscs-facets__label {
+	flex: 0 0 5.5em;
+	color: #6b7280;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.snscs-facets .snscs-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-facets .snscs-chip,
+.snscs-related .snscs-chip {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	padding: 3px 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 999px;
+	background: #fff;
+	color: #1f2937;
+	font-size: 13px;
+	text-decoration: none;
+}
+
+.snscs-facets .snscs-chip:hover {
+	border-color: #1B27B0;
+	color: #1B27B0;
+}
+
+.snscs-facets .snscs-chip.is-current {
+	border-color: #1B27B0;
+	background: #1B27B0;
+	color: #fff;
+}
+
+.snscs-facets .snscs-chip__count {
+	color: #6b7280;
+	font-size: 11px;
+}
+
+.snscs-savesearch {
+	margin: 0 0 12px;
+	font-size: 13px;
+}
+
+.snscs-savesearch__btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 14px;
+	border: 1px dashed #1B27B0;
+	border-radius: 999px;
+	background: #fff;
+	color: #1B27B0;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 700;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.snscs-savesearch__btn:hover {
+	background: #eef2ff;
+}
+
+.snscs-export {
+	margin-left: 8px;
+	font-size: 12px;
+}
+
+.snscs-card__why {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 2px 0 6px;
+}
+
+.snscs-card__why span {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #ecfdf5;
+	color: #047857;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.snscs-card__excerpt mark {
+	padding: 0 1px;
+	border-radius: 3px;
+	background: #fef08a;
+	color: inherit;
+	font-weight: 700;
+}
+
+.snscs-cmpbtn {
+	margin-top: 8px;
+	padding: 3px 12px;
+	border: 1px solid #c7d2fe;
+	border-radius: 999px;
+	background: #fff;
+	color: #1B27B0;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.snscs-cmpbtn.is-on {
+	border-color: #1B27B0;
+	background: #1B27B0;
+	color: #fff;
+}
+
+.snscs-cmptray {
+	position: fixed;
+	right: 12px;
+	bottom: 12px;
+	left: 12px;
+	z-index: 9990;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	align-items: center;
+	justify-content: center;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 10px 14px;
+	border-radius: 14px;
+	background: #111827;
+	color: #fff;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+	font-size: 14px;
+}
+
+.snscs-cmptray[hidden] {
+	display: none;
+}
+
+.snscs-cmptray__go {
+	padding: 6px 18px;
+	border-radius: 999px;
+	background: #45E39C;
+	color: #0b2e1f;
+	font-weight: 800;
+	text-decoration: none;
+}
+
+.snscs-cmptray__go.is-disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.snscs-cmptray__clear {
+	border: 0;
+	background: none;
+	color: #cbd5e1;
+	font: inherit;
+	font-size: 12px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.snscs-compare__scroll {
+	overflow-x: auto;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.snscs-compare__table {
+	width: 100%;
+	min-width: 520px;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.snscs-compare__table th,
+.snscs-compare__table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid #eef0f4;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.snscs-compare__table tbody th {
+	position: sticky;
+	left: 0;
+	background: #f9fafb;
+	color: #4b5563;
+	font-size: 12px;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.snscs-compare__table thead a {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	align-items: center;
+	color: #111827;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.snscs-compare__table thead img,
+.snscs-compare__initial {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-compare__initial {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: #eef2ff;
+	color: #1B27B0;
+	font-size: 22px;
+}
+
+.snscs-compare__table td.is-best {
+	background: #ecfdf5;
+	color: #047857;
+	font-weight: 700;
+}
+
+.snscs-compare__ok {
+	color: #047857;
+}
+
+.snscs-bulk,
+.snscs-bizplan,
+.snscs-promo .snscs-fields {
+	margin-top: 20px;
+}
+
+.snscs-bulk__teaser {
+	margin-top: 14px;
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: #fff7ed;
+	font-size: 14px;
+}
+
+.snscs-pr {
+	margin: 0 0 12px;
+}
+
+.snscs-card--pr {
+	position: relative;
+	border-color: #f59e0b;
+	background: #fffbeb;
+}
+
+.snscs-card__pr {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+	padding: 0 8px;
+	border: 1px solid #b45309;
+	border-radius: 4px;
+	color: #b45309;
+	font-size: 11px;
+	font-weight: 800;
+	line-height: 1.6;
+}
+
+.snscs-card__prmeta {
+	margin: 4px 0 0;
+	color: #6b7280;
+	font-size: 12px;
+}
+
+.snscs-related {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 10px;
+	align-items: center;
+	margin: 12px 0;
+}
+
+.snscs-related .snscs-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-related__label {
+	color: #6b7280;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.snscs-featurelink a {
+	display: inline-block;
+	padding: 8px 14px;
+	border-radius: 10px;
+	background: #f0f9ff;
+	color: #075985;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.snscs-saved {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-saved__item {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-saved__label {
+	flex: 1 1 260px;
+	font-weight: 700;
+}
+
+.snscs-saved__item form {
+	margin: 0;
+}
+
+@media (max-width: 600px) {
+	.snscs-facets__row {
+		flex-direction: column;
+		gap: 4px;
 	}
 }

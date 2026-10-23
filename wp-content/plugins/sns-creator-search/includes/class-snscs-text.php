@@ -144,6 +144,20 @@ class SNSCS_Text {
 					}
 				}
 			}
+			// AIが作った意味の近い言葉（SNSCS_Query）も、どれか1つがそろえば一致とみなす（重みは低め）。
+			foreach ( SNSCS_Query::expansions( $word ) as $alt ) {
+				$variant = array();
+				foreach ( array_keys( self::tokens( $alt ) ) as $term ) {
+					$hash      = self::hash( $term );
+					$variant[] = $hash;
+					if ( ! isset( $terms[ $hash ] ) ) {
+						$terms[ $hash ] = 0.5;
+					}
+				}
+				if ( $variant ) {
+					$variants[] = $variant;
+				}
+			}
 			if ( $terms ) {
 				$groups[] = array( 'label' => $word, 'terms' => $terms, 'variants' => array_values( array_filter( $variants ) ) );
 			}

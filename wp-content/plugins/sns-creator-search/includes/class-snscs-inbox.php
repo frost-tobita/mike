@@ -30,7 +30,7 @@ class SNSCS_Inbox {
 	const KEEP_DAYS   = 90;
 
 	/** メールで送る種類 */
-	const EMAIL_TYPES = array( 'award', 'collab', 'collab_ok', 'qa_answer', 'qa_best', 'listed', 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction', 'biolink_week', 'biolink_nudge' );
+	const EMAIL_TYPES = array( 'award', 'collab', 'collab_ok', 'qa_answer', 'qa_best', 'listed', 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction', 'biolink_week', 'biolink_nudge', 'saved_search' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'schedule' ) );
@@ -239,6 +239,8 @@ class SNSCS_Inbox {
 			case 'biolink_week':
 			case 'biolink_nudge':
 				return SNSCS_Biolink::describe( $row );
+			case 'saved_search':
+				return SNSCS_Search_UI::describe( $row );
 			case 'reaction':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "あなたの記事「{$title}」に、いいね・リポストが{$count}件ありました。", 'url' => get_permalink( $object ) ) : null;
 		}

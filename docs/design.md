@@ -463,6 +463,13 @@
 - `SNSCS_Biolink_Extra`: 設定は `_snscs_link_extra` に1つ。期間（`sched`。キーはボタンのキーと tip・line・mail）、応援（決まったサービスのホストとパスだけ。文言は選ぶだけ）、有料リンク（審査済みのリンクに値段と種類）、LINE、メールの登録（表 `snscs_bio_subs`。トークンで確認・登録をやめる。登録済みでも同じ表示にして、登録の有無を調べられないようにする。7日たった未確認は削除）、最新の投稿（YouTube はチャンネルIDを登録者数の取得から、無ければチャンネルのページから調べて RSS。note は RSS。ブログは載せているリンクの RSS を探す。リンクは同じホストのものだけ。`wp_safe_remote_get`、読み直しは裏で3時間ごと）
 - 押されたリンクの集計に、応援・LINE・最新の投稿（feed:yt など）も出す
 
+### フェーズ3.12（完了・1.21.0）: 検索の改良（大規模化への備え）
+- `SNSCS_Query`: 文章の読み解き（ひらがなを残した形とカタカナにした形を1文字ずつ対応させて、名前を見つけた場所を両方から消す。言い換え辞書の言葉は絞り込みにしない）、AIの言い換え（表 `snscs_qexp`。Batches APIで1時間ごと）、0件の言葉（表 `snscs_zero_queries`）
+- `SNSCS_Feedback`: 行動の記録に言葉の番号（qhash）。毎晩、言葉×発信者の選ばれやすさ（表 `snscs_query_boost`、0.7〜1.6倍）
+- `SNSCS_Ranker`: 選ばれやすさ・さっき見た人（クッキー snscs_ss）・インターリーブ（チーム・ドラフト。行動の記録の bucket に a/b）・結果を覚える（`SNSCS_Search_Cache`。世代の番号で古いものにする）
+- `SNSCS_Scores`: 信号「伸び率」（7〜60日前の記録と比べる。週1回、全員の数を記録）。表に growth 列
+- `SNSCS_Search_UI`（件数つき絞り込み・理由・色付け・比べる・保存した検索 `snscs_saved_searches`）、`SNSCS_Search_Quality`（表 `snscs_search_daily`）、`SNSCS_Promo`（表 `snscs_promos`・`snscs_promo_stats`。一般化第二価格）、`SNSCS_Business`（ユーザーメタ `_snscs_biz_until`）、`SNSCS_Ads` の内容合わせ
+
 ### フェーズ4: 大規模化
 - 検索エンジン部分を OpenSearch または Meilisearch に差し替え（`snscs_search_backend` フィルター）
 - 検索結果のキャッシュ、サーバーの分離

@@ -490,6 +490,7 @@ class SNSCS_Features {
 		?>
 		<p class="snscs-feature__lead">SNSとジャンル・地域の組み合わせから、発信者を探せます。</p>
 		<?php
+		echo SNSCS_Search_UI::popular_conditions_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		foreach ( snscs_platforms() as $key => $label ) {
 			$total = isset( self::combos()[ $key . '||' ] ) ? self::combos()[ $key . '||' ] : 0;
 			if ( ! $total ) {

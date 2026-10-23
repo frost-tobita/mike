@@ -42,6 +42,12 @@ class SNSCS_Feedback {
 		return $wpdb->prefix . 'snscs_creator_feedback';
 	}
 
+	/** 言葉ごとの「選ばれやすさ」（1.21）。 */
+	public static function boost_table() {
+		global $wpdb;
+		return $wpdb->prefix . 'snscs_query_boost';
+	}
+
 	public static function install() {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -58,12 +64,23 @@ class SNSCS_Feedback {
   explore tinyint(1) unsigned NOT NULL DEFAULT 0,
   rel float NOT NULL DEFAULT 0,
   has_q tinyint(1) unsigned NOT NULL DEFAULT 0,
+  qhash int(10) unsigned NOT NULL DEFAULT 0,
   clicked tinyint(1) unsigned NOT NULL DEFAULT 0,
   good tinyint(1) unsigned NOT NULL DEFAULT 0,
   bounce tinyint(1) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (qid,creator_id),
   KEY day (day),
   KEY creator_day (creator_id,day)
+) {$charset};"
+		);
+		$boost = self::boost_table();
+		dbDelta(
+			"CREATE TABLE {$boost} (
+  qhash int(10) unsigned NOT NULL,
+  creator_id bigint(20) unsigned NOT NULL,
+  clicks int(10) unsigned NOT NULL DEFAULT 0,
+  boost float NOT NULL DEFAULT 1,
+  PRIMARY KEY  (qhash,creator_id)
 ) {$charset};"
 		);
 		dbDelta(
@@ -99,11 +116,12 @@ class SNSCS_Feedback {
 	 * 検索結果の表示を記録する。
 	 *
 	 * @param string $qid   検索1回の番号。
-	 * @param array  $rows  [creator_id, pos, explore, rel] の配列。
+	 * @param array  $rows  [creator_id, pos, explore, rel, 組（混ぜて比べるとき。省略可）] の配列。
 	 * @param string $bucket A/Bテストの組（a / b）。
 	 * @param bool   $has_q  キーワードがある検索か。
+	 * @param int    $qhash  言葉の番号（SNSCS_Text::hash。言葉が無ければ 0）。
 	 */
-	public static function log_impressions( $qid, array $rows, $bucket, $has_q ) {
+	public static function log_impressions( $qid, array $rows, $bucket, $has_q, $qhash = 0 ) {
 		global $wpdb;
 		if ( ! $rows || SNSCS_Referrals::is_bot_request() || current_user_can( 'edit_others_posts' ) ) {
 			return false;
@@ -115,10 +133,10 @@ class SNSCS_Feedback {
 		$day    = current_time( 'Y-m-d' );
 		$values = array();
 		foreach ( $rows as $row ) {
-			$values[] = $wpdb->prepare( '(%s, %s, %d, %d, %s, %d, %f, %d)', $qid, $day, $row[0], $row[1], $bucket, $row[2] ? 1 : 0, $row[3], $has_q ? 1 : 0 );
+			$values[] = $wpdb->prepare( '(%s, %s, %d, %d, %s, %d, %f, %d, %d)', $qid, $day, $row[0], $row[1], isset( $row[4] ) ? $row[4] : $bucket, $row[2] ? 1 : 0, $row[3], $has_q ? 1 : 0, $qhash );
 		}
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$wpdb->query( 'INSERT IGNORE INTO ' . self::events_table() . ' (qid, day, creator_id, pos, bucket, explore, rel, has_q) VALUES ' . implode( ',', $values ) );
+		$wpdb->query( 'INSERT IGNORE INTO ' . self::events_table() . ' (qid, day, creator_id, pos, bucket, explore, rel, has_q, qhash) VALUES ' . implode( ',', $values ) );
 		return true;
 	}
 
@@ -273,7 +291,58 @@ class SNSCS_Feedback {
 		}
 		// phpcs:enable
 		update_option( 'snscs_avg_sat', $avg_sat, false );
+		self::aggregate_queries( $curve );
 		return count( $by );
+	}
+
+	/**
+	 * 言葉ごとの「選ばれやすさ」（Google の「その言葉で探した人に選ばれた結果を上げる」考え方）。
+	 *
+	 *   選ばれやすさ = (クリック + 0.5 × 満足 − 0.5 × すぐ戻る + 3) ÷ (その位置で期待されるクリック + 3)
+	 *   0.7〜1.6 の間にそろえる（データが少ないほど 1 に近い）。押されたことがあるか、20回以上表示された組だけ残す。
+	 */
+	public static function aggregate_queries( array $curve ) {
+		global $wpdb;
+		$events = self::events_table();
+		$table  = self::boost_table();
+		$case   = 'CASE pos';
+		foreach ( $curve as $pos => $ctr ) {
+			$case .= ' WHEN ' . (int) $pos . ' THEN ' . sprintf( '%.6F', $ctr );
+		}
+		$top   = isset( $curve[1] ) ? $curve[1] : 0.2;
+		$case .= ' ELSE ' . sprintf( '%.6F', $top ) . ' / GREATEST(1, pos) END';
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( "SELECT qhash, creator_id, COUNT(*) AS imp, SUM(clicked) AS clk, SUM(good) AS good, SUM(bounce) AS bounce, SUM({$case}) AS expected FROM {$events} WHERE qhash > 0 AND explore = 0 GROUP BY qhash, creator_id HAVING clk > 0 OR imp >= 20", ARRAY_A );
+		$wpdb->query( "DELETE FROM {$table}" );
+		$values = array();
+		foreach ( $rows as $r ) {
+			$boost    = ( (int) $r['clk'] + 0.5 * (int) $r['good'] - 0.5 * (int) $r['bounce'] + 3 ) / ( (float) $r['expected'] + 3 );
+			$values[] = $wpdb->prepare( '(%d, %d, %d, %f)', $r['qhash'], $r['creator_id'], $r['clk'], min( 1.6, max( 0.7, $boost ) ) );
+		}
+		foreach ( array_chunk( $values, 500 ) as $chunk ) {
+			$wpdb->query( "INSERT INTO {$table} (qhash, creator_id, clicks, boost) VALUES " . implode( ',', $chunk ) );
+		}
+		// phpcs:enable
+		return count( $values );
+	}
+
+	/**
+	 * その言葉での選ばれやすさ（発信者ID => 倍率）。
+	 *
+	 * @return array<int,float>
+	 */
+	public static function query_boosts( $qhash ) {
+		global $wpdb;
+		if ( ! $qhash ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT creator_id, boost FROM ' . self::boost_table() . ' WHERE qhash = %d LIMIT 2000', $qhash ), ARRAY_A );
+		$out  = array();
+		foreach ( $rows as $r ) {
+			$out[ (int) $r['creator_id'] ] = (float) $r['boost'];
+		}
+		return $out;
 	}
 
 	/**
@@ -319,6 +388,7 @@ class SNSCS_Feedback {
 		if ( SNSCS_Post_Types::POST_TYPE === get_post_type( $post_id ) ) {
 			$wpdb->delete( self::events_table(), array( 'creator_id' => $post_id ), array( '%d' ) );
 			$wpdb->delete( self::table(), array( 'creator_id' => $post_id ), array( '%d' ) );
+			$wpdb->delete( self::boost_table(), array( 'creator_id' => $post_id ), array( '%d' ) );
 		}
 	}
 }
