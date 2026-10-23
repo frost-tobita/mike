@@ -103,6 +103,7 @@ class SNSCS_Hub {
 			'ogp'                => 1,
 			'share_font'         => '',
 			'trend_min_visitors' => 3,
+			'search_trend_count' => 8,
 			'trend_block'        => '',
 			'trend_alerts'       => 1,
 			'newsletter_auto'    => 0,
@@ -223,6 +224,7 @@ class SNSCS_Hub {
 		$settings['personal_strength']  = min( 80, max( 0, (int) ( $in['personal_strength'] ?? 30 ) ) );
 		$settings['feature_min']        = min( 50, max( 1, (int) ( $in['feature_min'] ?? 3 ) ) );
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
+		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
 		$settings['newsletter_day']     = min( 6, max( 0, (int) ( $in['newsletter_day'] ?? 1 ) ) );
 		$settings['newsletter_hour']    = min( 23, max( 0, (int) ( $in['newsletter_hour'] ?? 8 ) ) );
 		$settings['trend_block']        = sanitize_textarea_field( (string) ( $in['trend_block'] ?? '' ) );
@@ -349,6 +351,11 @@ class SNSCS_Hub {
 						<th scope="row"><label for="trend_min_visitors">人気キーワードの条件</label></th>
 						<td><input id="trend_min_visitors" type="number" name="trend_min_visitors" min="1" max="100" value="<?php echo (int) $s['trend_min_visitors']; ?>" class="small-text"> 人以上が検索した言葉だけ表示
 						<p class="description">1人だけが調べた言葉（個人名など）が表に出ないようにするための条件です。</p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="search_trend_count">検索窓の下のトレンドワード</label></th>
+						<td><input id="search_trend_count" type="number" name="search_trend_count" min="0" max="20" value="<?php echo (int) $s['search_trend_count']; ?>" class="small-text"> 個まで表示
+						<p class="description">トップページの検索窓のすぐ下に、いま検索が増えている言葉（急上昇）と人気の言葉を並べます。足りないときは発信者の多いジャンルで補います。0 にすると表示しません。初期値 8個。</p></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="trend_block">表示しない言葉</label></th>

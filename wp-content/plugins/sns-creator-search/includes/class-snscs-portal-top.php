@@ -228,12 +228,33 @@ class SNSCS_Portal_Top {
 		return '<svg class="snscs-pt-tab__ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' . $path . '</svg>';
 	}
 
-	private static function search_band() {
-		$keywords = SNSCS_Trends::lists( 8 )['popular'];
-		if ( ! $keywords ) {
-			// まだ検索の記録が無いうちは、発信者の多いジャンルを出す。
-			$keywords = wp_list_pluck( get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'orderby' => 'count', 'order' => 'DESC', 'number' => 8, 'hide_empty' => true ) ) ?: array(), 'name' ); // phpcs:ignore WordPress.PHP.DisallowShortTernary.Found
+	/**
+	 * 検索窓の下に出すトレンドワード（急上昇 → 人気 → 発信者の多いジャンルの順に、決めた数まで）。
+	 *
+	 * @return array<int,array{term:string,hot:bool}>
+	 */
+	public static function trend_words( $limit ) {
+		if ( $limit <= 0 ) {
+			return array();
 		}
+		$out = array();
+		foreach ( SNSCS_Trends::ranking( '', $limit ) as $row ) {
+			$out[ mb_strtolower( $row['term'] ) ] = array( 'term' => $row['term'], 'hot' => (bool) $row['hot'] );
+		}
+		if ( count( $out ) < $limit ) {
+			$genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'orderby' => 'count', 'order' => 'DESC', 'number' => $limit, 'hide_empty' => false ) );
+			foreach ( is_wp_error( $genres ) ? array() : $genres as $genre ) {
+				if ( count( $out ) >= $limit ) {
+					break;
+				}
+				$out += array( mb_strtolower( $genre->name ) => array( 'term' => $genre->name, 'hot' => false ) );
+			}
+		}
+		return array_values( array_slice( $out, 0, $limit ) );
+	}
+
+	private static function search_band() {
+		$words = self::trend_words( (int) SNSCS_Hub::setting( 'search_trend_count' ) );
 		$tabs = array_merge( array( '' => 'すべて' ), snscs_platforms() );
 		ob_start();
 		?>
@@ -250,13 +271,30 @@ class SNSCS_Portal_Top {
 					<input id="snscs-pt-q" type="search" name="snscs_q" placeholder="発信者名・ジャンル・キーワードで探す">
 					<button type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg><span>検索</span></button>
 				</div>
-				<?php if ( $keywords ) : ?>
-					<p class="snscs-pt-search__keywords">
-						<span>注目のキーワード</span>
-						<?php foreach ( $keywords as $word ) : ?>
-							<a href="<?php echo esc_url( add_query_arg( 'snscs_q', rawurlencode( $word ), snscs_search_url() ) ); ?>"><?php echo esc_html( $word ); ?></a>
-						<?php endforeach; ?>
-					</p>
+				<?php if ( $words ) : ?>
+					<div class="snscs-pt-trendwords" aria-label="トレンドワード">
+						<span class="snscs-pt-trendwords__label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>トレンド</span>
+						<ul class="snscs-pt-trendwords__list">
+							<?php foreach ( $words as $word ) : ?>
+								<li><a class="snscs-pt-trendword<?php echo $word['hot'] ? ' snscs-pt-trendword--hot' : ''; ?>" href="<?php echo esc_url( add_query_arg( 'snscs_q', rawurlencode( $word['term'] ), snscs_search_url() ) ); ?>" data-q="<?php echo esc_attr( $word['term'] ); ?>"><?php if ( $word['hot'] ) : ?><span class="snscs-pt-trendword__hot">急上昇</span><?php endif; ?><?php echo esc_html( $word['term'] ); ?></a></li>
+							<?php endforeach; ?>
+						</ul>
+					</div>
+					<script>
+					( function () {
+						// 選んでいるSNSも一緒に渡す。
+						document.querySelectorAll( '.snscs-pt-trendword' ).forEach( function ( a ) {
+							a.addEventListener( 'click', function () {
+								var sns = document.querySelector( '.snscs-pt-tabs input:checked' );
+								if ( sns && sns.value ) {
+									var u = new URL( a.href );
+									u.searchParams.set( 'snscs_platform', sns.value );
+									a.href = u.toString();
+								}
+							} );
+						} );
+					} )();
+					</script>
 				<?php endif; ?>
 			</form>
 		</section>

@@ -2849,6 +2849,85 @@ body.snscs-portal-body .snscs-pt-search__keywords span {
 	text-decoration: none;
 }
 
+/* 検索窓の下のトレンドワード */
+body.snscs-portal-body .snscs-pt-trendwords {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin: 14px 0 0;
+}
+
+body.snscs-portal-body .snscs-pt-trendwords__label {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 4px;
+	min-height: 32px;
+	color: #c2410c;
+	font-size: 13px;
+	font-weight: 800;
+}
+
+body.snscs-portal-body ul.snscs-pt-trendwords__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-width: 0;
+}
+
+.snscs-portal-body .snscs-pt-trendword {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 32px;
+	padding: 0 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 999px;
+	background: #fff;
+	color: #1f2937;
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.snscs-portal-body .snscs-pt-trendword:hover {
+	border-color: #fb923c;
+	background: #fff7ed;
+	color: #9a3412;
+	text-decoration: none;
+}
+
+.snscs-portal-body .snscs-pt-trendword--hot {
+	border-color: #fed7aa;
+}
+
+.snscs-pt-trendword__hot {
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #f97316;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 800;
+	line-height: 18px;
+}
+
+@media (max-width: 759px) {
+	body.snscs-portal-body .snscs-pt-trendwords {
+		margin-right: -16px;
+	}
+
+	body.snscs-portal-body ul.snscs-pt-trendwords__list {
+		flex-wrap: nowrap;
+		padding-right: 16px;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.snscs-pt-trendwords__list::-webkit-scrollbar {
+		display: none;
+	}
+}
+
 /* トップ: 3つの列 */
 body.snscs-portal-body .snscs-pt-columns {
 	display: grid;
