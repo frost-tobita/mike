@@ -700,6 +700,7 @@ class SNSCS_English {
 <?php endif; ?>
 <?php endif; ?>
 <link rel="stylesheet" href="<?php echo esc_url( SNSCS_URL . 'assets/css/snscs-en.css?ver=' . SNSCS_VERSION ); ?>">
+<?php echo SNSCS_Brand::on() ? SNSCS_Brand::icons_html() : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 <?php if ( $page['jsonld'] ) : ?>
 <script type="application/ld+json"><?php echo wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => $page['jsonld'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ); ?></script>
 <?php endif; ?>
@@ -707,7 +708,11 @@ class SNSCS_English {
 <body>
 <header class="en-header">
 	<div class="en-wrap en-header__in">
-		<a class="en-logo" href="<?php echo esc_url( $home ); ?>"><?php echo esc_html( $site ); ?><span>Japanese Creator Directory</span></a>
+		<?php if ( SNSCS_Brand::on() ) : ?>
+			<a class="en-logo en-logo--brand" href="<?php echo esc_url( $home ); ?>"><img src="<?php echo esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ); ?>" alt="" width="36" height="36"><span class="en-logo__text"><img src="<?php echo esc_url( SNSCS_Brand::url( 'follofind-wordmark.png' ) ); ?>" alt="<?php echo esc_attr( SNSCS_Brand::NAME ); ?>" width="120" height="24"><span>Japanese Creator Directory</span></span></a>
+		<?php else : ?>
+			<a class="en-logo" href="<?php echo esc_url( $home ); ?>"><?php echo esc_html( $site ); ?><span>Japanese Creator Directory</span></a>
+		<?php endif; ?>
 		<nav class="en-nav" aria-label="Main">
 			<a href="<?php echo esc_url( $home ); ?>">Creators</a>
 			<?php if ( SNSCS_Hub::page_id( 'glossary' ) ) : ?>

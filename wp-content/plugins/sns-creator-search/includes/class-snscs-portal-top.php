@@ -449,7 +449,8 @@ class SNSCS_Portal_Top {
 		if ( $total >= 10 ) {
 			$stats = '<ul class="snscs-pt-hero__stats"><li><strong>' . esc_html( number_format_i18n( $total ) ) . '</strong>人の発信者</li><li><strong>' . esc_html( number_format_i18n( max( 1, $genres ) ) ) . '</strong>ジャンル</li><li><strong>' . count( snscs_platforms() ) . '</strong>つのSNS</li></ul>';
 		}
-		return '<section class="snscs-pt-hero' . ( $total >= 300 ? ' snscs-pt-hero--compact' : '' ) . '"><p class="snscs-pt-hero__title">' . esc_html( $title ) . '</p>'
+		$brand = SNSCS_Brand::on() && '' !== SNSCS_Brand::tagline() ? '<p class="snscs-pt-hero__brand"><img src="' . esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ) . '" alt="" width="22" height="22">' . esc_html( SNSCS_Brand::NAME . '｜' . SNSCS_Brand::tagline() ) . '</p>' : '';
+		return '<section class="snscs-pt-hero' . ( $total >= 300 ? ' snscs-pt-hero--compact' : '' ) . '">' . $brand . '<p class="snscs-pt-hero__title">' . esc_html( $title ) . '</p>'
 			. ( '' !== $text ? '<p class="snscs-pt-hero__text">' . esc_html( $text ) . '</p>' : '' )
 			. '<p class="snscs-pt-hero__btns"><a class="snscs-pt-hero__btn" href="' . esc_url( snscs_search_url() ) . '">発信者を探す</a><a class="snscs-pt-hero__btn snscs-pt-hero__btn--sub" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a></p>'
 			. $stats . '</section>';

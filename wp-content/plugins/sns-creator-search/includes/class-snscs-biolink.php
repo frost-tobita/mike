@@ -763,6 +763,7 @@ class SNSCS_Biolink {
 <meta property="og:url" content="<?php echo esc_url( self::url( $creator_id ) ); ?>">
 <meta property="og:image" content="<?php echo esc_url( SNSCS_Share::share_url( $creator_id ) ); ?>">
 <meta name="twitter:card" content="summary_large_image">
+<?php echo SNSCS_Brand::on() ? SNSCS_Brand::icons_html() : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 <script type="application/ld+json"><?php echo wp_json_encode( $ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ); ?></script>
 <style>
 *{box-sizing:border-box}
@@ -791,6 +792,8 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 .bio__foot{margin-top:36px;padding-top:20px;border-top:1px solid <?php echo esc_html( $t['border'] ); ?>;font-size:.85em}
 .bio__foot a{color:<?php echo esc_html( $t['text'] ); ?>}
 .bio__foot p{margin:6px 0}
+.bio__brand a{display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none}
+.bio__brand img{border-radius:6px}
 .bio__make{display:inline-block;margin-top:8px;padding:6px 16px;border:1px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;text-decoration:none}
 .bio__actions{display:flex;justify-content:center;gap:8px;margin:0 0 16px}
 .bio__followform{margin:0}
@@ -872,7 +875,11 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 	<?php endif; ?>
 
 	<footer class="bio__foot">
-		<p><a href="<?php echo esc_url( $search ); ?>"><?php echo esc_html( $l( $site . 'でほかの発信者を探す', 'Discover Japanese creators on ' . $site ) ); ?></a></p>
+		<?php if ( SNSCS_Brand::on() ) : ?>
+			<p class="bio__brand"><a href="<?php echo esc_url( $search ); ?>"><img src="<?php echo esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ); ?>" alt="" width="22" height="22"><?php echo esc_html( $l( SNSCS_Brand::NAME . 'でほかの発信者を探す', 'Discover more creators on ' . SNSCS_Brand::NAME ) ); ?></a></p>
+		<?php else : ?>
+			<p><a href="<?php echo esc_url( $search ); ?>"><?php echo esc_html( $l( $site . 'でほかの発信者を探す', 'Discover Japanese creators on ' . $site ) ); ?></a></p>
+		<?php endif; ?>
 		<?php if ( ! $english ) : ?>
 			<a class="bio__make" href="<?php echo esc_url( $join ); ?>">あなたもマイリンクを作る（無料）</a>
 		<?php endif; ?>

@@ -340,9 +340,16 @@ class SNSCS_Push {
 	 * サービスワーカー・マニフェスト・画面
 	 * ------------------------------------------------------------------ */
 
-	public static function icon_url() {
-		$icon = get_site_icon_url( 192 );
-		return $icon ? $icon : SNSCS_URL . 'assets/img/app-icon.png';
+	public static function icon_url( $size = 192 ) {
+		$icon = get_site_icon_url( $size );
+		if ( $icon ) {
+			return $icon;
+		}
+		return SNSCS_Brand::on() ? SNSCS_Brand::url( 512 === $size ? 'follofind-icon-512.png' : 'follofind-icon-192.png' ) : SNSCS_URL . 'assets/img/app-icon.png';
+	}
+
+	private static function theme_color() {
+		return SNSCS_Brand::on() ? SNSCS_Brand::BLUE : '#1e3a8a';
 	}
 
 	/**
@@ -368,11 +375,11 @@ class SNSCS_Push {
 					'scope'            => home_url( '/' ),
 					'display'          => 'standalone',
 					'background_color' => '#ffffff',
-					'theme_color'      => '#1e3a8a',
+					'theme_color'      => self::theme_color(),
 					'lang'             => 'ja',
 					'icons'            => array(
 						array( 'src' => self::icon_url(), 'sizes' => '192x192', 'type' => 'image/png' ),
-						array( 'src' => get_site_icon_url( 512 ) ? get_site_icon_url( 512 ) : self::icon_url(), 'sizes' => '512x512', 'type' => 'image/png' ),
+						array( 'src' => self::icon_url( 512 ), 'sizes' => '512x512', 'type' => 'image/png' ),
 					),
 				),
 				JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -384,9 +391,12 @@ class SNSCS_Push {
 
 	public static function head() {
 		echo '<link rel="manifest" href="' . esc_url( home_url( '/?snscs_manifest=1' ) ) . '">' . "\n";
-		echo '<meta name="theme-color" content="#1e3a8a">' . "\n";
 		echo '<meta name="apple-mobile-web-app-capable" content="yes">' . "\n";
-		echo '<link rel="apple-touch-icon" href="' . esc_url( self::icon_url() ) . '">' . "\n";
+		// ブランドを使うときは、色とホーム画面のアイコンを SNSCS_Brand が出す。
+		if ( ! SNSCS_Brand::on() ) {
+			echo '<meta name="theme-color" content="' . esc_attr( self::theme_color() ) . '">' . "\n";
+			echo '<link rel="apple-touch-icon" href="' . esc_url( self::icon_url() ) . '">' . "\n";
+		}
 	}
 
 	public static function enqueue() {

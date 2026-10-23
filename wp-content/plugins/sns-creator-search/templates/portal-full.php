@@ -26,7 +26,9 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 <div class="snscs-ph" role="banner">
 	<div class="snscs-ph__inner">
 		<a class="snscs-ph__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-			<?php if ( has_custom_logo() ) : ?>
+			<?php if ( SNSCS_Brand::on() ) : ?>
+				<?php echo SNSCS_Brand::header_logo(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+			<?php elseif ( has_custom_logo() ) : ?>
 				<?php echo wp_get_attachment_image( (int) get_theme_mod( 'custom_logo' ), 'medium', false, array( 'class' => 'snscs-ph__logo-image', 'alt' => get_bloginfo( 'name' ) ) ); ?>
 			<?php else : ?>
 				<?php bloginfo( 'name' ); ?>
@@ -77,6 +79,9 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 
 <div class="snscs-pf" role="contentinfo">
 	<div class="snscs-pf__inner">
+		<?php if ( SNSCS_Brand::on() ) : ?>
+			<?php echo SNSCS_Brand::footer_logo(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+		<?php endif; ?>
 		<?php if ( has_nav_menu( 'snscs_portal_footer' ) ) : ?>
 			<?php
 			wp_nav_menu(

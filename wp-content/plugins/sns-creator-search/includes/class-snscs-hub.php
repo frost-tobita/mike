@@ -106,6 +106,8 @@ class SNSCS_Hub {
 			'search_trend_count' => 8,
 			'founders_limit'     => 100,
 			'portal_scope'       => 'plugin',
+			'brand_on'           => 1,
+			'brand_tagline'      => 'SNS特化型サーチエンジン',
 			'hero_title'         => 'SNSで活躍する発信者が、きっと見つかる',
 			'hero_text'          => 'X・YouTube・Instagram・TikTokなどの発信者を、ジャンルやSNSから探せます。',
 			'trend_block'        => '',
@@ -222,7 +224,7 @@ class SNSCS_Hub {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verify() で確認済み。
 		$in       = wp_unslash( $_POST );
 		$settings = self::settings();
-		foreach ( array( 'personalize', 'ogp', 'newsletter_auto', 'inquiry_copy_admin', 'quick_nav', 'trend_alerts' ) as $key ) {
+		foreach ( array( 'personalize', 'ogp', 'newsletter_auto', 'inquiry_copy_admin', 'quick_nav', 'trend_alerts', 'brand_on' ) as $key ) {
 			$settings[ $key ] = empty( $in[ $key ] ) ? 0 : 1;
 		}
 		$settings['personal_strength']  = min( 80, max( 0, (int) ( $in['personal_strength'] ?? 30 ) ) );
@@ -230,6 +232,7 @@ class SNSCS_Hub {
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
 		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
 		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 100 ) ) );
+		$settings['brand_tagline']      = mb_substr( sanitize_text_field( (string) ( $in['brand_tagline'] ?? '' ) ), 0, 40 );
 		$settings['portal_scope']       = in_array( $in['portal_scope'] ?? '', array( 'top', 'plugin', 'site' ), true ) ? $in['portal_scope'] : 'plugin';
 		$settings['hero_title']         = mb_substr( sanitize_text_field( (string) ( $in['hero_title'] ?? '' ) ), 0, 60 );
 		$settings['hero_text']          = mb_substr( sanitize_text_field( (string) ( $in['hero_text'] ?? '' ) ), 0, 120 );
@@ -368,6 +371,12 @@ class SNSCS_Hub {
 						<th scope="row"><label for="search_trend_count">検索窓の下のトレンドワード</label></th>
 						<td><input id="search_trend_count" type="number" name="search_trend_count" min="0" max="20" value="<?php echo (int) $s['search_trend_count']; ?>" class="small-text"> 個まで表示
 						<p class="description">トップページの検索窓のすぐ下に、いま検索が増えている言葉（急上昇）と人気の言葉を並べます。足りないときは発信者の多いジャンルで補います。0 にすると表示しません。初期値 8個。</p></td>
+					</tr>
+					<tr>
+						<th scope="row">ブランド（FolloFind）</th>
+						<td><label><input type="checkbox" name="brand_on" value="1" <?php checked( $s['brand_on'] ); ?>> ヘッダー・フッターに FolloFind のロゴを出し、ブラウザのタブとスマホのホーム画面にアイコンを出す</label>
+						<p><label for="brand_tagline">ひとこと（ロゴの下）</label><br><input id="brand_tagline" type="text" name="brand_tagline" maxlength="40" value="<?php echo esc_attr( $s['brand_tagline'] ); ?>" class="regular-text"></p>
+						<p class="description">WordPress の「サイトアイコン」を設定しているときは、タブのアイコンはそちらを使います。SNSでシェアされたときの画像は、<a href="<?php echo esc_url( SNSCS_Brand::url( 'follofind-og.jpg' ) ); ?>" target="_blank">こちら（1200×630）</a>を保存して、テーマやSEOのプラグインの「OGP画像」に設定してください。</p></td>
 					</tr>
 					<tr>
 						<th scope="row">ポータルの見た目にするページ</th>
