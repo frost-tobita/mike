@@ -390,7 +390,7 @@ class SNSCS_Lists {
 			<?php $items = self::items( (int) $list['id'] ); ?>
 			<details class="snscs-list-edit">
 				<summary><strong><?php echo esc_html( $list['title'] ); ?></strong>（<?php echo (int) $list['items']; ?>人・いいね<?php echo (int) $list['likes']; ?>）<?php echo $list['status'] ? '' : ' <span class="snscs-badge">非表示</span>'; ?> — <a href="<?php echo esc_url( self::url( (int) $list['id'] ) ); ?>">ページを見る</a></summary>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_list_save">
 					<input type="hidden" name="list" value="<?php echo (int) $list['id']; ?>">
 					<?php wp_nonce_field( 'snscs_list_save', 'snscs_nonce' ); ?>
@@ -413,7 +413,7 @@ class SNSCS_Lists {
 					<?php endif; ?>
 					<button type="submit" class="snscs-button snscs-button--primary">保存</button>
 				</form>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('このリストを消しますか？');">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" onsubmit="return confirm('このリストを消しますか？');">
 					<input type="hidden" name="action" value="snscs_list_delete">
 					<input type="hidden" name="list" value="<?php echo (int) $list['id']; ?>">
 					<?php wp_nonce_field( 'snscs_list_delete', 'snscs_nonce' ); ?>
@@ -422,7 +422,7 @@ class SNSCS_Lists {
 			</details>
 		<?php endforeach; ?>
 		<?php if ( count( $lists ) < self::MAX_LISTS ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-list-new">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-list-new">
 				<input type="hidden" name="action" value="snscs_list_save">
 				<?php wp_nonce_field( 'snscs_list_save', 'snscs_nonce' ); ?>
 				<h3>新しいリストを作る</h3>

@@ -277,7 +277,7 @@ class SNSCS_Press {
 		$r     = $all[ $month ] ?? null;
 		$form  = function ( $do, $label, $m, $primary = false ) {
 			?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline-block; margin-right: 6px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: inline-block; margin-right: 6px">
 				<input type="hidden" name="action" value="snscs_press_run">
 				<input type="hidden" name="month" value="<?php echo esc_attr( $m ); ?>">
 				<input type="hidden" name="do" value="<?php echo esc_attr( $do ); ?>">

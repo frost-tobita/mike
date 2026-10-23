@@ -266,7 +266,7 @@ class SNSCS_Collab {
 		?>
 		<details class="snscs-collab__apply">
 			<summary class="snscs-button snscs-button--primary">コラボを申し込む</summary>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_collab_request">
 				<input type="hidden" name="to" value="<?php echo (int) $to; ?>">
 				<?php wp_nonce_field( 'snscs_collab_request', 'snscs_nonce' ); ?>
@@ -394,7 +394,7 @@ class SNSCS_Collab {
 		?>
 		<section class="snscs-panel snscs-collab-portal" id="snscs-collab">
 			<h2 class="snscs-panel__title">コラボ相手探し</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_collab_settings">
 				<?php wp_nonce_field( 'snscs_collab_settings', 'snscs_nonce' ); ?>
 				<p><label><input type="checkbox" name="open" value="1" <?php checked( $open ); ?>> コラボ相手を募集中にする（<a href="<?php echo esc_url( SNSCS_Hub::page_url( 'collab' ) ); ?>">コラボ相手探し</a>に載ります）</label></p>
@@ -422,7 +422,7 @@ class SNSCS_Collab {
 					<p><strong><a href="<?php echo esc_url( get_permalink( (int) $row['from_creator'] ) ); ?>" target="_blank"><?php echo esc_html( get_the_title( (int) $row['from_creator'] ) ); ?></a></strong>（<?php echo esc_html( $status[ (int) $row['status'] ] ); ?>・<?php echo esc_html( mysql2date( 'n月j日', $row['created_at'] ) ); ?>）</p>
 					<p class="snscs-collab__message"><?php echo nl2br( esc_html( $row['message'] ) ); ?></p>
 					<?php if ( self::PENDING === (int) $row['status'] ) : ?>
-						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-collab__answer">
+						<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-collab__answer">
 							<input type="hidden" name="action" value="snscs_collab_respond">
 							<input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
 							<?php wp_nonce_field( 'snscs_collab_respond', 'snscs_nonce' ); ?>

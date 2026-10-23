@@ -243,7 +243,7 @@ class SNSCS_People {
 			<?php if ( $banned ) : ?>
 				<p class="snscs-notice snscs-notice--error">運営の判断で、プロフィールの公開を止めています。</p>
 			<?php endif; ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
 				<input type="hidden" name="action" value="snscs_profile_save">
 				<?php wp_nonce_field( 'snscs_profile_save', 'snscs_nonce' ); ?>
 				<p><label><input type="checkbox" name="public" value="1" <?php checked( $public ); ?>> プロフィールを公開する</label></p>

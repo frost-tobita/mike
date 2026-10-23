@@ -712,7 +712,7 @@ class SNSCS_Glossary {
 			<?php if ( ! SNSCS_Claude::has_key() ) : ?>
 				<p>AIの下書きには、「記事の自動投稿」の画面でAPIキーを設定してください。用語は「用語を追加」から手で書くこともできます。</p>
 			<?php else : ?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_glossary_ai">
 					<?php wp_nonce_field( 'snscs_glossary_ai', 'snscs_nonce' ); ?>
 					<p><label for="snscs-gl-words">用語集に入れたい言葉（1行に1つ、1回に<?php echo (int) self::AI_MAX; ?>つまで）</label></p>

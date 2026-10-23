@@ -1225,7 +1225,7 @@ class SNSCS_English {
 			<?php if ( ! SNSCS_Claude::has_key() ) : ?>
 				<p>英訳には、「記事の自動投稿」の画面でAPIキーを設定してください。</p>
 			<?php else : ?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top: 12px">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin-top: 12px">
 					<input type="hidden" name="action" value="snscs_english">
 					<input type="hidden" name="do" value="run">
 					<?php wp_nonce_field( 'snscs_english', 'snscs_nonce' ); ?>
@@ -1234,7 +1234,7 @@ class SNSCS_English {
 				</form>
 			<?php endif; ?>
 			<h2>設定</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_english">
 				<input type="hidden" name="do" value="save">
 				<?php wp_nonce_field( 'snscs_english', 'snscs_nonce' ); ?>

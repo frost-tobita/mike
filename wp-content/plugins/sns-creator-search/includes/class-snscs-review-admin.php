@@ -199,7 +199,7 @@ class SNSCS_Review_Admin {
 			<div class="snscs-decision">
 				<h2>審査結果</h2>
 				<p>SNSのリンクを開いて、本人のアカウントであること・フォロワー数が大きく違わないことを確認してください。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_review">
 					<input type="hidden" name="submission" value="<?php echo (int) $row['id']; ?>">
 					<?php wp_nonce_field( 'snscs_review_' . $row['id'], 'snscs_nonce' ); ?>

@@ -340,7 +340,7 @@ class SNSCS_Ads_Admin {
 				<div class="notice notice-success is-dismissible"><p>設定を保存しました。</p></div>
 			<?php endif; ?>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_ad_settings">
 				<?php wp_nonce_field( 'snscs_ad_settings', 'snscs_nonce' ); ?>
 				<table class="form-table" role="presentation">

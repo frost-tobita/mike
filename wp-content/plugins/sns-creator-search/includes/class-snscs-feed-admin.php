@@ -250,14 +250,14 @@ class SNSCS_Feed_Admin {
 				</tbody>
 			</table>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top: 16px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin-top: 16px">
 				<input type="hidden" name="action" value="snscs_feed_save">
 				<?php wp_nonce_field( 'snscs_feed_save', 'snscs_nonce' ); ?>
 				<label><input type="radio" name="mode" value="auto" <?php checked( 'manual' !== $model['mode'] ); ?>> 自動（学習した重みが良ければ使う。おすすめ）</label><br>
 				<label><input type="radio" name="mode" value="manual" <?php checked( 'manual', $model['mode'] ); ?>> 初期の重みだけを使う</label>
 				<?php submit_button( '保存', 'secondary', 'submit', false ); ?>
 			</form>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top: 8px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin-top: 8px">
 				<input type="hidden" name="action" value="snscs_feed_train">
 				<?php wp_nonce_field( 'snscs_feed_train', 'snscs_nonce' ); ?>
 				<?php submit_button( 'いま学習する', 'secondary', 'submit', false ); ?>

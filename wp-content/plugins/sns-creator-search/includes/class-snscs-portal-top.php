@@ -525,7 +525,7 @@ class SNSCS_Portal_Top {
 		<?php if ( $id && 'publish' === get_post_status( $id ) ) : ?>
 			<p>作成済み: <a href="<?php echo esc_url( get_permalink( $id ) ); ?>" target="_blank"><?php echo esc_html( get_the_title( $id ) ); ?></a></p>
 		<?php endif; ?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 			<input type="hidden" name="action" value="snscs_portal_top">
 			<?php wp_nonce_field( 'snscs_portal_top', 'snscs_nonce' ); ?>
 			<p><label><input type="checkbox" name="front" value="1" checked> サイトのトップページ（ホームページ）に設定する</label></p>

@@ -128,7 +128,7 @@ class SNSCS_UGC {
 	private static function toggle_button( $kind, $id, $visible ) {
 		ob_start();
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline">
+		<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: inline">
 			<input type="hidden" name="action" value="snscs_ugc_toggle">
 			<input type="hidden" name="kind" value="<?php echo esc_attr( $kind ); ?>">
 			<input type="hidden" name="id" value="<?php echo (int) $id; ?>">
@@ -212,7 +212,7 @@ class SNSCS_UGC {
 			</table>
 
 			<h2>使えない言葉</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_ugc_words">
 				<?php wp_nonce_field( 'snscs_ugc_words', 'snscs_nonce' ); ?>
 				<textarea name="words" rows="5" class="large-text"><?php echo esc_textarea( (string) get_option( self::OPTION, '' ) ); ?></textarea>

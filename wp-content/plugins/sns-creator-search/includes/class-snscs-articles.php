@@ -323,7 +323,7 @@ class SNSCS_Articles {
 				<p class="snscs-notice"><?php echo esc_html( sprintf( '%s に公開する予定です。', mysql2date( 'Y年n月j日 H:i', $article->post_date ) ) ); ?></p>
 			<?php endif; ?>
 
-			<form class="snscs-fields" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form class="snscs-fields" method="post" enctype="multipart/form-data" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_article_save">
 				<input type="hidden" name="article" value="<?php echo (int) $article_id; ?>">
 				<input type="hidden" name="thumbnail_id" value="<?php echo (int) $photo; ?>">
@@ -392,7 +392,7 @@ class SNSCS_Articles {
 			</form>
 
 			<?php if ( $article ) : ?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( 'この記事を削除します。元に戻せません。よろしいですか？' );" class="snscs-article-delete">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" onsubmit="return confirm( 'この記事を削除します。元に戻せません。よろしいですか？' );" class="snscs-article-delete">
 					<input type="hidden" name="action" value="snscs_article_delete">
 					<input type="hidden" name="article" value="<?php echo (int) $article_id; ?>">
 					<?php wp_nonce_field( 'snscs_article_delete', 'snscs_nonce' ); ?>

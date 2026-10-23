@@ -86,7 +86,7 @@ class SNSCS_Portal {
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">発信者としても掲載する</h2>
 				<p>いまは読者会員としてログインしています。同じアカウントのまま発信者として登録し、掲載の申請や記事の執筆ができます（フォロー・ブックマークなどはそのまま使えます）。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_become_creator">
 					<?php wp_nonce_field( 'snscs_become_creator', 'snscs_nonce' ); ?>
 					<label class="snscs-check"><input type="checkbox" name="agree" value="1" required> 掲載の条件（利用規約）に同意する</label>
@@ -137,6 +137,7 @@ class SNSCS_Portal {
 			'weak_password'  => array( 'error', sprintf( 'パスワードは%d文字以上にしてください。', self::MIN_PASSWORD ) ),
 			'agree'          => array( 'error', '掲載の条件に同意してください。' ),
 			'register_error' => array( 'error', '登録できませんでした。時間をおいてもう一度お試しください。' ),
+			'form_retry'     => array( 'error', '確認のため、もう一度入力して送信してください（ページを開いてから時間がたっていました）。' ),
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -180,7 +181,7 @@ class SNSCS_Portal {
 					<li>プロフィールとSNSアカウントを入力して申請</li>
 					<li>運営の審査に通ると掲載されます</li>
 				</ol>
-				<form class="snscs-fields" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form class="snscs-fields" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_register">
 					<?php wp_nonce_field( 'snscs_register', 'snscs_nonce' ); ?>
 					<label class="snscs-field">
@@ -314,7 +315,7 @@ class SNSCS_Portal {
 			<section class="snscs-panel snscs-danger">
 				<h2 class="snscs-panel__title">掲載をやめる</h2>
 				<p>すぐに検索結果と発信者ページから表示されなくなります（審査は不要です）。もう一度掲載するときは、改めて審査があります。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( '掲載を停止します。よろしいですか？' );">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" onsubmit="return confirm( '掲載を停止します。よろしいですか？' );">
 					<input type="hidden" name="action" value="snscs_unpublish">
 					<?php wp_nonce_field( 'snscs_unpublish', 'snscs_nonce' ); ?>
 					<button type="submit" class="snscs-button snscs-button--danger">掲載を停止する</button>
@@ -333,7 +334,7 @@ class SNSCS_Portal {
 				<li>届いたお仕事の相談の記録</li>
 			</ul>
 			<p>一時的に表示を止めたいだけなら、退会ではなく「掲載をやめる」をお使いください。</p>
-			<form class="snscs-fields" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( '退会すると、登録情報と掲載情報がすべて削除され、元に戻せません。本当に退会しますか？' );">
+			<form class="snscs-fields" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" onsubmit="return confirm( '退会すると、登録情報と掲載情報がすべて削除され、元に戻せません。本当に退会しますか？' );">
 				<input type="hidden" name="action" value="snscs_withdraw">
 				<?php wp_nonce_field( 'snscs_withdraw', 'snscs_nonce' ); ?>
 				<label class="snscs-field">
@@ -487,7 +488,7 @@ class SNSCS_Portal {
 				</div>
 			<?php endif; ?>
 
-			<form class="snscs-fields" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form class="snscs-fields" method="post" enctype="multipart/form-data" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_submit">
 				<input type="hidden" name="snscs_thumbnail_id" value="<?php echo (int) $data['thumbnail_id']; ?>">
 				<?php wp_nonce_field( 'snscs_submit', 'snscs_nonce' ); ?>
@@ -619,7 +620,7 @@ class SNSCS_Portal {
 
 	public static function handle_register() {
 		if ( ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_register' ) ) {
-			self::back( 'register_error' );
+			self::back( 'form_retry' );
 		}
 		if ( is_user_logged_in() ) {
 			self::back();

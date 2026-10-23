@@ -113,7 +113,7 @@ class SNSCS_Stories {
 			'instant' => '全員すぐ公開（問題があれば、あとから非公開にする）',
 		);
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin: 12px 0 20px; padding: 12px 16px; background: #fff; border: 1px solid #dcdcde">
+		<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin: 12px 0 20px; padding: 12px 16px; background: #fff; border: 1px solid #dcdcde">
 			<input type="hidden" name="action" value="snscs_publish_mode">
 			<?php wp_nonce_field( 'snscs_publish_mode', 'snscs_nonce' ); ?>
 			<strong>記事の公開のしかた</strong>

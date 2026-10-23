@@ -236,7 +236,7 @@ class SNSCS_Legal {
 
 			<h2>ページを作成する</h2>
 			<p>入力した内容が文面の中に入ります。空欄の項目は【運営者名】のように表示されるので、あとでページを編集して埋めてください。作成済みのページは作り直しません（作り直したいときは、そのページをゴミ箱に入れてから作成してください）。</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_legal_create">
 				<?php wp_nonce_field( 'snscs_legal_create', 'snscs_nonce' ); ?>
 				<table class="form-table" role="presentation">

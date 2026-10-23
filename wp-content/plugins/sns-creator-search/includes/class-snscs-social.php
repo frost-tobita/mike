@@ -144,15 +144,22 @@ class SNSCS_Social {
 
 	public static function handle_register() {
 		if ( ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_member_register' ) ) {
-			self::back( 'register_error' );
+			self::back( 'form_retry' );
 		}
 		$redirect = self::return_to();
 		if ( is_user_logged_in() ) {
 			self::back( 'logged_in', $redirect );
 		}
 		$token = isset( $_POST['snscs_ft'] ) ? sanitize_text_field( wp_unslash( $_POST['snscs_ft'] ) ) : '';
-		if ( ! empty( $_POST['snscs_website'] ) || ! snscs_check_form_token( $token ) || snscs_rate_limited( 'member_register', 5 ) ) {
+		if ( ! empty( $_POST['snscs_website'] ) ) {
 			self::back( 'register_error' );
+		}
+		// 開いてから早すぎる送信・古すぎるページは、もう一度押してもらう（キャッシュされたページなど）。
+		if ( ! snscs_check_form_token( $token, 2 ) ) {
+			self::back( 'form_retry' );
+		}
+		if ( snscs_rate_limited( 'member_register', 5 ) ) {
+			self::back( 'too_many' );
 		}
 		$email    = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 		$password = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- パスワードは加工しない。
@@ -187,7 +194,7 @@ class SNSCS_Social {
 
 	public static function handle_login() {
 		if ( ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_member_login' ) ) {
-			self::back( 'login_error' );
+			self::back( 'form_retry' );
 		}
 		$redirect = self::return_to();
 		if ( snscs_rate_limited( 'member_login', 20 ) ) {
@@ -801,6 +808,8 @@ class SNSCS_Social {
 			'weak_password'  => array( 'error', sprintf( 'パスワードは%d文字以上にしてください。', SNSCS_Portal::MIN_PASSWORD ) ),
 			'agree'          => array( 'error', '利用規約とプライバシーポリシーに同意してください。' ),
 			'register_error' => array( 'error', '登録できませんでした。時間をおいてもう一度お試しください。' ),
+			'form_retry'     => array( 'error', '確認のため、もう一度入力して送信してください（ページを開いてから時間がたっていたか、送信が早すぎました）。' ),
+			'too_many'       => array( 'error', '短い時間に何度も送信されたため、いったん受け付けを止めています。1時間ほどたってからお試しください。' ),
 			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
 			'error'          => array( 'error', 'もう一度お試しください。' ),
 		);
@@ -836,7 +845,7 @@ class SNSCS_Social {
 		<section class="snscs-panel">
 			<h2 class="snscs-panel__title">会員登録（無料）</h2>
 			<p>登録すると、気になる発信者をフォローして新しい記事をまとめて読めたり、記事にいいね・リポスト・ブックマークしたりできます。スマホとパソコンで同じ内容を使えます。</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
 				<input type="hidden" name="action" value="snscs_member_register">
 				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect ); ?>">
 				<input type="hidden" name="snscs_ft" value="<?php echo esc_attr( snscs_form_token() ); ?>">
@@ -851,7 +860,7 @@ class SNSCS_Social {
 		</section>
 		<section class="snscs-panel">
 			<h2 class="snscs-panel__title">ログイン</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
 				<input type="hidden" name="action" value="snscs_member_login">
 				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect ); ?>">
 				<?php wp_nonce_field( 'snscs_member_login', 'snscs_nonce' ); ?>
@@ -986,7 +995,7 @@ class SNSCS_Social {
 		<section class="snscs-panel snscs-danger">
 			<h2 class="snscs-panel__title">退会する</h2>
 			<p>退会すると、アカウントと、フォロー・いいね・リポスト・ブックマークの記録がすべて削除され、元に戻せません。</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
 				<input type="hidden" name="action" value="snscs_member_withdraw">
 				<?php wp_nonce_field( 'snscs_member_withdraw', 'snscs_nonce' ); ?>
 				<p><label>確認のため、パスワードを入力してください<br><input type="password" name="password" required autocomplete="current-password"></label></p>

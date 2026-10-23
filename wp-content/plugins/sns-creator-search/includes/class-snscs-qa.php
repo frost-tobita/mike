@@ -445,7 +445,7 @@ class SNSCS_QA {
 		?>
 		<details class="snscs-qa__ask">
 			<summary class="snscs-button snscs-button--primary">質問する</summary>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_qa_ask">
 				<?php wp_nonce_field( 'snscs_qa_ask', 'snscs_nonce' ); ?>
 				<p><label>題名（10〜100字）<input class="snscs-input" type="text" name="title" minlength="10" maxlength="100" required placeholder="例: Instagramのリールの再生数が伸びません"></label></p>
@@ -585,7 +585,7 @@ class SNSCS_QA {
 						<span class="snscs-help">参考になった <?php echo (int) $a['helpful']; ?></span>
 					<?php endif; ?>
 					<?php if ( $mine && ! $best ) : ?>
-						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline">
+						<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: inline">
 							<input type="hidden" name="action" value="snscs_qa_best">
 							<input type="hidden" name="answer" value="<?php echo (int) $a['id']; ?>">
 							<?php wp_nonce_field( 'snscs_qa_best', 'snscs_nonce' ); ?>
@@ -596,7 +596,7 @@ class SNSCS_QA {
 			</section>
 		<?php endforeach; ?>
 		<?php if ( $creator && 'publish' === get_post_status( $creator ) && ! $mine ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-qa__answer-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-qa__answer-form">
 				<input type="hidden" name="action" value="snscs_qa_answer">
 				<input type="hidden" name="question" value="<?php echo (int) $q['id']; ?>">
 				<?php wp_nonce_field( 'snscs_qa_answer', 'snscs_nonce' ); ?>

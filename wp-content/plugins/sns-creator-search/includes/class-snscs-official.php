@@ -539,7 +539,7 @@ class SNSCS_Official {
 			<p>サイト公式の Threads・X に、急上昇ワード・伸びた発信者・アワードの結果・トレンド記事を投稿します。発信者を @ で紹介すると、本人がリポストしてくれやすくなります。</p>
 
 			<h2>投稿の候補</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_official_run">
 				<?php wp_nonce_field( 'snscs_official_run', 'snscs_nonce' ); ?>
 				<button class="button" name="do" value="collect">いま候補を作る</button>
@@ -557,7 +557,7 @@ class SNSCS_Official {
 							<td><pre style="white-space: pre-wrap; margin: 0"><?php echo esc_html( self::compose( $item, 'threads' ) ); ?></pre></td>
 							<td><pre style="white-space: pre-wrap; margin: 0"><?php echo esc_html( $xt ); ?></pre><small><?php echo (int) self::x_length( $xt ); ?>/280</small></td>
 							<td>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+								<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 									<input type="hidden" name="action" value="snscs_official_run">
 									<input type="hidden" name="index" value="<?php echo (int) $i; ?>">
 									<?php wp_nonce_field( 'snscs_official_run', 'snscs_nonce' ); ?>
@@ -570,7 +570,7 @@ class SNSCS_Official {
 				</tbody>
 			</table>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_official_save">
 				<?php wp_nonce_field( 'snscs_official_save', 'snscs_nonce' ); ?>
 				<h2>設定</h2>

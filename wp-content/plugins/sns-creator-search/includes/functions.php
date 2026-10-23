@@ -241,3 +241,94 @@ function snscs_operator_info() {
 		'address'  => $info['address'],
 	);
 }
+
+/**
+ * フォームの送り先。サイトの表側のページでは「/?snscs_fp=1」（サイトのトップのアドレス）に送る。
+ *
+ * /wp-admin/admin-post.php は、セキュリティのプラグイン（SiteGuard WP Plugin の「管理ページアクセス制限」など）や、
+ * サーバーの設定（/wp-admin/ のBasic認証・WAF）で、ログインしていない人には開けないことが多い。
+ * そうなると会員登録やお問い合わせが送れなくなるため、表側のアドレスで受けて、同じ処理（admin_post_ のフック）に渡す。
+ * 管理画面の中のフォームは、これまでどおり admin-post.php に送る。
+ */
+function snscs_post_url() {
+	return is_admin() && ! wp_doing_ajax() ? admin_url( 'admin-post.php' ) : add_query_arg( 'snscs_fp', 1, home_url( '/' ) );
+}
+
+/**
+ * 表側のアドレスに届いたフォームを、admin-post.php と同じように処理する（このプラグインのものだけ）。
+ */
+function snscs_front_post() {
+	// phpcs:disable WordPress.Security.NonceVerification -- 確認は、それぞれの処理の中で行う。
+	if ( empty( $_GET['snscs_fp'] ) || is_admin() ) {
+		return;
+	}
+	$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
+	// phpcs:enable
+	if ( 0 !== strpos( $action, 'snscs_' ) ) {
+		return;
+	}
+	$hook = ( is_user_logged_in() ? 'admin_post_' : 'admin_post_nopriv_' ) . $action;
+	if ( ! has_action( $hook ) ) {
+		// ログインが要る処理なのにログインしていない（ログインの期限切れなど）。
+		wp_safe_redirect( is_user_logged_in() ? home_url( '/' ) : wp_login_url( wp_get_referer() ? wp_get_referer() : home_url( '/' ) ) );
+		exit;
+	}
+	nocache_headers();
+	do_action( $hook );
+	exit;
+}
+add_action( 'wp_loaded', 'snscs_front_post' );
+
+/**
+ * キャッシュされたページでも送れるように、ログインしていない人のフォームの合言葉を開いたときに新しくする。
+ * （ページのキャッシュが古いと、合言葉の期限が切れていて「登録できない」ことになるため）
+ */
+function snscs_public_form_actions() {
+	return array( 'snscs_member_register', 'snscs_member_login', 'snscs_register' );
+}
+
+function snscs_form_keys_route() {
+	register_rest_route(
+		'snscs/v1',
+		'/form-keys',
+		array(
+			'methods'             => 'GET',
+			'permission_callback' => '__return_true',
+			'callback'            => function () {
+				$nonces = array();
+				if ( ! is_user_logged_in() ) {
+					foreach ( snscs_public_form_actions() as $action ) {
+						$nonces[ $action ] = wp_create_nonce( $action );
+					}
+				}
+				$response = new WP_REST_Response( array( 'nonces' => $nonces, 'ft' => snscs_form_token() ) );
+				$response->header( 'Cache-Control', 'no-store, max-age=0' );
+				return $response;
+			},
+		)
+	);
+}
+add_action( 'rest_api_init', 'snscs_form_keys_route' );
+
+function snscs_form_keys_script() {
+	if ( is_user_logged_in() || is_admin() ) {
+		return;
+	}
+	?>
+<script>
+( function () {
+	var forms = document.querySelectorAll( 'form input[name="snscs_ft"], form input[name="snscs_form"], form input[name="action"][value^="snscs_"]' );
+	if ( ! forms.length || ! window.fetch ) { return; }
+	fetch( <?php echo wp_json_encode( esc_url_raw( rest_url( 'snscs/v1/form-keys' ) ) ); ?>, { credentials: 'same-origin', cache: 'no-store' } ).then( function ( r ) { return r.json(); } ).then( function ( keys ) {
+		document.querySelectorAll( 'form' ).forEach( function ( form ) {
+			var action = form.querySelector( 'input[name="action"]' );
+			var nonce = form.querySelector( 'input[name="snscs_nonce"]' );
+			if ( action && nonce && keys.nonces && keys.nonces[ action.value ] ) { nonce.value = keys.nonces[ action.value ]; }
+			form.querySelectorAll( 'input[name="snscs_ft"], input[name="snscs_form"]' ).forEach( function ( i ) { if ( keys.ft ) { i.value = keys.ft; } } );
+		} );
+	} ).catch( function () {} );
+} )();
+</script>
+	<?php
+}
+add_action( 'wp_footer', 'snscs_form_keys_script', 99 );

@@ -511,7 +511,7 @@ class SNSCS_Integrity {
 
 	private static function button( $id, $do, $label, $primary = false ) {
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline">
+		<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: inline">
 			<?php wp_nonce_field( 'snscs_integrity', 'snscs_nonce' ); ?>
 			<input type="hidden" name="action" value="snscs_integrity">
 			<input type="hidden" name="do" value="<?php echo esc_attr( $do ); ?>">
@@ -551,7 +551,7 @@ class SNSCS_Integrity {
 			</table>
 			<p class="description">理由が複数あるときは掛け合わせます（下限 ×<?php echo esc_html( self::FLOOR ); ?>）。また、同じ人が同じ発信者を同じ日に何度押しても、検索の学習には1回として数えます。</p>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<?php wp_nonce_field( 'snscs_integrity', 'snscs_nonce' ); ?>
 				<input type="hidden" name="action" value="snscs_integrity">
 				<input type="hidden" name="do" value="settings">

@@ -268,7 +268,7 @@ class SNSCS_Hub {
 			<h2>月間成長レポート</h2>
 			<?php $built = get_option( 'snscs_report_built' ); ?>
 			<p>毎月1日の朝に、前の月の数字をまとめた画像を発信者ごとに作り、お知らせ（サイト内・メール・スマホ通知）で届けます。発信者がSNSでシェアすると、見た人がサイトに来ます。<?php echo $built ? esc_html( sprintf( '前回: %s分を%s人に作成（%s）。', $built['month'], number_format_i18n( $built['count'] ), $built['at'] ) ) : ''; ?></p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_report_build">
 				<?php wp_nonce_field( 'snscs_report_build', 'snscs_nonce' ); ?>
 				<label>対象の月 <input type="month" name="month" value="<?php echo esc_attr( gmdate( 'Y-m', strtotime( current_time( 'Y-m-01' ) . ' -1 month' ) ) ); ?>"></label>
@@ -301,7 +301,7 @@ class SNSCS_Hub {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_hub_pages">
 				<?php wp_nonce_field( 'snscs_hub_pages', 'snscs_nonce' ); ?>
 				<?php submit_button( '機能ページをまとめて作成', 'primary' ); ?>
@@ -322,7 +322,7 @@ class SNSCS_Hub {
 				</tbody>
 			</table>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_hub_settings">
 				<?php wp_nonce_field( 'snscs_hub_settings', 'snscs_nonce' ); ?>
 

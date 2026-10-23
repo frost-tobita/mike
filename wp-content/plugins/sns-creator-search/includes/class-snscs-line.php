@@ -330,7 +330,7 @@ class SNSCS_Line {
 			<h2 class="snscs-panel__title">LINEで受け取る</h2>
 			<?php if ( $linked ) : ?>
 				<p>LINEと連携しています。フォロー中の新着記事などのお知らせを、LINEでお届けします。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_line_unlink">
 					<?php wp_nonce_field( 'snscs_line_unlink', 'snscs_nonce' ); ?>
 					<button type="submit" class="snscs-button">連携を解除する</button>
@@ -400,7 +400,7 @@ class SNSCS_Line {
 					<tr><th>Webhook URL</th><td><code><?php echo esc_html( self::webhook_url() ); ?></code></td></tr>
 				</tbody>
 			</table>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_line_save">
 				<?php wp_nonce_field( 'snscs_line_save', 'snscs_nonce' ); ?>
 				<h2>設定</h2>

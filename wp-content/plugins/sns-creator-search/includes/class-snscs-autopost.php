@@ -921,7 +921,7 @@ PROMPT
 			</table>
 
 			<h2>すぐに試す</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: flex; flex-wrap: wrap; gap: 8px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: flex; flex-wrap: wrap; gap: 8px">
 				<input type="hidden" name="action" value="snscs_autopost_run">
 				<?php wp_nonce_field( 'snscs_autopost_run', 'snscs_nonce' ); ?>
 				<button class="button button-primary" name="do" value="now" <?php disabled( ! $has_key ); ?> onclick="this.textContent='執筆中です（2〜5分ほどかかります）…';">1本すぐに書いてみる（下書き）</button>
@@ -932,7 +932,7 @@ PROMPT
 			</form>
 			<p class="description">「1本すぐに書いてみる」は画面が数分止まります。ふだんの自動投稿は、まとめて依頼する方式（料金が半分）で、サーバーで待たずに進みます。</p>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_autopost_save">
 				<?php wp_nonce_field( 'snscs_autopost_save', 'snscs_nonce' ); ?>
 				<h2>設定</h2>

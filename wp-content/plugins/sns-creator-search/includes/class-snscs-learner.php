@@ -509,7 +509,7 @@ class SNSCS_Learner {
 				</tbody>
 			</table>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px">
 				<input type="hidden" name="action" value="snscs_engine_run">
 				<?php wp_nonce_field( 'snscs_engine_run', 'snscs_nonce' ); ?>
 				<button class="button" name="do" value="index" onclick="return confirm( '検索の索引を最初から作り直します。人数が多い場合は数回に分かれます。よろしいですか？' );">索引を作り直す</button>
@@ -547,7 +547,7 @@ class SNSCS_Learner {
 					<p>
 						<?php if ( $ab['z'] >= 1.96 ) : ?>
 							<strong>B の方が良い（偶然ではない差: 95%）。</strong>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline">
+							<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display: inline">
 								<input type="hidden" name="action" value="snscs_engine_run"><?php wp_nonce_field( 'snscs_engine_run', 'snscs_nonce' ); ?>
 								<button class="button button-primary" name="do" value="adopt_b">B を採用する</button>
 							</form>
@@ -562,7 +562,7 @@ class SNSCS_Learner {
 				<?php endif; ?>
 			<?php endif; ?>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_engine_save">
 				<?php wp_nonce_field( 'snscs_engine_save', 'snscs_nonce' ); ?>
 				<h2>並べ方の設定</h2>

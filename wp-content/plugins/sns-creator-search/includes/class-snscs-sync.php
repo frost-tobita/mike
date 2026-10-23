@@ -854,7 +854,7 @@ class SNSCS_Sync {
 								<span class="snscs-sync-list__error">更新できませんでした。もう一度連携してください。</span>
 								<a class="snscs-button" href="<?php echo esc_url( self::connect_url( $platform ) ); ?>">連携し直す</a>
 							<?php endif; ?>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+							<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display:inline">
 								<input type="hidden" name="action" value="snscs_sync_disconnect">
 								<input type="hidden" name="platform" value="<?php echo esc_attr( $platform ); ?>">
 								<?php wp_nonce_field( 'snscs_sync_disconnect', 'snscs_nonce' ); ?>
@@ -874,7 +874,7 @@ class SNSCS_Sync {
 	}
 
 	public static function connect_url( $platform ) {
-		return wp_nonce_url( add_query_arg( array( 'action' => 'snscs_sync_connect', 'platform' => $platform ), admin_url( 'admin-post.php' ) ), 'snscs_sync_connect' );
+		return wp_nonce_url( add_query_arg( array( 'action' => 'snscs_sync_connect', 'platform' => $platform ), snscs_post_url() ), 'snscs_sync_connect' );
 	}
 
 	/* --------------------------------------------------------------------
@@ -960,14 +960,14 @@ class SNSCS_Sync {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin: 12px 0">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin: 12px 0">
 				<input type="hidden" name="action" value="snscs_sync_run">
 				<?php wp_nonce_field( 'snscs_sync_run', 'snscs_nonce' ); ?>
 				<button type="submit" class="button">今すぐ更新する</button>
 				<span class="description">ふだんは1時間ごとに少しずつ、自動で更新します。</span>
 			</form>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_sync_settings">
 				<?php wp_nonce_field( 'snscs_sync_settings', 'snscs_nonce' ); ?>
 

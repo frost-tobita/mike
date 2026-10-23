@@ -86,7 +86,7 @@ class SNSCS_Newsletter {
 		$genres = $full ? get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'hide_empty' => false, 'parent' => 0, 'number' => 40 ) ) : array();
 		ob_start();
 		?>
-		<form class="snscs-newsletter__form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<form class="snscs-newsletter__form" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 			<input type="hidden" name="action" value="snscs_newsletter_subscribe">
 			<input type="hidden" name="snscs_form" value="<?php echo esc_attr( snscs_form_token() ); ?>">
 			<input type="hidden" name="back" value="<?php echo esc_attr( $full ? '' : get_permalink() ); ?>">
@@ -158,7 +158,7 @@ class SNSCS_Newsletter {
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">配信の停止</h2>
 				<p>下のボタンを押すと、メールマガジンの配信を停止します。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_newsletter_unsubscribe">
 					<input type="hidden" name="t" value="<?php echo esc_attr( $unsub ); ?>">
 					<button type="submit" class="snscs-button snscs-button--danger">配信を停止する</button>
@@ -604,13 +604,13 @@ class SNSCS_Newsletter {
 			<?php endif; ?>
 			<p>購読中: <strong><?php echo (int) $counts['active']; ?>人</strong>　確認待ち: <?php echo (int) $counts['pending']; ?>人　停止: <?php echo (int) $counts['unsubscribed']; ?>人</p>
 			<p>自動配信: <strong><?php echo SNSCS_Hub::setting( 'newsletter_auto' ) ? 'オン' : 'オフ'; ?></strong>（<a href="<?php echo esc_url( SNSCS_Hub::admin_url() ); ?>">「集客・回遊」で設定</a>）</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:8px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display:inline-block;margin-right:8px">
 				<input type="hidden" name="action" value="snscs_newsletter_admin">
 				<input type="hidden" name="do" value="test">
 				<?php wp_nonce_field( 'snscs_newsletter_admin', 'snscs_nonce' ); ?>
 				<?php submit_button( '自分にテスト送信', 'secondary', 'submit', false ); ?>
 			</form>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block" onsubmit="return confirm( '購読中の全員に、今の内容で配信します。よろしいですか？' );">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display:inline-block" onsubmit="return confirm( '購読中の全員に、今の内容で配信します。よろしいですか？' );">
 				<input type="hidden" name="action" value="snscs_newsletter_admin">
 				<input type="hidden" name="do" value="send">
 				<?php wp_nonce_field( 'snscs_newsletter_admin', 'snscs_nonce' ); ?>

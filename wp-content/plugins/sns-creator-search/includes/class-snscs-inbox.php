@@ -324,7 +324,7 @@ class SNSCS_Inbox {
 				'u'      => $user_id,
 				'k'      => substr( hash_hmac( 'sha256', 'inbox-unsub|' . $user_id, wp_salt( 'auth' ) ), 0, 24 ),
 			),
-			admin_url( 'admin-post.php' )
+			snscs_post_url()
 		);
 	}
 
@@ -360,7 +360,7 @@ class SNSCS_Inbox {
 		<section class="snscs-panel">
 			<h2 class="snscs-panel__title">お知らせメール</h2>
 			<p>フォローしている発信者の新しい記事や、ブックマークした記事の更新などを、メールでお知らせします。</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="snscs-form">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
 				<input type="hidden" name="action" value="snscs_inbox_settings">
 				<?php wp_nonce_field( 'snscs_inbox_settings', 'snscs_nonce' ); ?>
 				<?php foreach ( $options as $key => $label ) : ?>

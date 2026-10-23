@@ -115,7 +115,7 @@ class SNSCS_Inquiries {
 			<p><?php echo esc_html( $name ); ?>さんは、次のお仕事の相談を受け付けています: <?php echo esc_html( implode( '・', $cats ) ); ?></p>
 			<details class="snscs-inquiry__details"<?php echo ( '' !== $sent && 'sent' !== $sent ) ? ' open' : ''; ?>>
 				<summary class="snscs-button snscs-button--primary">相談する</summary>
-				<form class="snscs-fields snscs-inquiry__form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form class="snscs-fields snscs-inquiry__form" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_inquiry">
 					<input type="hidden" name="creator" value="<?php echo (int) $creator_id; ?>">
 					<input type="hidden" name="snscs_form" value="<?php echo esc_attr( snscs_form_token() ); ?>">
@@ -247,7 +247,7 @@ class SNSCS_Inquiries {
 		<section class="snscs-panel snscs-inquiry-settings" id="snscs-inquiry-settings">
 			<h2 class="snscs-panel__title">お仕事の相談</h2>
 			<p>受け付けると、あなたのページに企業などからの「お仕事の相談」フォームが付きます。相談はメールで届き、あなたのメールアドレスは相手に見えません。</p>
-			<form class="snscs-fields" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form class="snscs-fields" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_inquiry_settings">
 				<?php wp_nonce_field( 'snscs_inquiry_settings', 'snscs_nonce' ); ?>
 				<label class="snscs-check"><input type="checkbox" name="on" value="1" <?php checked( $settings['on'] ); ?>> <span>お仕事の相談を受け付ける</span></label>
@@ -381,7 +381,7 @@ class SNSCS_Inquiries {
 							<td><?php echo esc_html( $row['category'] ); ?><br><small><?php echo esc_html( $row['budget'] ); ?></small></td>
 							<td><?php echo nl2br( esc_html( wp_trim_words( $row['message'], 80, '…' ) ) ); ?></td>
 							<td>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm( '削除しますか？' );">
+								<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" onsubmit="return confirm( '削除しますか？' );">
 									<input type="hidden" name="action" value="snscs_inquiry_delete">
 									<input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
 									<?php wp_nonce_field( 'snscs_inquiry_delete_' . $row['id'], 'snscs_nonce' ); ?>

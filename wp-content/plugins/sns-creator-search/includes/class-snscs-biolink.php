@@ -720,7 +720,7 @@ class SNSCS_Biolink {
 		// phpcs:enable
 		$follow_url = $user ? '' : SNSCS_Social::member_url( array( 'redirect_to' => rawurlencode( add_query_arg( 'snscs_follow', 1, self::url( $creator_id ) ) ) ) );
 		$follow_form = function ( $label, $class ) use ( $creator_id ) {
-			return '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="bio__followform"><input type="hidden" name="action" value="snscs_bio_follow"><input type="hidden" name="creator" value="' . (int) $creator_id . '">' . wp_nonce_field( 'snscs_bio_follow_' . $creator_id, 'snscs_nonce', true, false ) . '<button type="submit" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
+			return '<form method="post" action="' . esc_url( snscs_post_url() ) . '" class="bio__followform"><input type="hidden" name="action" value="snscs_bio_follow"><input type="hidden" name="creator" value="' . (int) $creator_id . '">' . wp_nonce_field( 'snscs_bio_follow_' . $creator_id, 'snscs_nonce', true, false ) . '<button type="submit" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
 		};
 
 		// 構造化データ（この人のプロフィールのページ）。
@@ -1127,7 +1127,7 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 			</details>
 
 			<h3 class="snscs-sharekit__heading">デザインと表示</h3>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_link_theme">
 				<?php wp_nonce_field( 'snscs_link_theme', 'snscs_nonce' ); ?>
 				<div class="snscs-themes">

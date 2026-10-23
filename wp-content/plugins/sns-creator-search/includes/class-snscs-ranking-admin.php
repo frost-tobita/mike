@@ -69,7 +69,7 @@ class SNSCS_Ranking_Admin {
 				<p>点数は1時間ごとに自動で計算し直します。</p>
 			</div>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_ranking_save">
 				<?php wp_nonce_field( 'snscs_ranking_save', 'snscs_nonce' ); ?>
 				<table class="form-table" role="presentation">
@@ -119,7 +119,7 @@ class SNSCS_Ranking_Admin {
 			<p>
 				最終計算: <?php echo $updated ? esc_html( wp_date( 'Y/m/d H:i', $updated ) ) : '（まだ計算していません）'; ?>
 			</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom: 12px">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="margin-bottom: 12px">
 				<input type="hidden" name="action" value="snscs_ranking_recalc">
 				<?php wp_nonce_field( 'snscs_ranking_recalc', 'snscs_nonce' ); ?>
 				<button type="submit" class="button">今すぐ計算し直す</button>

@@ -363,7 +363,7 @@ class SNSCS_Columns {
 			<?php endif; ?>
 
 			<h2>スターター記事を追加</h2>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 				<input type="hidden" name="action" value="snscs_add_starter_columns">
 				<?php wp_nonce_field( 'snscs_add_starter_columns', 'snscs_nonce' ); ?>
 				<?php submit_button( 'スターター記事を下書きで追加', 'secondary' ); ?>

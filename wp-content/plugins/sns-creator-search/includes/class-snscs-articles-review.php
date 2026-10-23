@@ -145,7 +145,7 @@ class SNSCS_Articles_Review {
 			<div style="max-width: 1100px; margin-top: 24px; padding: 4px 20px 12px; border: 1px solid #c3c4c7; background: #fff">
 				<h2>審査結果</h2>
 				<p>宣伝が過剰でないか、他人の権利を侵害していないか、誤解を招く内容や法律に触れる内容がないかを確認してください。</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_article_review">
 					<input type="hidden" name="article" value="<?php echo (int) $article->ID; ?>">
 					<?php wp_nonce_field( 'snscs_article_review_' . $article->ID, 'snscs_nonce' ); ?>
