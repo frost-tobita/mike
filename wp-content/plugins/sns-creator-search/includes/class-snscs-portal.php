@@ -120,7 +120,7 @@ class SNSCS_Portal {
 			'article_updated'   => array( 'success', '記事を更新しました。' ),
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
-			'link_theme_saved'  => array( 'success', 'マイリンクのデザインを保存しました。' ),
+			'link_theme_saved'  => array( 'success', 'マイリンクのデザインと表示を保存しました。' ),
 			'sync_linked'    => array( 'success', '連携しました。フォロワー数は毎日自動で最新になり、発信者ページに「本人確認済み」の印が付きます。' ),
 			'sync_unlinked'  => array( 'success', '連携を解除しました。' ),
 			'sync_cancel'    => array( 'error', '連携は取り消されました。' ),

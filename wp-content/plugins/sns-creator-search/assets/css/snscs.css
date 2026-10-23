@@ -1882,6 +1882,76 @@
 	font-size: 0.85em;
 }
 
+/* 1.16: マイリンクの成績・形・目立たせるリンク */
+.snscs-biolink__stats {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-biolink__stats li {
+	padding: 10px 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #f9fafb;
+	color: #4b5563;
+	font-size: 12px;
+	text-align: center;
+}
+
+.snscs-biolink__stats strong {
+	display: block;
+	color: #111827;
+	font-size: 20px;
+	line-height: 1.3;
+}
+
+.snscs-biolink__urls {
+	margin: 8px 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-biolink__urls li {
+	margin-bottom: 10px;
+}
+
+.snscs-biolink__urls input {
+	width: 100%;
+	max-width: 28em;
+}
+
+.snscs-biolink__field {
+	margin: 14px 0;
+	padding: 10px 14px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+}
+
+.snscs-biolink__field legend {
+	padding: 0 4px;
+	font-weight: bold;
+}
+
+.snscs-biolink__field label {
+	display: inline-block;
+	margin: 4px 12px 4px 0;
+}
+
+.snscs-biolink__shape span {
+	display: inline-block;
+	padding: 2px 14px;
+	border: 2px solid #374151;
+}
+
+.snscs-biolink__check {
+	display: block;
+	margin: 0 0 12px;
+}
+
 /* トップページのカレンダーへのリンク */
 .snscs-callink {
 	display: flex;
@@ -4496,4 +4566,307 @@ a.snscs-line__add:focus-visible {
 .snscs-press__body {
 	line-height: 1.9;
 	overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------
+ * 1.16: マイリンクの紹介ページ [sns_mylink]
+ * ------------------------------------------------------------------- */
+
+.snscs-mylink__hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 260px;
+	gap: 28px;
+	align-items: center;
+	margin: 0 0 32px;
+	padding: 28px;
+	border-radius: 16px;
+	background: linear-gradient(135deg, #eef2ff, #fdf2f8);
+}
+
+.snscs-mylink__eyebrow {
+	margin: 0 0 6px;
+	color: #4f46e5;
+	font-size: 13px;
+	font-weight: bold;
+}
+
+.snscs-mylink__catch {
+	margin: 0 0 12px;
+	color: #111827;
+	font-size: 26px;
+	font-weight: 800;
+	line-height: 1.4;
+}
+
+.snscs-mylink__cta {
+	display: inline-block;
+	padding: 12px 28px;
+	border-radius: 999px;
+	font-size: 16px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.snscs-mylink__phone {
+	overflow: hidden;
+	height: 460px;
+	border: 8px solid #111827;
+	border-radius: 32px;
+	background: #fff;
+	box-shadow: 0 12px 32px rgba(17, 24, 39, 0.25);
+}
+
+.snscs-mylink__phone iframe {
+	width: 375px;
+	height: 690px;
+	border: 0;
+	transform: scale(0.65);
+	transform-origin: 0 0;
+	pointer-events: none;
+}
+
+.snscs-mylink__features {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 12px;
+	margin: 0 0 28px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-mylink__features li {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 16px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+	font-size: 14px;
+}
+
+.snscs-mylink__icon {
+	font-size: 24px;
+}
+
+.snscs-mylink__steps {
+	margin: 0 0 28px;
+	padding-left: 1.4em;
+}
+
+.snscs-mylink__steps li {
+	margin-bottom: 6px;
+}
+
+.snscs-mylink__examples {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 10px;
+	margin: 0 0 28px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-mylink__examples a {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	padding: 10px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	color: #111827;
+	text-decoration: none;
+}
+
+.snscs-mylink__examples img,
+.snscs-mylink__initial {
+	flex: 0 0 48px;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.snscs-mylink__initial {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: #eef2ff;
+	color: #4338ca;
+	font-weight: bold;
+}
+
+.snscs-mylink__examples small {
+	display: block;
+	color: #6b7280;
+}
+
+.snscs-mylink__faq dt {
+	margin-top: 14px;
+	font-weight: bold;
+}
+
+.snscs-mylink__faq dd {
+	margin: 4px 0 0;
+	color: #374151;
+}
+
+.snscs-mylink__bottom {
+	margin: 28px 0;
+	text-align: center;
+}
+
+@media (max-width: 700px) {
+	.snscs-mylink__hero {
+		grid-template-columns: 1fr;
+		padding: 20px 16px;
+	}
+
+	.snscs-mylink__catch {
+		font-size: 22px;
+	}
+
+	.snscs-mylink__phone {
+		display: none;
+	}
+}
+
+/* ---------------------------------------------------------------------
+ * 1.16: SNS用語集 [sns_glossary]
+ * ------------------------------------------------------------------- */
+
+.snscs-glossary__search input {
+	width: 100%;
+	max-width: 420px;
+	padding: 10px 14px;
+	border: 1px solid #d1d5db;
+	border-radius: 999px;
+	font-size: 16px;
+}
+
+.snscs-glossary__rows {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 12px 0 20px;
+}
+
+.snscs-glossary__rows a,
+.snscs-glossary__rows span {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 40px;
+	height: 36px;
+	padding: 0 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.snscs-glossary__rows a {
+	background: #eef2ff;
+	color: #3730a3;
+}
+
+.snscs-glossary__rows span {
+	color: #d1d5db;
+}
+
+.snscs-glossary__group h2 {
+	margin: 24px 0 8px;
+	padding-bottom: 4px;
+	border-bottom: 2px solid #e5e7eb;
+	font-size: 18px;
+}
+
+.snscs-glossary__list {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-glossary__list li {
+	display: flex;
+	flex-direction: column;
+	padding: 10px 12px;
+	border: 1px solid #f3f4f6;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.snscs-glossary__list span {
+	color: #4b5563;
+	font-size: 14px;
+}
+
+.snscs-glossary__list--cards {
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.snscs-glossary__reading {
+	margin: 0 0 12px;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.snscs-glossary__reading span {
+	margin-left: 12px;
+}
+
+.snscs-glossary__short {
+	margin: 0 0 20px;
+	padding: 14px 18px;
+	border-left: 5px solid #4f46e5;
+	border-radius: 0 10px 10px 0;
+	background: #eef2ff;
+}
+
+.snscs-glossary__short p {
+	margin: 0;
+	font-size: 17px;
+	font-weight: bold;
+}
+
+.snscs-glossary__short .snscs-glossary__label {
+	margin-bottom: 4px;
+	color: #4f46e5;
+	font-size: 12px;
+}
+
+.snscs-glossary__body p {
+	margin: 0 0 14px;
+	line-height: 1.9;
+}
+
+.snscs-glossary__trend {
+	padding: 10px 14px;
+	border-radius: 10px;
+	background: #fff7ed;
+}
+
+.snscs-glossary__links {
+	margin: 0 0 16px;
+	padding-left: 1.2em;
+}
+
+.snscs-glossary__links li {
+	margin-bottom: 6px;
+}
+
+.snscs-glossary__cta {
+	margin: 28px 0 16px;
+	padding: 16px 18px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #f9fafb;
+}
+
+.snscs-glossary__cta .snscs-button {
+	display: inline-block;
+	margin: 4px 6px 4px 0;
+	text-decoration: none;
 }

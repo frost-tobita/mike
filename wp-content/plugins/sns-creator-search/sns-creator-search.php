@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.15.0
+ * Version:           1.16.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.15.0' );
-define( 'SNSCS_DB_VERSION', '25' );
+define( 'SNSCS_VERSION', '1.16.0' );
+define( 'SNSCS_DB_VERSION', '26' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -70,6 +70,8 @@ require_once SNSCS_DIR . 'includes/class-snscs-qa.php';
 require_once SNSCS_DIR . 'includes/class-snscs-profile-ai.php';
 require_once SNSCS_DIR . 'includes/class-snscs-gamify.php';
 require_once SNSCS_DIR . 'includes/class-snscs-press.php';
+require_once SNSCS_DIR . 'includes/class-snscs-glossary.php';
+require_once SNSCS_DIR . 'includes/class-snscs-english.php';
 require_once SNSCS_DIR . 'includes/class-snscs-features.php';
 require_once SNSCS_DIR . 'includes/class-snscs-rankings.php';
 require_once SNSCS_DIR . 'includes/class-snscs-share.php';
@@ -119,6 +121,7 @@ function snscs_activate() {
 	SNSCS_Features::add_rewrite_rule();
 	SNSCS_Share::add_rewrite_rules();
 	SNSCS_Biolink::add_rewrite_rule();
+	SNSCS_English::add_rewrite_rules();
 	SNSCS_Report::add_rewrite_rule();
 	SNSCS_Stories::register();
 	SNSCS_Post_Types::install_default_terms();
@@ -135,7 +138,7 @@ function snscs_after_install() {
 		SNSCS_Post_Types::install_default_terms();
 		// 機能ページを作ってあるサイトには、あとから加わったページ（トレンド・診断）も1度だけ作る。
 		$added = (array) get_option( 'snscs_pages_added', get_option( 'snscs_trends_page_added' ) ? array( 'trends' ) : array() );
-		$new   = array_diff( array( 'trends', 'shindan', 'awards', 'collab', 'similar', 'embed', 'lists', 'qa', 'profile-check', 'press' ), $added );
+		$new   = array_diff( array( 'trends', 'shindan', 'awards', 'collab', 'similar', 'embed', 'lists', 'qa', 'profile-check', 'press', 'glossary', 'mylink' ), $added );
 		if ( get_option( SNSCS_Hub::PAGES ) && $new ) {
 			update_option( 'snscs_pages_added', array_merge( $added, $new ) );
 			SNSCS_Hub::create_pages( array_values( $new ) );
@@ -161,6 +164,7 @@ function snscs_deactivate() {
 	wp_clear_scheduled_hook( SNSCS_Push::SEND_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Sync::CRON_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Line::SEND_HOOK );
+	wp_clear_scheduled_hook( SNSCS_English::CRON_HOOK );
 	flush_rewrite_rules();
 }
 
@@ -261,6 +265,8 @@ SNSCS_QA::init();
 SNSCS_Profile_AI::init();
 SNSCS_Gamify::init();
 SNSCS_Press::init();
+SNSCS_Glossary::init();
+SNSCS_English::init();
 SNSCS_Features::init();
 SNSCS_Rankings::init();
 SNSCS_Share::init();

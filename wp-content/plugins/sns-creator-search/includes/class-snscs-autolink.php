@@ -65,6 +65,8 @@ class SNSCS_Autolink {
 				}
 			}
 		}
+		// SNS用語集の言葉 → 用語のページ（トレンド・特集と同じ言葉なら、そちらを優先）。
+		$targets += SNSCS_Glossary::autolink_targets();
 		uksort(
 			$targets,
 			function ( $a, $b ) {

@@ -46,6 +46,8 @@ class SNSCS_Hub {
 			'qa'         => array( 'title' => 'SNS運用の質問箱', 'slug' => 'qa', 'shortcode' => '[sns_qa]', 'nav' => '質問箱' ),
 			'profile-check' => array( 'title' => 'SNSプロフィールAI診断', 'slug' => 'profile-check', 'shortcode' => '[sns_profile_check]', 'nav' => 'AIプロフィール診断' ),
 			'press'      => array( 'title' => 'プレス・データ', 'slug' => 'press', 'shortcode' => '[sns_press]', 'nav' => '' ),
+			'glossary'   => array( 'title' => 'SNS用語集', 'slug' => 'glossary', 'shortcode' => '[sns_glossary]', 'nav' => '用語集' ),
+			'mylink'     => array( 'title' => 'マイリンク（無料のリンクまとめ）', 'slug' => 'mylink', 'shortcode' => '[sns_mylink]', 'nav' => '' ),
 			'embed'      => array( 'title' => 'ブログに貼れるランキング', 'slug' => 'blog-parts', 'shortcode' => '[sns_embed]', 'nav' => '' ),
 			'member'     => array( 'title' => '会員ページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
