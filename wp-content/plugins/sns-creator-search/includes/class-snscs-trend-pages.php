@@ -186,6 +186,7 @@ class SNSCS_Trend_Pages {
 			'indexable' => $month >= self::index_min(),
 			'result'    => SNSCS_Search::run( array( 'q' => $term, 'sort' => 'recommended', 'per_page' => self::PER_PAGE ) ),
 			'articles'  => self::articles( $term ),
+			'columns'   => self::columns( $term ),
 			'related'   => $main ? SNSCS_Trends::ranking( $main->slug, 13 ) : SNSCS_Trends::ranking( '', 13 ),
 			'main'      => $main,
 		);
@@ -383,6 +384,8 @@ class SNSCS_Trend_Pages {
 				</a>
 			</p>
 
+			<?php echo SNSCS_Columns::render_posts( '「' . $term . '」のコラム・トレンド記事', $page['columns'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+
 			<?php if ( $page['articles'] ) : ?>
 				<h2 class="snscs-trendpage__title">「<?php echo esc_html( $term ); ?>」の記事</h2>
 				<?php
@@ -438,15 +441,43 @@ class SNSCS_Trend_Pages {
 	 * @return string[]
 	 */
 	public static function sitemap_urls() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$terms = $wpdb->get_col( $wpdb->prepare( 'SELECT term FROM ' . SNSCS_Trends::terms_table() . ' WHERE day >= %s GROUP BY term HAVING SUM(visitors) >= %d ORDER BY SUM(visitors) DESC LIMIT %d', self::since( 30 ), self::index_min(), self::SITEMAP_MAX ), 0 );
-		$urls  = array( SNSCS_Trends::page_url() );
-		foreach ( $terms as $term ) {
-			if ( SNSCS_Trends::allowed( $term ) && false === strpos( $term, '/' ) ) {
-				$urls[] = self::url( $term );
+		return array_merge( array( SNSCS_Trends::page_url() ), array_map( array( __CLASS__, 'url' ), self::indexable_terms( self::SITEMAP_MAX ) ) );
+	}
+
+	/**
+	 * 検索エンジンに載せているキーワード（直近30日に下限の人数以上が調べた言葉。多い順。10分ごとに数え直す）。
+	 *
+	 * @return string[]
+	 */
+	public static function indexable_terms( $limit = self::SITEMAP_MAX ) {
+		$cached = get_transient( 'snscs_trend_indexable' );
+		if ( ! is_array( $cached ) ) {
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$terms  = $wpdb->get_col( $wpdb->prepare( 'SELECT term FROM ' . SNSCS_Trends::terms_table() . ' WHERE day >= %s GROUP BY term HAVING SUM(visitors) >= %d ORDER BY SUM(visitors) DESC LIMIT %d', self::since( 30 ), self::index_min(), self::SITEMAP_MAX ), 0 );
+			$cached = array();
+			foreach ( $terms as $term ) {
+				if ( SNSCS_Trends::allowed( $term ) && false === strpos( $term, '/' ) ) {
+					$cached[] = (string) $term;
+				}
 			}
+			set_transient( 'snscs_trend_indexable', $cached, 10 * MINUTE_IN_SECONDS );
 		}
-		return $urls;
+		return array_slice( $cached, 0, $limit );
+	}
+
+	/**
+	 * この言葉のコラム（その言葉のトレンド記事を先に、ほかは本文にその言葉を含む新しいもの）。
+	 *
+	 * @return WP_Post[]
+	 */
+	public static function columns( $term, $limit = 4 ) {
+		$cat = SNSCS_Columns::category_id();
+		if ( ! $cat ) {
+			return array();
+		}
+		$own   = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'meta_key' => SNSCS_Column_Kinds::META_TERM, 'meta_value' => $term, 'numberposts' => 2 ) ); // phpcs:ignore WordPress.DB.SlowDBQuery
+		$other = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'cat' => $cat, 's' => $term, 'numberposts' => $limit, 'post__not_in' => wp_list_pluck( $own, 'ID' ) ) );
+		return array_slice( array_merge( $own, $other ), 0, $limit );
 	}
 }

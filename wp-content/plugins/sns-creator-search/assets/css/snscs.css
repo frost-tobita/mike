@@ -3816,3 +3816,111 @@ a.snscs-share__button:hover {
 	line-height: 1.5;
 	white-space: normal;
 }
+
+/* 自動投稿の記事に差し込む一覧・表と、サイト内リンク */
+.snscs-colblock {
+	margin: 28px 0;
+	padding: 16px;
+	background: #f8f9fe;
+	border: 1px solid #e0e7ff;
+	border-radius: 14px;
+}
+
+.snscs-colblock__title {
+	margin: 4px 0 10px;
+	font-size: 1.15em;
+}
+
+.snscs-colblock__lead,
+.snscs-colblock__sub {
+	margin: 0 0 10px;
+}
+
+.snscs-colblock__sub {
+	color: #4b5563;
+	font-weight: 700;
+	font-size: 0.9em;
+}
+
+.snscs-colblock__more {
+	margin: 12px 0 0;
+	text-align: center;
+}
+
+.snscs-colblock table {
+	width: 100%;
+	margin: 0 0 16px;
+	font-size: 0.92em;
+	border-collapse: collapse;
+	background: #fff;
+}
+
+.snscs-colblock th,
+.snscs-colblock td {
+	padding: 6px 8px;
+	text-align: left;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-colblock--report {
+	overflow-x: auto;
+}
+
+a.snscs-autolink {
+	text-decoration-style: dotted;
+	text-underline-offset: 3px;
+}
+
+.snscs-related {
+	margin: 32px 0 20px;
+	padding: 16px;
+	border: 1px solid #e5e7eb;
+	border-radius: 14px;
+}
+
+.snscs-related__title {
+	margin: 0 0 8px;
+	font-size: 1.1em;
+}
+
+.snscs-related__list {
+	margin: 0 0 12px;
+	padding-left: 1.2em;
+}
+
+.snscs-related__list li {
+	margin: 4px 0;
+}
+
+.snscs-related__sub {
+	margin: 8px 0;
+	color: #4b5563;
+	font-weight: 700;
+	font-size: 0.9em;
+}
+
+.snscs-related__quiz {
+	display: block;
+	margin-top: 12px;
+	padding: 12px 14px;
+	color: #fff;
+	text-decoration: none;
+	background: linear-gradient(90deg, #4f46e5, #7c3aed);
+	border-radius: 12px;
+}
+
+.snscs-related__quiz:hover,
+.snscs-related__quiz:focus-visible {
+	color: #fff;
+	opacity: 0.92;
+}
+
+.snscs-related__quiz strong {
+	display: block;
+	font-size: 1.05em;
+}
+
+.snscs-related__quiz span {
+	font-size: 0.85em;
+	opacity: 0.9;
+}

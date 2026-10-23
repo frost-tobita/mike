@@ -10,6 +10,10 @@
  *      足りないものは使わない。
  *   3. 決めた時刻（初期: 7時と19時）に1本ずつ公開する（「下書きのまま止める」設定なら運営にメールで知らせる）。
  *
+ * 記事の種類（SNSCS_Column_Kinds）: SNS運用コラムと「ジャンル × SNS」の攻略ガイドを交互に書きため、
+ * トレンド記事（急上昇した言葉）と月刊SNSトレンドレポートは、その日・その月に頼んで仕上がりしだい公開する。
+ * 記事の中のサイト内リンクは SNSCS_Autolink が表示のときに付ける。
+ *
  * API キーは wp-config.php の SNSCS_ANTHROPIC_API_KEY（おすすめ）か、管理画面で入れる。
  * WordPress を置くサーバーの多くでは Anthropic の PHP SDK（PHP 8.1 以上・大きなライブラリ）が使えないため、
  * WordPress 標準の通信機能で API を直接呼ぶ。
@@ -63,6 +67,11 @@ class SNSCS_Autopost {
 			'topics'   => implode( "\n", self::default_topics() ),
 			'ai_note'  => 1,
 			'eyecatch' => 1,
+			// 記事の種類（SNSCS_Column_Kinds）とサイト内リンク（SNSCS_Autolink）。
+			'trend_per_day' => 1,
+			'report'        => 1,
+			'guides'        => 1,
+			'autolink'      => 1,
 		);
 	}
 
@@ -154,7 +163,7 @@ class SNSCS_Autopost {
 	}
 
 	private static function state() {
-		return wp_parse_args( (array) get_option( self::STATE, array() ), array( 'batches' => array(), 'published' => array(), 'used' => array() ) );
+		return wp_parse_args( (array) get_option( self::STATE, array() ), array( 'batches' => array(), 'published' => array(), 'used' => array(), 'guides' => array(), 'trend_done' => array(), 'report_done' => '', 'last_kind' => '' ) );
 	}
 
 	private static function save_state( array $state ) {
@@ -178,6 +187,53 @@ class SNSCS_Autopost {
 		}
 		self::publish_due();
 		self::maybe_order();
+		self::order_kinds();
+	}
+
+	/**
+	 * トレンド記事・月刊レポートを、その日・その月の分だけ頼む。
+	 *
+	 * @param bool $force 時刻と「今月はもう頼んだ」を無視する（管理画面のボタン）。
+	 * @return int 頼んだ本数。
+	 */
+	public static function order_kinds( $force = false ) {
+		if ( '' === self::api_key() || ( ! $force && ! self::settings()['enabled'] ) ) {
+			return 0;
+		}
+		$state = self::state();
+		$due   = SNSCS_Column_Kinds::due_items( $state, $force );
+		if ( '' !== $due['report_month'] ) {
+			$state['report_done'] = $due['report_month'];
+			self::save_state( $state );
+		}
+		if ( ! $due['items'] ) {
+			return 0;
+		}
+		return self::order( $due['items'] ) ? count( $due['items'] ) : 0;
+	}
+
+	/**
+	 * 書きためる記事を $count 本ぶん選ぶ（コラムと攻略ガイドを交互に）。
+	 *
+	 * @return array<string,array>
+	 */
+	public static function next_items( $count ) {
+		$state  = self::state();
+		$items  = array();
+		$guides = (array) $state['guides'];
+		$last   = (string) $state['last_kind'];
+		for ( $i = 0; $i < $count; $i++ ) {
+			$guide = ( self::settings()['guides'] && 'guide' !== $last ) ? SNSCS_Column_Kinds::next_guide( $guides ) : null;
+			if ( $guide ) {
+				$guides[] = $guide['sns'] . '|' . $guide['genre']->slug;
+				$items[ 'gd-' . time() . '-' . $i ] = array( 'topic' => SNSCS_Column_Kinds::guide_topic( $guide['sns'], $guide['genre']->name ), 'kind' => 'guide', 'sns' => $guide['sns'], 'genre' => $guide['genre']->slug, 'count' => $guide['count'] );
+				$last = 'guide';
+			} else {
+				$items[ 'ap-' . time() . '-' . $i ] = array( 'topic' => self::next_topic( array_column( $items, 'topic' ) ), 'kind' => 'column' );
+				$last = 'column';
+			}
+		}
+		return $items;
 	}
 
 	/**
@@ -252,11 +308,7 @@ class SNSCS_Autopost {
 		if ( $want <= 0 ) {
 			return false;
 		}
-		$items = array();
-		for ( $i = 0; $i < min( 5, $want ); $i++ ) {
-			$items[ 'ap-' . time() . '-' . $i ] = array( 'topic' => self::next_topic( array_column( $items, 'topic' ) ) );
-		}
-		return self::order( $items );
+		return self::order( self::next_items( min( 5, $want ) ) );
 	}
 
 	/**
@@ -358,7 +410,8 @@ PROMPT
 	/**
 	 * Messages API に送る中身（バッチでも、すぐに1本作るときも同じ）。
 	 */
-	public static function params( $topic, $rewrite = '' ) {
+	public static function params( $topic, $rewrite = '', array $item = array() ) {
+		$prompt = '' === $rewrite ? SNSCS_Column_Kinds::user_prompt( $item ) : null;
 		return array(
 			'model'         => self::settings()['model'],
 			'max_tokens'    => self::MAX_TOKENS,
@@ -368,7 +421,7 @@ PROMPT
 				'format' => array( 'type' => 'json_schema', 'schema' => self::schema() ),
 			),
 			'messages'      => array(
-				array( 'role' => 'user', 'content' => self::user_prompt( $topic, $rewrite ) ),
+				array( 'role' => 'user', 'content' => null !== $prompt ? $prompt : self::user_prompt( $topic, $rewrite ) ),
 			),
 		);
 	}
@@ -391,7 +444,7 @@ PROMPT
 		$requests = array();
 		foreach ( $items as $cid => $item ) {
 			$rewrite    = ! empty( $item['rewrite'] ) ? (string) get_post_field( 'post_content', $item['rewrite'] ) : '';
-			$requests[] = array( 'custom_id' => $cid, 'params' => self::params( $item['topic'], $rewrite ) );
+			$requests[] = array( 'custom_id' => $cid, 'params' => self::params( $item['topic'], $rewrite, $item ) );
 		}
 		$batch = self::request( 'POST', '/v1/messages/batches', array( 'requests' => $requests ) );
 		if ( is_wp_error( $batch ) || empty( $batch['id'] ) ) {
@@ -400,11 +453,28 @@ PROMPT
 		}
 		$state              = self::state();
 		$state['batches'][] = array( 'id' => (string) $batch['id'], 'created' => time(), 'items' => $items );
+		$today              = current_time( 'Y-m-d' );
 		foreach ( $items as $item ) {
-			if ( '' !== $item['topic'] && empty( $item['rewrite'] ) ) {
-				$state['used'][] = $item['topic'];
+			$kind = $item['kind'] ?? 'column';
+			if ( 'guide' === $kind ) {
+				$state['guides'][]   = $item['sns'] . '|' . $item['genre'];
+				$state['last_kind'] = 'guide';
+			} elseif ( 'trend' === $kind ) {
+				$state['trend_done'][ $item['term'] ] = $today;
+			} elseif ( 'column' === $kind && empty( $item['rewrite'] ) ) {
+				if ( '' !== $item['topic'] ) {
+					$state['used'][] = $item['topic'];
+				}
+				$state['last_kind'] = 'column';
 			}
 		}
+		// トレンド記事の記録は30日分だけ残す。
+		$state['trend_done'] = array_filter(
+			(array) $state['trend_done'],
+			function ( $day ) {
+				return $day >= gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -30 days' ) );
+			}
+		);
 		self::save_state( $state );
 		self::log( sprintf( '%d本の執筆を依頼しました（多くは1時間以内に仕上がります）。', count( $items ) ) );
 		return true;
@@ -514,10 +584,11 @@ PROMPT
 		$body  = self::clean_body( (string) $data['body_html'] );
 		$chars = mb_strlen( preg_replace( '/\s+/u', '', wp_strip_all_tags( $body ) ) );
 		$h2    = preg_match_all( '/<h2[\s>]/i', $body );
-		if ( $chars < self::MIN_CHARS || $h2 < self::MIN_H2 ) {
+		if ( $chars < SNSCS_Column_Kinds::min_chars( $item ) || $h2 < self::MIN_H2 ) {
 			return new WP_Error( 'snscs_short', sprintf( '記事が条件に届きませんでした（%d字・見出し%d個）', $chars, $h2 ) );
 		}
-		$content = self::with_toc( $body );
+		$content = SNSCS_Column_Kinds::decorate( self::with_toc( $body ), $item );
+		$kind    = $item['kind'] ?? 'column';
 		$title   = mb_substr( sanitize_text_field( $data['title'] ), 0, 80 );
 		$excerpt = mb_substr( sanitize_text_field( (string) $data['excerpt'] ), 0, 200 );
 
@@ -560,13 +631,24 @@ PROMPT
 			wp_set_object_terms( $post_id, $genre_ids, SNSCS_Post_Types::TAX_GENRE );
 		}
 		update_post_meta( $post_id, self::META_AI, 1 );
-		if ( ! isset( $item['ready'] ) || $item['ready'] ) {
+		SNSCS_Column_Kinds::remember( $post_id, $item );
+		$timely = in_array( $kind, array( 'trend', 'report' ), true );
+		if ( ! $timely && ( ! isset( $item['ready'] ) || $item['ready'] ) ) {
 			update_post_meta( $post_id, self::META_READY, 1 );
 		}
 		if ( self::settings()['eyecatch'] ) {
-			self::make_eyecatch( $post_id, $title, $sns );
+			self::make_eyecatch( $post_id, $title, 'guide' === $kind ? array( $item['sns'] ) : $sns, 'column' === $kind ? '' : SNSCS_Column_Kinds::labels()[ $kind ] );
 		}
-		self::log( sprintf( '記事ができました（%d字・見出し%d個）: %s', $chars, $h2, $title ) );
+		self::log( sprintf( '%sができました（%d字・見出し%d個）: %s', SNSCS_Column_Kinds::labels()[ $kind ], $chars, $h2, $title ) );
+		// トレンド記事・レポートは鮮度が大事なので、書きためずにすぐ公開する。
+		if ( $timely && ( ! isset( $item['ready'] ) || $item['ready'] ) ) {
+			if ( self::settings()['enabled'] && 'publish' === self::settings()['mode'] ) {
+				wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish', 'post_date' => current_time( 'mysql' ), 'post_date_gmt' => current_time( 'mysql', true ) ) );
+				self::log( '公開しました: ' . $title );
+			} else {
+				wp_mail( get_option( 'admin_email' ), '[' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . '] ' . SNSCS_Column_Kinds::labels()[ $kind ] . 'を確認してください', "次の記事が下書きとしてできあがりました。内容を確認して公開してください。\n\n" . $title . "\n" . admin_url( 'post.php?post=' . $post_id . '&action=edit' ) );
+			}
+		}
 		return (int) $post_id;
 	}
 
@@ -608,7 +690,7 @@ PROMPT
 	/**
 	 * タイトル入りのアイキャッチ画像（1200×630）を作って設定する。
 	 */
-	public static function make_eyecatch( $post_id, $title, array $sns ) {
+	public static function make_eyecatch( $post_id, $title, array $sns, $kind_label = '' ) {
 		$font = SNSCS_Share::font();
 		if ( ! $font || ! function_exists( 'imagecreatetruecolor' ) ) {
 			return 0;
@@ -629,7 +711,7 @@ PROMPT
 		}
 		$white = imagecolorallocate( $image, 255, 255, 255 );
 		$soft  = imagecolorallocatealpha( $image, 255, 255, 255, 60 );
-		$label = $sns ? implode( ' / ', array_map( 'snscs_platform_label', $sns ) ) . ' 運用コラム' : 'SNS運用コラム';
+		$label = '' !== $kind_label ? $kind_label : ( $sns ? implode( ' / ', array_map( 'snscs_platform_label', $sns ) ) . ' 運用コラム' : 'SNS運用コラム' );
 		// テーマによって画像の左右や上下が切り取られるため、文字は中央の範囲（幅780px）にまとめる。
 		$center = function ( $text, $size, $y, $color ) use ( $image, $font ) {
 			$box = imagettfbbox( $size, 0, $font, $text );
@@ -724,6 +806,10 @@ PROMPT
 		$settings['enabled']  = empty( $in['enabled'] ) ? 0 : 1;
 		$settings['ai_note']  = empty( $in['ai_note'] ) ? 0 : 1;
 		$settings['eyecatch'] = empty( $in['eyecatch'] ) ? 0 : 1;
+		$settings['report']   = empty( $in['report'] ) ? 0 : 1;
+		$settings['guides']   = empty( $in['guides'] ) ? 0 : 1;
+		$settings['autolink'] = empty( $in['autolink'] ) ? 0 : 1;
+		$settings['trend_per_day'] = min( 3, max( 0, (int) ( $in['trend_per_day'] ?? 1 ) ) );
 		$settings['per_day']  = min( 5, max( 1, (int) ( $in['per_day'] ?? 2 ) ) );
 		$settings['times']    = sanitize_text_field( (string) ( $in['times'] ?? '' ) );
 		$settings['mode']     = 'draft' === ( $in['mode'] ?? '' ) ? 'draft' : 'publish';
@@ -759,11 +845,7 @@ PROMPT
 			if ( $state['batches'] ) {
 				$msg = 'busy';
 			} else {
-				$items = array();
-				for ( $i = 0; $i < max( 1, (int) self::settings()['per_day'] ); $i++ ) {
-					$items[ 'ap-' . time() . '-' . $i ] = array( 'topic' => self::next_topic( array_column( $items, 'topic' ) ) );
-				}
-				$msg = self::order( $items ) ? 'ordered' : 'failed';
+				$msg = self::order( self::next_items( max( 1, (int) self::settings()['per_day'] ) ) ) ? 'ordered' : 'failed';
 			}
 		} elseif ( 'rewrite' === $do ) {
 			$items = array();
@@ -774,6 +856,8 @@ PROMPT
 				}
 			}
 			$msg = $items ? ( self::order( $items ) ? 'ordered' : 'failed' ) : 'nothing';
+		} elseif ( 'kinds' === $do ) {
+			$msg = self::order_kinds( true ) ? 'ordered' : 'no-kinds';
 		} elseif ( 'check' === $do ) {
 			self::tick();
 			$msg = 'checked';
@@ -801,6 +885,7 @@ PROMPT
 			'failed'  => array( 'error', 'うまくいきませんでした。下の「記録」を確認してください。' ),
 			'nothing' => array( 'warning', '書き直すスターター記事が見つかりませんでした（「SNS運用コラム」の画面で下書きを追加してから押してください）。' ),
 			'checked' => array( 'success', '仕上がりを確認しました。' ),
+			'no-kinds' => array( 'warning', 'いま書けるトレンド記事・レポートはありませんでした（急上昇した言葉が少ない、今日の本数に達した、前の月の検索の記録が少ない、など）。下の「記録」も確認してください。' ),
 		);
 		?>
 		<div class="wrap">
@@ -812,7 +897,13 @@ PROMPT
 				<div class="notice notice-<?php echo esc_attr( $notices[ $msg ][0] ); ?>"><p><?php echo esc_html( $notices[ $msg ][1] ); ?></p></div>
 			<?php endif; ?>
 
-			<p>AI（Anthropic の Claude）が、章立てのしっかりした5000字前後のSNS運用コラムを書き、決めた時刻に1本ずつ公開します。目次とタイトル入りのアイキャッチ画像も自動で付けます。</p>
+			<p>AI（Anthropic の Claude）が、章立てのしっかりした記事を書き、自動で公開します。目次とタイトル入りのアイキャッチ画像も自動で付けます。記事の種類は次の4つです。</p>
+			<ul style="list-style: disc; padding-left: 20px">
+				<li><strong>SNS運用コラム</strong>と<strong>攻略ガイド</strong>（「料理ジャンルでInstagramを伸ばす方法」のように、発信者の多いジャンル × SNS から順に）を交互に書きため、決めた時刻に1本ずつ公開</li>
+				<li><strong>トレンド記事</strong>: ジャンルで急上昇した言葉を、その日のうちに記事にしてすぐ公開</li>
+				<li><strong>月刊SNSトレンドレポート</strong>: 毎月1日に、前の月の検索・フォロワーの伸びの数字から</li>
+			</ul>
+			<p>人気の発信者の一覧やレポートの表は、AIではなく、このサイトの本物のデータを差し込みます（発信者の一覧は表示のたびに最新）。記事の中には、トレンドのページ・特集ページ・発信者診断へのリンクも自動で付きます。</p>
 
 			<table class="widefat striped" style="max-width: 900px">
 				<tbody>
@@ -821,6 +912,11 @@ PROMPT
 					<tr><th>執筆を依頼中</th><td><?php echo (int) array_sum( array_map( function ( $b ) { return count( $b['items'] ); }, $state['batches'] ) ); ?>本</td></tr>
 					<tr><th>公開する時刻</th><td><?php echo esc_html( implode( '、', self::slots() ) ); ?>（今日公開した数: <?php echo (int) ( $state['published'][ current_time( 'Y-m-d' ) ] ?? 0 ); ?>本）</td></tr>
 					<tr><th>次のテーマ</th><td><?php echo esc_html( self::next_topic() ? self::next_topic() : '（テーマ一覧を使い切ったため、AIがテーマを選びます）' ); ?></td></tr>
+					<?php $guide = $s['guides'] ? SNSCS_Column_Kinds::next_guide( (array) $state['guides'] ) : null; ?>
+					<tr><th>次の攻略ガイド</th><td><?php echo $guide ? esc_html( SNSCS_Column_Kinds::guide_topic( $guide['sns'], $guide['genre']->name ) . '（掲載中' . number_format_i18n( $guide['count'] ) . '人）' ) : '—'; ?></td></tr>
+					<?php $cands = $s['trend_per_day'] ? SNSCS_Column_Kinds::trend_candidates( (array) $state['trend_done'] ) : array(); ?>
+					<tr><th>トレンド記事の候補</th><td><?php echo $cands ? esc_html( implode( '、', array_map( function ( $c ) { return '「' . $c['term'] . '」（7日で' . $c['visitors'] . '人）'; }, array_slice( $cands, 0, 5 ) ) ) ) : 'いまはありません（急上昇した言葉が出ると候補になります）'; ?></td></tr>
+					<tr><th>月刊レポート</th><td><?php echo $state['report_done'] ? esc_html( '最後に作った月: ' . $state['report_done'] ) : 'まだありません'; ?>（毎月1日の8時以降に、前の月の分を作ります）</td></tr>
 				</tbody>
 			</table>
 
@@ -831,6 +927,7 @@ PROMPT
 				<button class="button button-primary" name="do" value="now" <?php disabled( ! $has_key ); ?> onclick="this.textContent='執筆中です（2〜5分ほどかかります）…';">1本すぐに書いてみる（下書き）</button>
 				<button class="button" name="do" value="order" <?php disabled( ! $has_key ); ?>>1日分をまとめて依頼する</button>
 				<button class="button" name="do" value="rewrite" <?php disabled( ! $has_key ); ?> onclick="return confirm( 'スターター記事（短い版）を、5000字前後の記事に書き直します。公開中の記事も、同じURLのまま中身が新しくなります。よろしいですか？' );">スターター記事を5000字版に書き直す</button>
+				<button class="button" name="do" value="kinds" <?php disabled( ! $has_key ); ?>>トレンド記事・前の月のレポートをいま依頼する</button>
 				<button class="button" name="do" value="check">仕上がりを確認</button>
 			</form>
 			<p class="description">「1本すぐに書いてみる」は画面が数分止まります。ふだんの自動投稿は、まとめて依頼する方式（料金が半分）で、サーバーで待たずに進みます。</p>
@@ -890,6 +987,18 @@ PROMPT
 							<label><input type="checkbox" name="eyecatch" value="1" <?php checked( $s['eyecatch'] ); ?>> タイトル入りのアイキャッチ画像</label><br>
 							<label><input type="checkbox" name="ai_note" value="1" <?php checked( $s['ai_note'] ); ?>> 記事の最後に「生成AIを活用して作成」の一文</label>
 						</td>
+					</tr>
+					<tr>
+						<th scope="row">記事の種類</th>
+						<td>
+							<label><input type="checkbox" name="guides" value="1" <?php checked( $s['guides'] ); ?>> 攻略ガイド（ジャンル × SNS）をコラムと交互に書く</label><br>
+							<label>トレンド記事を1日に <input type="number" name="trend_per_day" min="0" max="3" value="<?php echo (int) $s['trend_per_day']; ?>" class="small-text"> 本まで書く（0で書かない。上の「1日の本数」とは別）</label><br>
+							<label><input type="checkbox" name="report" value="1" <?php checked( $s['report'] ); ?>> 毎月1日に、月刊SNSトレンドレポートを書く</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">サイト内リンク</th>
+						<td><label><input type="checkbox" name="autolink" value="1" <?php checked( $s['autolink'] ); ?>> コラムの中の言葉に、トレンドのページ・特集ページへのリンクを自動で付け、最後に「関連するページ」を出す（これまでの記事にも付きます）</label></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="snscs-ap-topics">テーマ一覧</label></th>
