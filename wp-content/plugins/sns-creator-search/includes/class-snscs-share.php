@@ -333,7 +333,7 @@ class SNSCS_Share {
 	 *
 	 * @return array{0:string,1:int} [文字, 大きさ]
 	 */
-	private static function fit( $text, $font, $size, $max_width ) {
+	public static function fit( $text, $font, $size, $max_width ) {
 		$measure = function ( $t, $s ) use ( $font ) {
 			$box = imagettfbbox( $s, 0, $font, $t );
 			return $box[2] - $box[0];
@@ -347,7 +347,7 @@ class SNSCS_Share {
 		return array( $text, $size );
 	}
 
-	private static function rounded_rect( $image, $x1, $y1, $x2, $y2, $r, $color ) {
+	public static function rounded_rect( $image, $x1, $y1, $x2, $y2, $r, $color ) {
 		imagefilledrectangle( $image, $x1 + $r, $y1, $x2 - $r, $y2, $color );
 		imagefilledrectangle( $image, $x1, $y1 + $r, $x2, $y2 - $r, $color );
 		foreach ( array( array( $x1 + $r, $y1 + $r ), array( $x2 - $r, $y1 + $r ), array( $x1 + $r, $y2 - $r ), array( $x2 - $r, $y2 - $r ) ) as $c ) {

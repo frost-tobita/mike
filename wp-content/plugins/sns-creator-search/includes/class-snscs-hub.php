@@ -244,7 +244,24 @@ class SNSCS_Hub {
 			<?php if ( isset( $_GET['snscs_saved'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>設定を保存しました。</p></div>
 			<?php endif; ?>
+			<?php if ( isset( $_GET['snscs_msg'] ) && 'report' === $_GET['snscs_msg'] ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html( sprintf( '成長レポートを%d人分作成しました。', isset( $_GET['n'] ) ? (int) $_GET['n'] : 0 ) ); ?></p></div>
+			<?php endif; ?>
 			<?php // phpcs:enable ?>
+
+			<h2>月間成長レポート</h2>
+			<?php $built = get_option( 'snscs_report_built' ); ?>
+			<p>毎月1日の朝に、前の月の数字をまとめた画像を発信者ごとに作り、お知らせ（サイト内・メール・スマホ通知）で届けます。発信者がSNSでシェアすると、見た人がサイトに来ます。<?php echo $built ? esc_html( sprintf( '前回: %s分を%s人に作成（%s）。', $built['month'], number_format_i18n( $built['count'] ), $built['at'] ) ) : ''; ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="snscs_report_build">
+				<?php wp_nonce_field( 'snscs_report_build', 'snscs_nonce' ); ?>
+				<label>対象の月 <input type="month" name="month" value="<?php echo esc_attr( gmdate( 'Y-m', strtotime( current_time( 'Y-m-01' ) . ' -1 month' ) ) ); ?>"></label>
+				<label><input type="checkbox" name="notify" value="1"> 発信者にお知らせする</label>
+				<button type="submit" class="button">今すぐ作成</button>
+				<?php if ( ! SNSCS_Share::font() ) : ?>
+					<p class="description" style="color:#b32d2e">日本語のフォントが見つからないため、画像を作れません。下の「シェア画像のフォント」を設定してください。</p>
+				<?php endif; ?>
+			</form>
 
 			<h2>機能ページ</h2>
 			<p>下のボタンで、まだ無いページをまとめて作成・公開します。作ったページはメニューやトップページからリンクしてください。</p>

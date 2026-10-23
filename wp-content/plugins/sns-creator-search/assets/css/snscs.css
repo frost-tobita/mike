@@ -3443,3 +3443,59 @@ body.snscs-portal-body {
 	color: #b32d2e;
 	font-size: 0.85em;
 }
+
+/* ------------------------------------------------------------------
+ * 月間成長レポート（SNSCS_Report）
+ * ---------------------------------------------------------------- */
+
+.snscs-report__body {
+	display: grid;
+	grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+}
+
+.snscs-report__image {
+	width: 100%;
+	height: auto;
+	border-radius: 12px;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.snscs-report__actions {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.snscs-report__actions .snscs-share__button,
+.snscs-report__actions .snscs-button {
+	text-align: center;
+}
+
+.snscs-report__actions textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.snscs-share__button--threads {
+	background: #000;
+	color: #fff;
+}
+
+@media (max-width: 640px) {
+	.snscs-report__body {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* テーマのリンクの色に負けないよう、シェアボタンの文字は白に固定する。 */
+a.snscs-share__button,
+a.snscs-share__button:visited,
+a.snscs-share__button:hover {
+	color: #fff;
+}
+
+.snscs-report__actions .snscs-share__button {
+	justify-content: center;
+}

@@ -127,7 +127,10 @@ Googleアドセンスを使う場合は「広告枠 → 設定」で `ads.txt` �
 4. **X**（有料）: 使うときだけオンにし、更新の間隔と1日の上限を決める
 5. 設定したものから自動で更新が始まる（1時間ごとに少しずつ）。発信者ページに「✓ 公式の数」「✓ 本人確認済み」の印と、30日の増減が出る
 
-### 11. 動作確認用のダミーデータ
+### 11. 月間成長レポート
+毎月1日に自動で作られ、発信者に届きます（設定は不要）。日本語のフォントが必要です（「集客・回遊」の「シェア画像のフォント」）。過去の月を作り直すときは「集客・回遊」の「月間成長レポート」から。
+
+### 12. 動作確認用のダミーデータ
 ```
 wp snscs seed --count=10000   # ダミー発信者を1万人作る
 wp snscs delete-dummy         # ダミー発信者を全部消す
@@ -209,6 +212,7 @@ wp-content/plugins/sns-creator-search/
 │   ├── class-snscs-social.php      読者会員・フォロー・いいね・リポスト・ブックマーク
 │   ├── class-snscs-inbox.php       お知らせ（サイト内・メール）
 │   ├── class-snscs-people.php      会員の公開プロフィールと会員どうしのフォロー
+│   ├── class-snscs-report.php      月間成長レポート（シェア用の画像とページ）
 │   ├── class-snscs-sync.php        フォロワー数の自動更新（各SNSの公式API）と本人連携
 │   ├── class-snscs-push.php        スマホ・パソコンへのプッシュ通知（Web Push）・ホーム画面に追加
 │   ├── class-snscs-stories.php     記事の公開（すぐ公開・予約・ハッシュタグ）・みんなの記事・話題の記事・拡散
@@ -223,6 +227,7 @@ wp-content/plugins/sns-creator-search/
     assets/js/snscs-search.js       検索の行動の記録・入力中の候補
     assets/js/snscs-social.js       フォロー・いいね・リポスト・ブックマークのボタン・続きから読む
     assets/js/snscs-inbox.js        未読のお知らせの数
+    assets/js/snscs-report.js       成長レポートの「画像をシェア」
     assets/js/snscs-push.js         「この端末で通知を受け取る」
     assets/js/snscs-sw.js           サービスワーカー（通知の表示）
 ```

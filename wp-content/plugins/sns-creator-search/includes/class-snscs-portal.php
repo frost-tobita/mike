@@ -288,6 +288,7 @@ class SNSCS_Portal {
 		</section>
 
 		<?php if ( $published ) : ?>
+			<?php SNSCS_Report::render_portal( $creator_id ); ?>
 			<?php SNSCS_Sync::render_portal( $creator_id ); ?>
 			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
 			<?php self::render_referral( $creator_id ); ?>

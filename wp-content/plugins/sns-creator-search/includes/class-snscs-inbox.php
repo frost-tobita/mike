@@ -30,7 +30,7 @@ class SNSCS_Inbox {
 	const KEEP_DAYS   = 90;
 
 	/** メールで送る種類 */
-	const EMAIL_TYPES = array( 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction' );
+	const EMAIL_TYPES = array( 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'schedule' ) );
@@ -203,6 +203,9 @@ class SNSCS_Inbox {
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "{$name}さんが記事を公開しました:「{$title}」", 'url' => get_permalink( $object ) ) : null;
 			case 'repost':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "{$name}さんがリポストしました:「{$title}」", 'url' => add_query_arg( 'rp', $actor, get_permalink( $object ) ) ) : null;
+			case 'monthly_report':
+				$month = SNSCS_Report::latest_month( $object );
+				return '' !== $month ? array( 'text' => SNSCS_Report::month_label( $month ) . 'の成長レポートが届きました。画像をSNSでシェアしてみましょう。', 'url' => snscs_portal_url() . '#snscs-report' ) : null;
 			case 'user_repost':
 				return SNSCS_Social::is_article( $object ) && SNSCS_People::is_public( $actor ) ? array( 'text' => SNSCS_People::nickname( $actor ) . "さんがリポストしました:「{$title}」", 'url' => add_query_arg( 'ru', $actor, get_permalink( $object ) ) ) : null;
 			case 'new_user_follower':
