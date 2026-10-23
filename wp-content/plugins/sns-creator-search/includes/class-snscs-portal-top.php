@@ -46,8 +46,59 @@ class SNSCS_Portal_Top {
 		return $templates;
 	}
 
+	private static $active = null;
+
+	/**
+	 * このページをポータルの見た目（このプラグインのヘッダー・フッター。テーマのCSSは外す）で出すか。
+	 *
+	 * 「集客・回遊」の「ポータルの見た目にするページ」で決める:
+	 *   top    … テンプレート「SNS検索ポータル（全幅）」を選んだページだけ
+	 *   plugin … それに加えて、このプラグインのページ（機能ページ・検索・マイページ・規約・発信者・記事・コラム）（初期値）
+	 *   site   … サイトのすべての固定ページ・投稿
+	 */
 	public static function is_active() {
-		return is_singular( 'page' ) && self::TEMPLATE === get_page_template_slug( get_queried_object_id() );
+		if ( null !== self::$active && did_action( 'wp' ) ) {
+			return self::$active;
+		}
+		$active = false;
+		if ( is_singular( 'page' ) && self::TEMPLATE === get_page_template_slug( get_queried_object_id() ) ) {
+			$active = true;
+		} elseif ( ! is_admin() && ! is_feed() && ! is_embed() && is_singular() ) {
+			$scope = (string) SNSCS_Hub::setting( 'portal_scope' );
+			if ( 'site' === $scope ) {
+				$active = true;
+			} elseif ( 'plugin' === $scope ) {
+				$active = self::is_plugin_page( get_queried_object_id() );
+			}
+		}
+		if ( did_action( 'wp' ) ) {
+			self::$active = $active;
+		}
+		return $active;
+	}
+
+	/**
+	 * このプラグインが作った・使うページか。
+	 */
+	public static function is_plugin_page( $id ) {
+		$type = get_post_type( $id );
+		if ( in_array( $type, array( SNSCS_Post_Types::POST_TYPE, SNSCS_Articles::POST_TYPE ), true ) ) {
+			return true;
+		}
+		if ( 'post' === $type ) {
+			return SNSCS_Columns::is_column( $id );
+		}
+		if ( 'page' !== $type ) {
+			return false;
+		}
+		$ids = array_map( 'intval', array_values( (array) get_option( SNSCS_Hub::PAGES, array() ) ) );
+		foreach ( array( 'snscs_search_page_id', 'snscs_portal_page_id', 'snscs_portal_top_id' ) as $option ) {
+			$ids[] = (int) get_option( $option );
+		}
+		foreach ( array_keys( SNSCS_Legal::pages() ) as $key ) {
+			$ids[] = (int) SNSCS_Legal::page_id( $key );
+		}
+		return in_array( (int) $id, array_filter( $ids ), true );
 	}
 
 	public static function use_template( $template ) {
@@ -612,6 +663,13 @@ class SNSCS_Portal_Top {
 	private static function rank_row( $rank, array $item, $note ) {
 		$main = $item['accounts'] ? $item['accounts'][0]['platform_label'] : '';
 		return '<li><span class="snscs-pt-rank">' . (int) $rank . '</span><a href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['name'] ) . '</a><span class="snscs-pt-meta">' . esc_html( $main ) . '</span>' . ( '' !== $note ? '<span class="snscs-pt-growth">' . esc_html( $note ) . '</span>' : '' ) . '</li>';
+	}
+
+	/**
+	 * トップ以外のページの右の列（トップの右の列と同じ中身）。
+	 */
+	public static function sidebar() {
+		return self::right_column();
 	}
 
 	private static function right_column() {

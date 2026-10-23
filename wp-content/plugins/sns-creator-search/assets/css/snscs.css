@@ -6231,3 +6231,188 @@ ol.snscs-mylink__steps > li {
 .snscs-mylink img {
 	border: 0 !important;
 }
+
+/* ---------------------------------------------------------------------
+ * 1.17.4: トップ以外のページもポータルの見た目で（本文＋右の列）
+ * ------------------------------------------------------------------- */
+
+body.snscs-portal-body .snscs-pm__layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 300px;
+	align-items: start;
+	gap: 24px;
+	box-sizing: border-box;
+	max-width: 1240px;
+	margin: 24px auto 0;
+	padding: 0 24px;
+}
+
+body.snscs-portal-body .snscs-pm__layout .snscs-pm__page {
+	min-width: 0;
+	max-width: none;
+	margin: 0;
+}
+
+body.snscs-portal-body .snscs-pm__side {
+	position: sticky;
+	top: 16px;
+}
+
+/* 本文の読みやすさ（テーマのCSSが無いので、ここで決める） */
+body.snscs-portal-body .snscs-pm__page p {
+	margin: 0 0 1.2em;
+	line-height: 1.85;
+}
+
+body.snscs-portal-body .snscs-pm__page :is(ul, ol):not([class]) {
+	margin: 0 0 1.2em;
+	padding-left: 1.5em;
+}
+
+body.snscs-portal-body .snscs-pm__page :is(ul, ol):not([class]) li {
+	margin: 0.3em 0;
+	line-height: 1.75;
+}
+
+body.snscs-portal-body .snscs-pm__page img {
+	max-width: 100%;
+	height: auto;
+}
+
+body.snscs-portal-body .snscs-pm__page table {
+	width: 100%;
+	margin: 0 0 1.2em;
+	border-collapse: collapse;
+}
+
+body.snscs-portal-body .snscs-pm__page :is(th, td) {
+	padding: 8px 10px;
+	border: 1px solid #e5e7eb;
+	text-align: left;
+}
+
+body.snscs-portal-body .snscs-pm__page blockquote {
+	margin: 0 0 1.2em;
+	padding: 10px 16px;
+	border-left: 4px solid #c7d2fe;
+	background: #f8fafc;
+}
+
+body.snscs-portal-body .snscs-pm__page input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.snscs-portal-body .snscs-pm__page select,
+body.snscs-portal-body .snscs-pm__page textarea {
+	max-width: 100%;
+	padding: 8px 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 8px;
+	font: inherit;
+}
+
+/* サイト内ナビ・パンくずには、どのテーマでも「・」や番号を付けない */
+.snscs-quicknav ul,
+.snscs-breadcrumbs ol {
+	margin-left: 0 !important;
+	padding-left: 0 !important;
+	list-style: none !important;
+}
+
+.snscs-quicknav li,
+.snscs-breadcrumbs li {
+	margin-left: 0 !important;
+	padding-left: 0 !important;
+	list-style: none !important;
+	background: none !important;
+}
+
+.snscs-quicknav li::before,
+.snscs-quicknav li::after,
+.snscs-quicknav__link::before,
+.snscs-quicknav__link::after,
+.snscs-breadcrumbs li::marker {
+	display: none !important;
+	content: none !important;
+}
+
+.snscs-breadcrumbs li + li::before {
+	display: inline !important;
+	margin: 0 6px !important;
+	color: #9ca3af;
+	content: "›" !important;
+}
+
+/* 用語集などの章の見出し（テーマの飾りの代わり） */
+body.snscs-portal-body .snscs-pm__page h2.snscs-single__heading {
+	text-align: left;
+}
+
+@media (max-width: 959px) {
+	body.snscs-portal-body .snscs-pm__layout {
+		grid-template-columns: minmax(0, 1fr);
+		padding: 0 12px;
+	}
+
+	body.snscs-portal-body .snscs-pm__side {
+		position: static;
+	}
+
+	body.snscs-portal-body .snscs-pm__layout .snscs-pm__page {
+		padding: 20px 16px;
+	}
+}
+
+/* ポータルの見た目のページのボタン（テーマのボタンの形が無いので、ここで決める） */
+body.snscs-portal-body .snscs-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 40px;
+	padding: 0 18px;
+	border: 1px solid #d1d5db;
+	border-radius: 999px;
+	background: #fff;
+	color: #1f2937;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+body.snscs-portal-body .snscs-button:hover {
+	border-color: #1d4ed8;
+	color: #1d4ed8;
+	text-decoration: none;
+}
+
+body.snscs-portal-body .snscs-button--primary,
+body.snscs-portal-body .snscs-button--primary:hover {
+	border-color: #1d4ed8;
+	background: #1d4ed8;
+	color: #fff;
+}
+
+body.snscs-portal-body .snscs-button--primary:hover {
+	border-color: #1e3a8a;
+	background: #1e3a8a;
+}
+
+/* スマホでは、サイト内ナビを横にスクロールする1行に（上が長くならないように） */
+@media (max-width: 759px) {
+	.snscs-quicknav ul {
+		flex-wrap: nowrap !important;
+		margin-right: -16px !important;
+		padding-right: 16px !important;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.snscs-quicknav ul::-webkit-scrollbar {
+		display: none;
+	}
+
+	.snscs-quicknav li {
+		flex: 0 0 auto;
+	}
+}

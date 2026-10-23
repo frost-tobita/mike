@@ -62,9 +62,14 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 		<?php if ( $snscs_is_top ) : ?>
 			<?php the_content(); ?>
 		<?php else : ?>
-			<div class="snscs-pm__page">
-				<h1 class="snscs-pm__title"><?php the_title(); ?></h1>
-				<?php the_content(); ?>
+			<div class="snscs-pm__layout">
+				<div class="snscs-pm__page">
+					<h1 class="snscs-pm__title"><?php the_title(); ?></h1>
+					<?php the_content(); ?>
+				</div>
+				<div class="snscs-pt snscs-pt-right snscs-pm__side" role="complementary" aria-label="ログインとトレンド">
+					<?php echo SNSCS_Portal_Top::sidebar(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+				</div>
 			</div>
 		<?php endif; ?>
 	<?php endwhile; ?>

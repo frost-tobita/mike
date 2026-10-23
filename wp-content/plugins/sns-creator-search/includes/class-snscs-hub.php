@@ -105,6 +105,7 @@ class SNSCS_Hub {
 			'trend_min_visitors' => 3,
 			'search_trend_count' => 8,
 			'founders_limit'     => 100,
+			'portal_scope'       => 'plugin',
 			'hero_title'         => 'SNSで活躍する発信者が、きっと見つかる',
 			'hero_text'          => 'X・YouTube・Instagram・TikTokなどの発信者を、ジャンルやSNSから探せます。',
 			'trend_block'        => '',
@@ -229,6 +230,7 @@ class SNSCS_Hub {
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
 		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
 		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 100 ) ) );
+		$settings['portal_scope']       = in_array( $in['portal_scope'] ?? '', array( 'top', 'plugin', 'site' ), true ) ? $in['portal_scope'] : 'plugin';
 		$settings['hero_title']         = mb_substr( sanitize_text_field( (string) ( $in['hero_title'] ?? '' ) ), 0, 60 );
 		$settings['hero_text']          = mb_substr( sanitize_text_field( (string) ( $in['hero_text'] ?? '' ) ), 0, 120 );
 		if ( '' === $settings['hero_title'] ) {
@@ -366,6 +368,15 @@ class SNSCS_Hub {
 						<th scope="row"><label for="search_trend_count">検索窓の下のトレンドワード</label></th>
 						<td><input id="search_trend_count" type="number" name="search_trend_count" min="0" max="20" value="<?php echo (int) $s['search_trend_count']; ?>" class="small-text"> 個まで表示
 						<p class="description">トップページの検索窓のすぐ下に、いま検索が増えている言葉（急上昇）と人気の言葉を並べます。足りないときは発信者の多いジャンルで補います。0 にすると表示しません。初期値 8個。</p></td>
+					</tr>
+					<tr>
+						<th scope="row">ポータルの見た目にするページ</th>
+						<td>
+							<?php foreach ( array( 'top' => 'トップページだけ（テンプレート「SNS検索ポータル（全幅）」を選んだページ）', 'plugin' => 'このプラグインのページすべて（おすすめ）: 機能ページ・検索・マイページ・会員ページ・規約・発信者・記事・コラム', 'site' => 'サイト全体（すべての固定ページ・投稿）' ) as $snscs_k => $snscs_l ) : ?>
+								<label style="display:block;margin:4px 0"><input type="radio" name="portal_scope" value="<?php echo esc_attr( $snscs_k ); ?>" <?php checked( $s['portal_scope'], $snscs_k ); ?>> <?php echo esc_html( $snscs_l ); ?></label>
+							<?php endforeach; ?>
+							<p class="description">選んだページは、トップページと同じヘッダー・フッター・右の列で表示し、テーマ（AFFINGER など）の見た目は使いません。広告・アクセス解析のコードはそのまま動きます。</p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="hero_title">トップの看板の見出し</label></th>
