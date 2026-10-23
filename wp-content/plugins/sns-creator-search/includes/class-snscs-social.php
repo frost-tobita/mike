@@ -901,6 +901,7 @@ class SNSCS_Social {
 		if ( 'account' === $tab ) {
 			SNSCS_People::render_settings( $user_id );
 			SNSCS_Push::render_settings();
+			SNSCS_Line::render_settings( $user_id );
 			SNSCS_Inbox::render_settings( $user_id );
 			self::render_account();
 			return;

@@ -162,6 +162,11 @@ class SNSCS_Share {
 	 * バッジに書く順位（ジャンル100位以内・10人以上のジャンル → 総合100位以内 → 無し）。
 	 */
 	public static function badge_rank_label( $creator_id ) {
+		// 最近の月間アワードの受賞がいちばん目立つ。
+		$award = SNSCS_Awards::recent_label( $creator_id );
+		if ( '' !== $award ) {
+			return $award;
+		}
 		$genre = self::genre_standing( $creator_id );
 		if ( $genre && $genre['rank'] <= 100 && $genre['total'] >= 10 ) {
 			return sprintf( '%sジャンル%d位', $genre['name'], $genre['rank'] );

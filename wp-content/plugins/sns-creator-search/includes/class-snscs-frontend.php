@@ -453,6 +453,7 @@ class SNSCS_Frontend {
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
 		self::render_accounts( $accounts, true );
 		self::render_links( SNSCS_Submissions::links_for( $id ), SNSCS_Submissions::stores_for( $id ) );
+		echo SNSCS_Awards::creator_box( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Inquiries::form_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( $id, 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Social::reposts_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
@@ -460,6 +461,7 @@ class SNSCS_Frontend {
 		// 回遊: 一緒に見られている発信者（予測）→ 似ている発信者 → 最近見た発信者（この人のブラウザの記録）。
 		echo SNSCS_Personalize::also_viewed_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Recommend::similar_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		echo SNSCS_Similar::link_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Personalize::placeholder( 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Columns::for_creator( $id, $accounts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		$running = false;

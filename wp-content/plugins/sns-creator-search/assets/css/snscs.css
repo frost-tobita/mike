@@ -3954,3 +3954,164 @@ a.snscs-autolink {
 	color: #6b7280;
 	font-size: 0.9em;
 }
+
+/* 似ている発信者 */
+.snscs-similar__more {
+	margin: 4px 0 20px;
+	text-align: right;
+}
+
+/* 月間アワード */
+.snscs-award {
+	margin: 24px 0;
+	padding: 16px;
+	background: linear-gradient(180deg, #fffbeb, #fff);
+	border: 1px solid #fde68a;
+	border-radius: 14px;
+}
+
+.snscs-award__title {
+	margin: 0 0 10px;
+	font-size: 1.1em;
+}
+
+.snscs-award__wins {
+	margin: 0 0 12px;
+	padding: 0;
+	color: #92400e;
+	font-weight: 700;
+	list-style: none;
+}
+
+.snscs-award__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.snscs-award__row p {
+	margin: 0;
+}
+
+.snscs-award__vote.is-on {
+	opacity: 0.7;
+}
+
+.snscs-award__msg {
+	flex-basis: 100%;
+	margin: 4px 0 0;
+	color: #065f46;
+	font-size: 0.9em;
+}
+
+.snscs-award__history {
+	padding-left: 1.2em;
+}
+
+.snscs-award-portal__win img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 12px;
+}
+
+/* コラボ相手探し */
+.snscs-collab__filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px 0 16px;
+}
+
+.snscs-collab__filter select {
+	max-width: 100%;
+}
+
+.snscs-collab__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-collab__item {
+	margin: 0 0 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-collab__note,
+.snscs-collab__message {
+	margin: 6px 0;
+	white-space: pre-wrap;
+}
+
+.snscs-collab__apply summary {
+	display: inline-block;
+	cursor: pointer;
+	list-style: none;
+}
+
+.snscs-collab__apply summary::-webkit-details-marker {
+	display: none;
+}
+
+.snscs-collab__apply form {
+	margin-top: 10px;
+}
+
+.snscs-collab__apply textarea,
+.snscs-collab-portal textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.snscs-collab__kind {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.snscs-collab__req {
+	margin: 10px 0;
+	padding: 10px 12px;
+	background: #f9fafb;
+	border-radius: 10px;
+}
+
+.snscs-collab__answer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.snscs-collab__contact {
+	font-weight: 700;
+}
+
+/* LINE */
+.snscs-line__add {
+	margin-top: 6px;
+	color: #fff;
+	background: #06c755;
+	border-color: #06c755;
+}
+
+a.snscs-line__add:hover,
+a.snscs-line__add:focus-visible {
+	color: #fff;
+	background: #05a847;
+}
+
+.snscs-line__code {
+	font-size: 1.4em;
+	letter-spacing: 0.15em;
+}
+
+/* 埋め込みの作成ページ */
+.snscs-embedmaker textarea {
+	width: 100%;
+	box-sizing: border-box;
+	font-family: ui-monospace, monospace;
+	font-size: 0.85em;
+}

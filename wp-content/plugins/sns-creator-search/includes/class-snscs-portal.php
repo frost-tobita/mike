@@ -290,6 +290,9 @@ class SNSCS_Portal {
 		<?php if ( $published ) : ?>
 			<?php SNSCS_Report::render_portal( $creator_id ); ?>
 			<?php SNSCS_Trend_Alerts::render_portal( $creator_id ); ?>
+			<?php SNSCS_Awards::render_portal( $creator_id ); ?>
+			<?php SNSCS_Collab::render_portal( $creator_id ); ?>
+			<?php SNSCS_Line::render_settings( get_current_user_id() ); ?>
 			<?php SNSCS_Sync::render_portal( $creator_id ); ?>
 			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
 			<?php self::render_referral( $creator_id ); ?>

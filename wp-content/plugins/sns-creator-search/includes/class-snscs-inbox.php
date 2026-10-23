@@ -30,7 +30,7 @@ class SNSCS_Inbox {
 	const KEEP_DAYS   = 90;
 
 	/** メールで送る種類 */
-	const EMAIL_TYPES = array( 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction' );
+	const EMAIL_TYPES = array( 'award', 'collab', 'collab_ok', 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'schedule' ) );
@@ -69,6 +69,7 @@ class SNSCS_Inbox {
   read_at datetime DEFAULT NULL,
   emailed tinyint(1) unsigned NOT NULL DEFAULT 0,
   pushed tinyint(1) unsigned NOT NULL DEFAULT 0,
+  lined tinyint(1) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   UNIQUE KEY one_per_day (user_id,type,object_id,actor_id,day),
   KEY user_unread (user_id,read_at),
@@ -218,6 +219,13 @@ class SNSCS_Inbox {
 				return array( 'text' => $count > 1 ? "{$count}人に新しくフォローされました。" : '新しくフォローされました。', 'url' => snscs_portal_url() );
 			case 'trend':
 				return SNSCS_Trend_Alerts::describe( $object );
+			case 'award':
+				$wins = SNSCS_Awards::wins( $object );
+				return $wins ? array( 'text' => 'おめでとうございます！' . SNSCS_Awards::month_label( $wins[0]['month'] ) . 'の' . $wins[0]['genre']->name . 'アワードで' . $wins[0]['rank'] . '位になりました（' . $wins[0]['votes'] . '票）。受賞画像をSNSでシェアしましょう。', 'url' => snscs_portal_url() . '#snscs-award' ) : null;
+			case 'collab':
+				return SNSCS_Collab::describe( $object );
+			case 'collab_ok':
+				return SNSCS_Collab::describe( $object, true );
 			case 'reaction':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "あなたの記事「{$title}」に、いいね・リポストが{$count}件ありました。", 'url' => get_permalink( $object ) ) : null;
 		}
