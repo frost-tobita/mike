@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.10.0
+ * Version:           1.11.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.10.0' );
-define( 'SNSCS_DB_VERSION', '20' );
+define( 'SNSCS_VERSION', '1.11.0' );
+define( 'SNSCS_DB_VERSION', '22' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -49,6 +49,9 @@ require_once SNSCS_DIR . 'includes/class-snscs-invites.php';
 require_once SNSCS_DIR . 'includes/class-snscs-hub.php';
 require_once SNSCS_DIR . 'includes/class-snscs-personalize.php';
 require_once SNSCS_DIR . 'includes/class-snscs-trends.php';
+require_once SNSCS_DIR . 'includes/class-snscs-trend-pages.php';
+require_once SNSCS_DIR . 'includes/class-snscs-trend-alerts.php';
+require_once SNSCS_DIR . 'includes/class-snscs-quiz.php';
 require_once SNSCS_DIR . 'includes/class-snscs-features.php';
 require_once SNSCS_DIR . 'includes/class-snscs-rankings.php';
 require_once SNSCS_DIR . 'includes/class-snscs-share.php';
@@ -112,10 +115,12 @@ function snscs_after_install() {
 	if ( get_option( 'snscs_after_install' ) ) {
 		delete_option( 'snscs_after_install' );
 		SNSCS_Post_Types::install_default_terms();
-		// 機能ページを作ってあるサイトには、あとから加わったページ（トレンド）も1度だけ作る。
-		if ( get_option( SNSCS_Hub::PAGES ) && ! get_option( 'snscs_trends_page_added' ) ) {
-			update_option( 'snscs_trends_page_added', 1 );
-			SNSCS_Hub::create_pages( array( 'trends' ) );
+		// 機能ページを作ってあるサイトには、あとから加わったページ（トレンド・診断）も1度だけ作る。
+		$added = (array) get_option( 'snscs_pages_added', get_option( 'snscs_trends_page_added' ) ? array( 'trends' ) : array() );
+		$new   = array_diff( array( 'trends', 'shindan' ), $added );
+		if ( get_option( SNSCS_Hub::PAGES ) && $new ) {
+			update_option( 'snscs_pages_added', array_merge( $added, $new ) );
+			SNSCS_Hub::create_pages( array_values( $new ) );
 		}
 		flush_rewrite_rules();
 	}
@@ -153,6 +158,7 @@ function snscs_install() {
 	SNSCS_Usage::install();
 	SNSCS_Personalize::install();
 	SNSCS_Trends::install();
+	SNSCS_Trend_Alerts::install();
 	SNSCS_Rankings::install();
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
@@ -209,6 +215,9 @@ SNSCS_Invites::init();
 SNSCS_Hub::init();
 SNSCS_Personalize::init();
 SNSCS_Trends::init();
+SNSCS_Trend_Pages::init();
+SNSCS_Trend_Alerts::init();
+SNSCS_Quiz::init();
 SNSCS_Features::init();
 SNSCS_Rankings::init();
 SNSCS_Share::init();

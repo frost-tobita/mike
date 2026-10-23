@@ -180,7 +180,7 @@ class SNSCS_Trends {
 	/**
 	 * 表に出してよい言葉か（管理画面の「表示しない言葉」を含まない）。
 	 */
-	private static function allowed( $term ) {
+	public static function allowed( $term ) {
 		foreach ( preg_split( '/\R/u', (string) SNSCS_Hub::setting( 'trend_block' ) ) as $word ) {
 			$word = trim( mb_strtolower( $word ) );
 			if ( '' !== $word && false !== mb_strpos( $term, $word ) ) {
@@ -393,7 +393,7 @@ class SNSCS_Trends {
 		$rank = $start;
 		foreach ( $rows as $row ) {
 			$meta  = $rank . ' · ' . $label . ( $row['hot'] ? ' · 急上昇' : '' );
-			$html .= '<li class="snscs-trendlist__item"><a class="snscs-trendlist__link" href="' . esc_url( self::search_link( $row['term'], $genre ) ) . '">'
+			$html .= '<li class="snscs-trendlist__item"><a class="snscs-trendlist__link" href="' . esc_url( SNSCS_Trend_Pages::url( $row['term'], $genre ) ) . '">'
 				. '<span class="snscs-trendlist__meta">' . esc_html( $meta ) . '</span>'
 				. '<span class="snscs-trendlist__term' . ( $row['hot'] ? ' snscs-trendlist__term--hot' : '' ) . '">' . esc_html( $row['term'] ) . '</span>'
 				. '<span class="snscs-trendlist__count">' . esc_html( sprintf( '%s人が検索（7日間）', number_format_i18n( $row['visitors'] ) ) ) . '</span>'
@@ -409,6 +409,9 @@ class SNSCS_Trends {
 	public static function page_shortcode() {
 		SNSCS_Hub::remember_page( 'trends' );
 		wp_enqueue_style( 'snscs' );
+		if ( SNSCS_Trend_Pages::current() ) {
+			return SNSCS_Trend_Pages::render( SNSCS_Trend_Pages::current() );
+		}
 		$genres  = self::genres_with_trends();
 		$current = isset( $_GET[ self::TAB_PARAM ] ) ? sanitize_title( wp_unslash( $_GET[ self::TAB_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 表示の切り替えだけ。
 		$term    = '' === $current ? null : get_term_by( 'slug', $current, SNSCS_Post_Types::TAX_GENRE );

@@ -52,9 +52,20 @@ class SNSCS_Share {
 		return add_query_arg( $var, $code, home_url( '/' ) );
 	}
 
-	public static function badge_url( $creator_id, $dark = false ) {
-		$url = self::file_url( self::BADGE_VAR, 'snscs-badge', $creator_id, 'svg' );
-		return $dark ? add_query_arg( 's', 'dark', $url ) : $url;
+	/**
+	 * バッジの形（'' = 明るい色、dark = 暗い色、card = カード型）。true は dark（以前の呼び方）。
+	 */
+	private static function badge_style( $style ) {
+		if ( true === $style ) {
+			return 'dark';
+		}
+		return in_array( $style, array( 'dark', 'card' ), true ) ? $style : '';
+	}
+
+	public static function badge_url( $creator_id, $style = '' ) {
+		$url   = self::file_url( self::BADGE_VAR, 'snscs-badge', $creator_id, 'svg' );
+		$style = self::badge_style( $style );
+		return '' !== $style ? add_query_arg( 's', $style, $url ) : $url;
 	}
 
 	public static function share_url( $creator_id ) {
@@ -74,11 +85,11 @@ class SNSCS_Share {
 		}
 		if ( '' !== $badge ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$dark = isset( $_GET['s'] ) && 'dark' === $_GET['s'];
+			$style = self::badge_style( isset( $_GET['s'] ) ? sanitize_key( wp_unslash( $_GET['s'] ) ) : '' );
 			header( 'Content-Type: image/svg+xml; charset=utf-8' );
 			header( 'Cache-Control: public, max-age=3600' );
 			header( 'X-Content-Type-Options: nosniff' );
-			echo self::badge_svg( $creator_id, $dark ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 中の文字は badge_svg() でエスケープ済み。
+			echo self::badge_svg( $creator_id, $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 中の文字は badge_svg() でエスケープ済み。
 			exit;
 		}
 		$file = self::share_file( $creator_id );
@@ -109,12 +120,90 @@ class SNSCS_Share {
 	}
 
 	/**
-	 * 掲載中バッジ。総合100位以内なら順位も入れる。
+	 * 発信者のジャンル内の順位（総合点で。いちばん良いジャンル。1時間ごとに数え直す）。
+	 *
+	 * @return array{name:string,slug:string,rank:int,total:int}|null
 	 */
-	public static function badge_svg( $creator_id, $dark = false ) {
-		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+	public static function genre_standing( $creator_id ) {
+		$key    = 'snscs_gstand_' . (int) $creator_id;
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached ? $cached : null;
+		}
+		global $wpdb;
+		$scores = SNSCS_Scores::table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$score = $wpdb->get_var( $wpdb->prepare( "SELECT score FROM {$scores} WHERE creator_id = %d AND scored_at IS NOT NULL", $creator_id ) );
+		$terms = get_the_terms( $creator_id, SNSCS_Post_Types::TAX_GENRE );
+		$best  = array();
+		if ( null !== $score && $terms && ! is_wp_error( $terms ) ) {
+			foreach ( $terms as $term ) {
+				$from = $wpdb->prepare(
+					"FROM {$scores} st INNER JOIN {$wpdb->posts} p ON p.ID = st.creator_id AND p.post_status = 'publish' AND p.post_type = %s
+					INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = st.creator_id AND tr.term_taxonomy_id = %d
+					WHERE st.scored_at IS NOT NULL", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					SNSCS_Post_Types::POST_TYPE,
+					$term->term_taxonomy_id
+				);
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				$rank  = 1 + (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) {$from} AND st.score > %f", $score ) );
+				$total = (int) $wpdb->get_var( "SELECT COUNT(*) {$from}" );
+				// phpcs:enable
+				if ( ! $best || $rank < $best['rank'] ) {
+					$best = array( 'name' => $term->name, 'slug' => $term->slug, 'rank' => $rank, 'total' => $total );
+				}
+			}
+		}
+		set_transient( $key, $best, HOUR_IN_SECONDS );
+		return $best ? $best : null;
+	}
+
+	/**
+	 * バッジに書く順位（ジャンル100位以内・10人以上のジャンル → 総合100位以内 → 無し）。
+	 */
+	public static function badge_rank_label( $creator_id ) {
+		$genre = self::genre_standing( $creator_id );
+		if ( $genre && $genre['rank'] <= 100 && $genre['total'] >= 10 ) {
+			return sprintf( '%sジャンル%d位', $genre['name'], $genre['rank'] );
+		}
 		$standing = SNSCS_Scores::standing( $creator_id );
-		$right    = ( $standing && $standing['rank'] <= 100 ) ? sprintf( '掲載中・総合%d位', $standing['rank'] ) : '掲載中';
+		return ( $standing && $standing['rank'] <= 100 ) ? sprintf( '総合%d位', $standing['rank'] ) : '';
+	}
+
+	/**
+	 * カード型のバッジ（ブログのサイドバーなど向け。順位を大きく出す）。
+	 */
+	private static function badge_card_svg( $creator_id ) {
+		$site  = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$rank  = self::badge_rank_label( $creator_id );
+		$name  = html_entity_decode( get_the_title( $creator_id ), ENT_QUOTES, 'UTF-8' );
+		$name  = mb_strlen( $name ) > 16 ? mb_substr( $name, 0, 15 ) . '…' : $name;
+		$big   = '' !== $rank ? $rank : '掲載中';
+		$size  = min( 26, (int) floor( 290 / max( 1, self::text_width( $big, 1 ) ) ) );
+		$label = $site . ' ' . $big . ' ' . $name;
+		return sprintf(
+			'<svg xmlns="http://www.w3.org/2000/svg" width="320" height="104" viewBox="0 0 320 104" role="img" aria-label="%1$s"><title>%1$s</title><clipPath id="snscs-badge-card"><rect width="320" height="104" rx="12"/></clipPath><rect x="0.5" y="0.5" width="319" height="103" rx="12" fill="#ffffff" stroke="#c7d2fe"/><rect width="8" height="104" fill="#4f46e5" clip-path="url(#snscs-badge-card)"/><g font-family="\'Hiragino Sans\',\'Noto Sans JP\',\'Yu Gothic\',Meiryo,sans-serif"><text x="22" y="26" font-size="12" font-weight="700" fill="#4f46e5">%2$s</text><text x="22" y="%3$d" font-size="%4$d" font-weight="800" fill="#111827">%5$s</text><text x="22" y="90" font-size="12" fill="#4b5563">%6$s</text></g></svg>',
+			esc_attr( $label ),
+			esc_html( $site . ( '' !== $rank ? ' のランキング' : '' ) ),
+			60 + (int) round( $size / 3 ),
+			$size,
+			esc_html( $big ),
+			esc_html( $name . ( '' !== $rank ? '・毎日更新' : '' ) )
+		);
+	}
+
+	/**
+	 * 順位バッジ。ジャンル・総合で上位なら順位も入れる。
+	 */
+	public static function badge_svg( $creator_id, $style = '' ) {
+		$style = self::badge_style( $style );
+		if ( 'card' === $style ) {
+			return self::badge_card_svg( $creator_id );
+		}
+		$dark     = 'dark' === $style;
+		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$rank     = self::badge_rank_label( $creator_id );
+		$right    = '' !== $rank ? '掲載中・' . $rank : '掲載中';
 		$size     = 12;
 		$left_w   = self::text_width( $site, $size ) + 20;
 		$right_w  = self::text_width( $right, $size ) + 20;
@@ -142,9 +231,11 @@ class SNSCS_Share {
 	/**
 	 * 発信者が自分のサイトに貼るHTML。
 	 */
-	public static function badge_html( $creator_id, $dark = false ) {
+	public static function badge_html( $creator_id, $style = '' ) {
 		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		return sprintf( '<a href="%s" target="_blank" rel="noopener"><img src="%s" alt="%s" height="24"></a>', esc_url( SNSCS_Referrals::link_for( $creator_id ) ), esc_url( self::badge_url( $creator_id, $dark ) ), esc_attr( $site . 'に掲載中' ) );
+		$rank = self::badge_rank_label( $creator_id );
+		$size = 'card' === self::badge_style( $style ) ? 'width="320" height="104"' : 'height="24"';
+		return sprintf( '<a href="%s" target="_blank" rel="noopener"><img src="%s" alt="%s" %s></a>', esc_url( SNSCS_Referrals::link_for( $creator_id ) ), esc_url( self::badge_url( $creator_id, $style ) ), esc_attr( $site . 'に掲載中' . ( '' !== $rank ? '（' . $rank . '）' : '' ) ), $size );
 	}
 
 	/* --------------------------------------------------------------------
@@ -427,8 +518,9 @@ class SNSCS_Share {
 	 * ------------------------------------------------------------------ */
 
 	public static function render_portal( $creator_id ) {
-		$position = SNSCS_Rankings::position( $creator_id );
-		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$position   = SNSCS_Rankings::position( $creator_id );
+		$site       = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$rank_label = self::badge_rank_label( $creator_id );
 		$link     = SNSCS_Referrals::link_for( $creator_id );
 		$lines    = array();
 		if ( $position['overall'] && $position['overall'] <= 100 ) {
@@ -443,7 +535,7 @@ class SNSCS_Share {
 		$text = $lines ? sprintf( '「%s」で%sになりました！ありがとうございます。', $site, implode( '・', $lines ) ) : sprintf( '「%s」に発信者として掲載されています。', $site );
 		?>
 		<section class="snscs-panel snscs-sharekit" id="snscs-sharekit">
-			<h2 class="snscs-panel__title">シェア画像と掲載中バッジ</h2>
+			<h2 class="snscs-panel__title">シェア画像と順位バッジ</h2>
 			<dl class="snscs-referral__stats">
 				<div><dt>総合ランキング</dt><dd><?php echo $position['overall'] ? esc_html( number_format_i18n( $position['overall'] ) . '位' ) : '—'; ?><?php if ( $position['previous'] ) : ?> <small>（先月 <?php echo esc_html( number_format_i18n( $position['previous'] ) ); ?>位）</small><?php endif; ?></dd></div>
 				<div><dt>急上昇ランキング</dt><dd><?php echo $position['rising'] ? esc_html( $position['rising'] . '位' ) : '圏外'; ?></dd></div>
@@ -461,14 +553,15 @@ class SNSCS_Share {
 			</div>
 			<p class="snscs-help">シェアのリンクはあなたの紹介リンクなので、見に来た人は紹介リンク流入として数えます。</p>
 
-			<h3 class="snscs-sharekit__heading">掲載中バッジ</h3>
-			<p>ブログやホームページに貼ってください。押した人はあなたのページに移動し、紹介リンク流入として数えます。</p>
-			<?php foreach ( array( false => '明るい色', true => '暗い色' ) as $dark => $label ) : ?>
+			<h3 class="snscs-sharekit__heading">順位バッジ</h3>
+			<p>ブログやホームページ、リンク集に貼ってください。<?php echo '' !== $rank_label ? esc_html( 'いまの順位（' . $rank_label . '）が入り、毎日自動で更新されます。' ) : 'ジャンルで100位以内に入ると、順位が自動で入ります。'; ?>押した人はあなたのページに移動し、紹介リンク流入として数えます。</p>
+			<?php foreach ( array( 'card' => 'カード型（おすすめ）', '' => '細長い形・明るい色', 'dark' => '細長い形・暗い色' ) as $style => $label ) : ?>
+				<?php $field = 'snscs-badge-' . ( '' !== $style ? $style : 'light' ); ?>
 				<div class="snscs-sharekit__badge">
-					<p><img src="<?php echo esc_url( self::badge_url( $creator_id, (bool) $dark ) ); ?>" alt="<?php echo esc_attr( $site . 'に掲載中' ); ?>" height="24"> <small><?php echo esc_html( $label ); ?></small></p>
-					<label class="screen-reader-text" for="snscs-badge-<?php echo (int) $dark; ?>">貼り付け用のHTML（<?php echo esc_html( $label ); ?>）</label>
-					<textarea id="snscs-badge-<?php echo (int) $dark; ?>" rows="3" readonly onclick="this.select();"><?php echo esc_textarea( self::badge_html( $creator_id, (bool) $dark ) ); ?></textarea>
-					<button type="button" class="snscs-button" onclick="var t=document.getElementById('snscs-badge-<?php echo (int) $dark; ?>');t.select();navigator.clipboard&&navigator.clipboard.writeText(t.value);this.textContent='コピーしました';">HTMLをコピー</button>
+					<p><img src="<?php echo esc_url( self::badge_url( $creator_id, (string) $style ) ); ?>" alt="<?php echo esc_attr( $site . 'に掲載中' ); ?>" <?php echo 'card' === $style ? 'width="320" height="104"' : 'height="24"'; ?>> <small><?php echo esc_html( $label ); ?></small></p>
+					<label class="screen-reader-text" for="<?php echo esc_attr( $field ); ?>">貼り付け用のHTML（<?php echo esc_html( $label ); ?>）</label>
+					<textarea id="<?php echo esc_attr( $field ); ?>" rows="3" readonly onclick="this.select();"><?php echo esc_textarea( self::badge_html( $creator_id, (string) $style ) ); ?></textarea>
+					<button type="button" class="snscs-button" onclick="var t=document.getElementById('<?php echo esc_attr( $field ); ?>');t.select();navigator.clipboard&&navigator.clipboard.writeText(t.value);this.textContent='コピーしました';">HTMLをコピー</button>
 				</div>
 			<?php endforeach; ?>
 		</section>

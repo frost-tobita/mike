@@ -216,6 +216,8 @@ class SNSCS_Inbox {
 				return array( 'text' => "まだ読み終えていないブックマークが{$count}件あります。", 'url' => SNSCS_Social::member_url( array( 'tab' => 'bookmarks' ) ) );
 			case 'new_follower':
 				return array( 'text' => $count > 1 ? "{$count}人に新しくフォローされました。" : '新しくフォローされました。', 'url' => snscs_portal_url() );
+			case 'trend':
+				return SNSCS_Trend_Alerts::describe( $object );
 			case 'reaction':
 				return SNSCS_Social::is_article( $object ) ? array( 'text' => "あなたの記事「{$title}」に、いいね・リポストが{$count}件ありました。", 'url' => get_permalink( $object ) ) : null;
 		}

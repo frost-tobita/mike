@@ -3616,3 +3616,203 @@ a.snscs-share__button:hover {
 	margin: 4px 8px 0;
 	font-size: 0.85em;
 }
+
+/* トレンドのキーワードのページ */
+.snscs-trendterm__lead {
+	font-size: 1.02em;
+	line-height: 1.8;
+}
+
+.snscs-trendterm__stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 8px;
+	margin: 12px 0 20px;
+}
+
+.snscs-trendterm__stats div {
+	padding: 10px 12px;
+	background: #f5f6fb;
+	border-radius: 10px;
+}
+
+.snscs-trendterm__stats dt {
+	color: #6b7280;
+	font-size: 0.8em;
+}
+
+.snscs-trendterm__stats dd {
+	margin: 2px 0 0;
+	font-weight: 700;
+	font-size: 1.3em;
+}
+
+.snscs-trendterm__hot {
+	display: inline-block;
+	padding: 1px 8px;
+	color: #fff;
+	font-size: 0.6em;
+	vertical-align: middle;
+	background: #dc2626;
+	border-radius: 999px;
+}
+
+.snscs-trendchart {
+	display: flex;
+	align-items: flex-end;
+	gap: 4px;
+	height: 150px;
+	margin: 8px 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-trendchart__bar {
+	position: relative;
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	justify-content: flex-end;
+	height: 100%;
+	min-width: 0;
+}
+
+.snscs-trendchart__bar::before {
+	content: "";
+	order: 1;
+	height: calc(var(--h) * 0.75);
+	min-height: 2px;
+	background: #6366f1;
+	border-radius: 4px 4px 0 0;
+}
+
+.snscs-trendchart__bar:last-child::before {
+	background: #dc2626;
+}
+
+.snscs-trendchart__value {
+	order: 0;
+	color: #4b5563;
+	font-size: 0.7em;
+	text-align: center;
+}
+
+.snscs-trendchart__day {
+	order: 2;
+	margin-top: 4px;
+	color: #6b7280;
+	font-size: 0.65em;
+	text-align: center;
+	white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+	.snscs-trendchart__bar:nth-child(odd) .snscs-trendchart__day {
+		visibility: hidden;
+	}
+}
+
+/* 発信者診断 */
+.snscs-quiz__lead {
+	font-size: 1.02em;
+}
+
+.snscs-quiz__q {
+	margin: 0 0 18px;
+	padding: 14px 14px 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: 14px;
+}
+
+.snscs-quiz__q legend {
+	padding: 0 6px;
+	font-weight: 700;
+	font-size: 1.05em;
+}
+
+.snscs-quiz__no {
+	display: inline-block;
+	margin-right: 8px;
+	padding: 1px 8px;
+	color: #fff;
+	font-size: 0.8em;
+	background: #4f46e5;
+	border-radius: 999px;
+}
+
+.snscs-quiz__opt {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 6px 8px 0;
+	padding: 8px 14px;
+	cursor: pointer;
+	background: #f5f6fb;
+	border: 2px solid transparent;
+	border-radius: 999px;
+}
+
+.snscs-quiz__opt input {
+	margin: 0;
+	accent-color: #4f46e5;
+}
+
+.snscs-quiz__opt:hover {
+	border-color: #c7d2fe;
+}
+
+.snscs-quiz__opt:has(input:checked) {
+	color: #312e81;
+	font-weight: 700;
+	background: #e0e7ff;
+	border-color: #4f46e5;
+}
+
+.snscs-quiz__opt:has(input:focus-visible) {
+	outline: 2px solid #4f46e5;
+	outline-offset: 2px;
+}
+
+.snscs-quiz__submit {
+	min-width: 200px;
+	padding: 12px 24px;
+	font-size: 1.1em;
+}
+
+.snscs-quiz__type {
+	padding: 28px 20px;
+	color: #fff;
+	text-align: center;
+	background: linear-gradient(180deg, #4f46e5, #3730a3);
+	border-radius: 18px;
+}
+
+.snscs-quiz__you {
+	margin: 0;
+	opacity: 0.85;
+}
+
+.snscs-quiz__name {
+	margin: 4px 0 12px;
+	font-weight: 800;
+	font-size: 1.8em;
+	line-height: 1.3;
+}
+
+.snscs-quiz__text {
+	max-width: 36em;
+	margin: 0 auto;
+	line-height: 1.8;
+}
+
+.snscs-quiz__cta {
+	margin: 20px 0;
+	text-align: center;
+}
+
+.snscs-quiz__cta .snscs-button {
+	display: inline-block;
+	max-width: 100%;
+	line-height: 1.5;
+	white-space: normal;
+}

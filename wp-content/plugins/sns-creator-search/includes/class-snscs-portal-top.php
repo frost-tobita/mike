@@ -300,7 +300,7 @@ class SNSCS_Portal_Top {
 		$rows = '';
 		$rank = 0;
 		foreach ( SNSCS_Trends::ranking( '', 8 ) as $row ) {
-			$rows .= '<li><span class="snscs-pt-rank">' . ( ++$rank ) . '</span><a href="' . esc_url( SNSCS_Trends::search_link( $row['term'] ) ) . '">' . esc_html( $row['term'] ) . '</a><span class="snscs-pt-meta">' . esc_html( $row['hot'] ? '急上昇' : '人気' ) . '</span></li>';
+			$rows .= '<li><span class="snscs-pt-rank">' . ( ++$rank ) . '</span><a href="' . esc_url( SNSCS_Trend_Pages::url( $row['term'] ) ) . '">' . esc_html( $row['term'] ) . '</a><span class="snscs-pt-meta">' . esc_html( $row['hot'] ? '急上昇' : '人気' ) . '</span></li>';
 		}
 		$out .= self::box( 'トレンドワード', $rows ? '<ol class="snscs-pt-ranks snscs-pt-ranks--small">' . $rows . '</ol>' : '', SNSCS_Trends::page_url() );
 

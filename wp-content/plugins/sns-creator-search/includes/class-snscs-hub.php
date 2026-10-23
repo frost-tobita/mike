@@ -38,6 +38,7 @@ class SNSCS_Hub {
 			'favorites'  => array( 'title' => 'お気に入りの発信者', 'slug' => 'favorites', 'shortcode' => '[sns_favorites]', 'nav' => 'お気に入り' ),
 			'stories'    => array( 'title' => 'みんなの記事', 'slug' => 'stories', 'shortcode' => '[sns_stories]', 'nav' => 'みんなの記事' ),
 			'trends'     => array( 'title' => 'トレンド', 'slug' => 'trends', 'shortcode' => '[sns_trends]', 'nav' => 'トレンド' ),
+			'shindan'    => array( 'title' => 'あなたに合う発信者診断', 'slug' => 'shindan', 'shortcode' => '[sns_shindan]', 'nav' => '発信者診断' ),
 			'member'     => array( 'title' => '会員ページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
 			'newsletter' => array( 'title' => 'メールマガジン', 'slug' => 'newsletter', 'shortcode' => '[sns_newsletter]', 'nav' => '' ),
@@ -93,6 +94,7 @@ class SNSCS_Hub {
 			'share_font'         => '',
 			'trend_min_visitors' => 3,
 			'trend_block'        => '',
+			'trend_alerts'       => 1,
 			'newsletter_auto'    => 0,
 			'newsletter_day'     => 1,
 			'newsletter_hour'    => 8,
@@ -205,7 +207,7 @@ class SNSCS_Hub {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verify() で確認済み。
 		$in       = wp_unslash( $_POST );
 		$settings = self::settings();
-		foreach ( array( 'personalize', 'ogp', 'newsletter_auto', 'inquiry_copy_admin', 'quick_nav' ) as $key ) {
+		foreach ( array( 'personalize', 'ogp', 'newsletter_auto', 'inquiry_copy_admin', 'quick_nav', 'trend_alerts' ) as $key ) {
 			$settings[ $key ] = empty( $in[ $key ] ) ? 0 : 1;
 		}
 		$settings['personal_strength']  = min( 80, max( 0, (int) ( $in['personal_strength'] ?? 30 ) ) );
@@ -342,6 +344,11 @@ class SNSCS_Hub {
 						<th scope="row"><label for="trend_block">表示しない言葉</label></th>
 						<td><textarea id="trend_block" name="trend_block" rows="4" class="large-text"><?php echo esc_textarea( $s['trend_block'] ); ?></textarea>
 						<p class="description">1行に1つ。この言葉を含むキーワードは「人気のキーワード」に出しません。</p></td>
+					</tr>
+					<tr>
+						<th scope="row">発信者へのトレンドのお知らせ</th>
+						<td><label><input type="checkbox" name="trend_alerts" value="1" <?php checked( $s['trend_alerts'] ); ?>> ジャンルで急上昇した言葉を、そのジャンルの発信者に知らせる（お知らせ・スマホ通知。1日1回まで）</label>
+						<p class="description">話題の記事が増え、トレンドのページが充実します。同じ言葉は14日間、同じジャンルにくり返し知らせません。</p></td>
 					</tr>
 				</table>
 

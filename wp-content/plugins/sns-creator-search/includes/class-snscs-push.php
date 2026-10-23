@@ -23,7 +23,7 @@ class SNSCS_Push {
 
 	const OPTION    = 'snscs_vapid';
 	const SEND_HOOK = 'snscs_push_send';
-	const TYPES     = array( 'monthly_report', 'new_article', 'repost', 'user_repost', 'bookmark_updated', 'new_follower', 'new_user_follower' );
+	const TYPES     = array( 'monthly_report', 'new_article', 'repost', 'user_repost', 'bookmark_updated', 'new_follower', 'new_user_follower', 'trend' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'serve' ), 1 );
