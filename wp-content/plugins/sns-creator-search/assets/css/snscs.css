@@ -2453,7 +2453,8 @@ body.snscs-portal-body .snscs-ph img {
 	text-decoration: none;
 }
 
-.snscs-portal-body a:hover {
+/* ふつうのリンク（クラスの無いもの）だけ。ボタン・カードなどは、それぞれのカーソルの色を使う */
+.snscs-portal-body a:not([class]):hover {
 	color: #131d8c;
 	text-decoration: underline;
 }
@@ -6716,4 +6717,18 @@ body.snscs-portal-body .snscs-pf img,
 	border: 0 !important;
 	box-shadow: none;
 	max-width: none;
+}
+
+/* サイト内ナビのボタン: カーソルを合わせたとき・今いるページは、青の地に白い文字 */
+body .snscs-quicknav a.snscs-quicknav__link:hover,
+body .snscs-quicknav a.snscs-quicknav__link:focus-visible,
+body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
+	border-color: #1B27B0 !important;
+	background: #1B27B0 !important;
+	color: #fff !important;
+	text-decoration: none !important;
+}
+
+body .snscs-quicknav a.snscs-quicknav__link {
+	transition: background 0.15s, color 0.15s;
 }
