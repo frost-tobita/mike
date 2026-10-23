@@ -3154,9 +3154,10 @@ body.snscs-portal-body .snscs-pt-box--cta .snscs-pt-box__title {
 body.snscs-portal-body p.snscs-pt-cta__lead {
 	margin: 0 0 10px;
 	color: #7c2d12;
-	font-size: 17px;
+	font-size: 16px;
 	font-weight: 800;
 	line-height: 1.5;
+	letter-spacing: -0.01em;
 }
 
 body.snscs-portal-body ul.snscs-pt-cta__points {

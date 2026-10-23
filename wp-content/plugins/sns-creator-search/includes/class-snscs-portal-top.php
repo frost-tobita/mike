@@ -375,8 +375,8 @@ class SNSCS_Portal_Top {
 		}
 		$out .= self::box( '', $body, '', 'snscs-pt-box--login' );
 
-		$points = array( 'SNSアカウントを無料で掲載', 'プロフィールに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
-		$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で。</p><ul class="snscs-pt-cta__points">';
+		$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
+		$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で</p><ul class="snscs-pt-cta__points">';
 		foreach ( $points as $point ) {
 			$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
 		}
