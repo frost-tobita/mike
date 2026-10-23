@@ -334,7 +334,7 @@ class SNSCS_Frontend {
 	/**
 	 * @param array $accounts SNSCS_Search::format_creator() の accounts。
 	 */
-	public static function render_accounts( array $accounts ) {
+	public static function render_accounts( array $accounts, $growth = false ) {
 		if ( empty( $accounts ) ) {
 			return;
 		}
@@ -349,6 +349,15 @@ class SNSCS_Frontend {
 						<span><?php echo esc_html( snscs_display_handle( $account['platform'], $account['handle'] ) ); ?></span>
 					<?php endif; ?>
 					<span class="snscs-account__followers"><?php echo esc_html( $account['followers_label'] ); ?></span>
+					<?php if ( ! empty( $account['verified'] ) ) : ?>
+						<span class="snscs-verified" title="<?php echo esc_attr( 2 === $account['verified'] ? '本人がSNSと連携して確認したアカウントです。フォロワー数は公式の数を毎日更新しています。' : 'フォロワー数は、SNSの公式の数を自動で更新しています。' ); ?>"><?php echo 2 === $account['verified'] ? '✓ 本人確認済み' : '✓ 公式の数'; ?></span>
+					<?php endif; ?>
+					<?php if ( $growth && ! empty( $account['creator_id'] ) ) : ?>
+						<?php $diff = SNSCS_Sync::growth( $account['creator_id'], $account['platform'] ); ?>
+						<?php if ( null !== $diff && 0 !== $diff ) : ?>
+							<span class="snscs-account__growth<?php echo $diff < 0 ? ' is-down' : ''; ?>"><?php echo esc_html( sprintf( '30日で%s%s', $diff > 0 ? '+' : '−', number_format_i18n( abs( $diff ) ) ) ); ?></span>
+						<?php endif; ?>
+					<?php endif; ?>
 				</li>
 			<?php endforeach; ?>
 		</ul>
@@ -433,7 +442,7 @@ class SNSCS_Frontend {
 		ob_start();
 		echo SNSCS_Invites::badge( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '<h2 class="snscs-single__heading">SNSアカウント</h2>';
-		self::render_accounts( $accounts );
+		self::render_accounts( $accounts, true );
 		self::render_links( SNSCS_Submissions::links_for( $id ), SNSCS_Submissions::stores_for( $id ) );
 		echo SNSCS_Inquiries::form_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo SNSCS_Articles::render_list( 'この発信者の記事', SNSCS_Articles::for_creator( $id, 'publish', 5 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。

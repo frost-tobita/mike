@@ -37,6 +37,9 @@ class SNSCS_Accounts {
   handle varchar(191) NOT NULL,
   url varchar(255) NOT NULL DEFAULT '',
   followers bigint(20) unsigned NOT NULL DEFAULT 0,
+  verified tinyint(1) unsigned NOT NULL DEFAULT 0,
+  synced_at datetime DEFAULT NULL,
+  external_id varchar(100) NOT NULL DEFAULT '',
   updated_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY  (id),
   UNIQUE KEY platform_handle (platform,handle),
@@ -103,6 +106,13 @@ class SNSCS_Accounts {
 		$creator_id = absint( $creator_id );
 		$skipped    = array();
 
+		// 公式APIで確認済みの数（SNSCS_Sync）は、申告の数で上書きしないよう覚えておく。
+		$verified = array();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT platform, handle, followers, verified, synced_at, external_id FROM {$table} WHERE creator_id = %d AND verified > 0", $creator_id ), ARRAY_A ) as $row ) {
+			$verified[ $row['platform'] . '|' . strtolower( $row['handle'] ) ] = $row;
+		}
+
 		$wpdb->delete( $table, array( 'creator_id' => $creator_id ), array( '%d' ) );
 
 		foreach ( $accounts as $account ) {
@@ -120,26 +130,39 @@ class SNSCS_Accounts {
 				continue;
 			}
 
+			$keep = isset( $verified[ $account['platform'] . '|' . strtolower( $account['handle'] ) ] ) ? $verified[ $account['platform'] . '|' . strtolower( $account['handle'] ) ] : null;
 			$wpdb->insert(
 				$table,
 				array(
-					'creator_id' => $creator_id,
-					'platform'   => $account['platform'],
-					'handle'     => $account['handle'],
-					'url'        => $account['url'],
-					'followers'  => $account['followers'],
-					'updated_at' => current_time( 'mysql', true ),
+					'creator_id'  => $creator_id,
+					'platform'    => $account['platform'],
+					'handle'      => $account['handle'],
+					'url'         => $account['url'],
+					'followers'   => $keep ? (int) $keep['followers'] : $account['followers'],
+					'verified'    => $keep ? (int) $keep['verified'] : 0,
+					'synced_at'   => $keep ? $keep['synced_at'] : null,
+					'external_id' => $keep ? $keep['external_id'] : '',
+					'updated_at'  => current_time( 'mysql', true ),
 				),
-				array( '%d', '%s', '%s', '%s', '%d', '%s' )
+				array( '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' )
 			);
 		}
 
+		do_action( 'snscs_accounts_replaced', $creator_id );
 		return $skipped;
 	}
 
 	public static function delete_for_creator( $creator_id ) {
 		global $wpdb;
 		$wpdb->delete( self::table(), array( 'creator_id' => absint( $creator_id ) ), array( '%d' ) );
+	}
+
+	/**
+	 * ハンドル名をそろえる（先頭の @ と前後の空白を外す）。
+	 */
+	public static function normalize_handle( $platform, $handle ) {
+		unset( $platform );
+		return mb_substr( ltrim( trim( (string) $handle ), '@' ), 0, 191 );
 	}
 
 	/**

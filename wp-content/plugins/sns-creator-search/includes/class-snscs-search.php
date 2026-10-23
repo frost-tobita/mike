@@ -197,6 +197,8 @@ class SNSCS_Search {
 				'url'             => $account['url'] ? $account['url'] : snscs_profile_url( $account['platform'], $account['handle'] ),
 				'followers'       => (int) $account['followers'],
 				'followers_label' => snscs_format_count( $account['followers'] ),
+				'verified'        => isset( $account['verified'] ) ? (int) $account['verified'] : 0,
+				'creator_id'      => isset( $account['creator_id'] ) ? (int) $account['creator_id'] : 0,
 			);
 		}
 

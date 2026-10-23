@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.7.1
+ * Version:           1.8.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.7.1' );
-define( 'SNSCS_DB_VERSION', '17' );
+define( 'SNSCS_VERSION', '1.8.0' );
+define( 'SNSCS_DB_VERSION', '18' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -74,6 +74,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-inbox.php';
 require_once SNSCS_DIR . 'includes/class-snscs-stories.php';
 require_once SNSCS_DIR . 'includes/class-snscs-people.php';
 require_once SNSCS_DIR . 'includes/class-snscs-push.php';
+require_once SNSCS_DIR . 'includes/class-snscs-sync.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SNSCS_DIR . 'includes/class-snscs-cli.php';
@@ -128,6 +129,7 @@ function snscs_deactivate() {
 	wp_clear_scheduled_hook( 'snscs_hourly_engine' );
 	wp_clear_scheduled_hook( SNSCS_Inbox::CRON_HOOK );
 	wp_clear_scheduled_hook( SNSCS_Push::SEND_HOOK );
+	wp_clear_scheduled_hook( SNSCS_Sync::CRON_HOOK );
 	flush_rewrite_rules();
 }
 
@@ -156,6 +158,7 @@ function snscs_install() {
 	SNSCS_Inbox::install();
 	SNSCS_People::install();
 	SNSCS_Push::install();
+	SNSCS_Sync::install();
 	SNSCS_Portal::add_role();
 	update_option( 'snscs_columns_setup', 1 );
 	update_option( 'snscs_db_version', SNSCS_DB_VERSION );
@@ -220,3 +223,4 @@ SNSCS_Inbox::init();
 SNSCS_Stories::init();
 SNSCS_People::init();
 SNSCS_Push::init();
+SNSCS_Sync::init();

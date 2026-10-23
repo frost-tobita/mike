@@ -3386,3 +3386,60 @@ body.snscs-portal-body {
 	gap: 8px;
 	text-decoration: none;
 }
+
+/* ------------------------------------------------------------------
+ * フォロワー数の自動更新・本人確認（SNSCS_Sync）
+ * ---------------------------------------------------------------- */
+
+.snscs-verified {
+	display: inline-block;
+	margin-left: 4px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #e7f5ec;
+	color: #17803d;
+	font-size: 0.75em;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.snscs-account__growth {
+	margin-left: 4px;
+	color: #17803d;
+	font-size: 0.8em;
+	white-space: nowrap;
+}
+
+.snscs-account__growth.is-down {
+	color: #b32d2e;
+}
+
+.snscs-sns-row__auto {
+	grid-column: 1 / -1;
+	color: #17803d;
+	font-size: 0.8em;
+}
+
+.snscs-sync-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-sync-list__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.snscs-sync-list__item strong {
+	min-width: 90px;
+}
+
+.snscs-sync-list__error {
+	color: #b32d2e;
+	font-size: 0.85em;
+}

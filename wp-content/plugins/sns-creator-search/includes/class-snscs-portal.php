@@ -121,6 +121,13 @@ class SNSCS_Portal {
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
 			'link_theme_saved'  => array( 'success', 'マイリンクのデザインを保存しました。' ),
+			'sync_linked'    => array( 'success', '連携しました。フォロワー数は毎日自動で最新になり、発信者ページに「本人確認済み」の印が付きます。' ),
+			'sync_unlinked'  => array( 'success', '連携を解除しました。' ),
+			'sync_cancel'    => array( 'error', '連携は取り消されました。' ),
+			'sync_expired'   => array( 'error', '連携の手続きの有効期限が切れました。もう一度「連携する」を押してください。' ),
+			'sync_taken'     => array( 'error', 'このアカウントは、すでに別の発信者と連携されています。お心当たりがない場合は運営にお問い合わせください。' ),
+			'sync_ig_type'   => array( 'error', 'Instagram のフォロワー数を取得できませんでした。Instagram のアプリで「プロアカウント（ビジネスまたはクリエイター）」に切り替えてから、もう一度連携してください（無料・すぐ切り替えられます）。' ),
+			'sync_error'     => array( 'error', '連携できませんでした。時間をおいてもう一度お試しください。' ),
 			'withdrawn'      => array( 'success', '退会しました。登録情報と掲載情報はすべて削除しました。ご利用ありがとうございました。' ),
 			'withdraw_pass'  => array( 'error', 'パスワードが違うため、退会できませんでした。' ),
 			'withdraw_check' => array( 'error', '退会するには、「削除されることを理解しました」にチェックを入れてください。' ),
@@ -281,6 +288,7 @@ class SNSCS_Portal {
 		</section>
 
 		<?php if ( $published ) : ?>
+			<?php SNSCS_Sync::render_portal( $creator_id ); ?>
 			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
 			<?php self::render_referral( $creator_id ); ?>
 			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
@@ -443,6 +451,11 @@ class SNSCS_Portal {
 	}
 
 	private static function render_form( array $data, array $errors, $creator_id, $has_pending ) {
+		// 公式APIで確認済みのフォロワー数（入力欄は読み取りだけにする）。
+		$live_accounts = array();
+		foreach ( $creator_id ? SNSCS_Accounts::get_for_creator( $creator_id ) : array() as $row ) {
+			$live_accounts[ $row['platform'] ] = $row;
+		}
 		if ( $has_pending ) {
 			$button = '申請内容を送り直す';
 		} elseif ( $creator_id ) {
@@ -526,6 +539,7 @@ class SNSCS_Portal {
 					<div class="snscs-sns-rows">
 						<?php foreach ( snscs_platforms() as $platform => $label ) : ?>
 							<?php $account = isset( $data['accounts'][ $platform ] ) ? $data['accounts'][ $platform ] : array( 'handle' => '', 'followers' => '' ); ?>
+							<?php $synced = isset( $live_accounts[ $platform ] ) && (int) $live_accounts[ $platform ]['verified'] > 0 && 0 === strcasecmp( (string) $live_accounts[ $platform ]['handle'], (string) $account['handle'] ) ? $live_accounts[ $platform ] : null; ?>
 							<div class="snscs-sns-row snscs-sns-row--<?php echo esc_attr( $platform ); ?>">
 								<span class="snscs-sns-row__label"><?php echo esc_html( $label ); ?></span>
 								<label>
@@ -534,8 +548,11 @@ class SNSCS_Portal {
 								</label>
 								<label>
 									<span class="screen-reader-text"><?php echo esc_html( $label ); ?> のフォロワー数</span>
-									<input type="number" min="0" step="1" name="snscs[accounts][<?php echo esc_attr( $platform ); ?>][followers]" value="<?php echo esc_attr( $account['followers'] ); ?>" placeholder="<?php echo 'substack' === $platform ? '購読者数' : 'フォロワー数'; ?>">
+									<input type="number" min="0" step="1" name="snscs[accounts][<?php echo esc_attr( $platform ); ?>][followers]" value="<?php echo esc_attr( $synced ? $synced['followers'] : $account['followers'] ); ?>" placeholder="<?php echo 'substack' === $platform ? '購読者数' : 'フォロワー数'; ?>" <?php echo $synced ? 'readonly' : ''; ?>>
 								</label>
+								<?php if ( $synced ) : ?>
+									<span class="snscs-sns-row__auto">✓ 公式の数を自動で更新しています</span>
+								<?php endif; ?>
 							</div>
 						<?php endforeach; ?>
 					</div>
