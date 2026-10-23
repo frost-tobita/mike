@@ -37,6 +37,7 @@ class SNSCS_Hub {
 			'tools'      => array( 'title' => 'SNS運用の無料ツール', 'slug' => 'tools', 'shortcode' => '[sns_tools]', 'nav' => '無料ツール' ),
 			'favorites'  => array( 'title' => 'お気に入りの発信者', 'slug' => 'favorites', 'shortcode' => '[sns_favorites]', 'nav' => 'お気に入り' ),
 			'stories'    => array( 'title' => 'みんなの記事', 'slug' => 'stories', 'shortcode' => '[sns_stories]', 'nav' => 'みんなの記事' ),
+			'trends'     => array( 'title' => 'トレンド', 'slug' => 'trends', 'shortcode' => '[sns_trends]', 'nav' => 'トレンド' ),
 			'member'     => array( 'title' => '会員ページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
 			'newsletter' => array( 'title' => 'メールマガジン', 'slug' => 'newsletter', 'shortcode' => '[sns_newsletter]', 'nav' => '' ),
@@ -161,13 +162,14 @@ class SNSCS_Hub {
 	/**
 	 * 機能ページをまとめて作る（作成済みのものは作らない）。
 	 *
+	 * @param string[]|null $only 作るページ（null ならすべて）。
 	 * @return int 作った数。
 	 */
-	public static function create_pages() {
+	public static function create_pages( $only = null ) {
 		$ids     = (array) get_option( self::PAGES, array() );
 		$created = 0;
 		foreach ( self::pages() as $key => $page ) {
-			if ( self::page_id( $key ) ) {
+			if ( self::page_id( $key ) || ( null !== $only && ! in_array( $key, $only, true ) ) ) {
 				continue;
 			}
 			$id = wp_insert_post(

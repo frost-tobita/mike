@@ -296,23 +296,13 @@ class SNSCS_Portal_Top {
 
 		$out .= SNSCS_Calendar::shortcode_link( array( 'title' => 'SNS発信カレンダー', 'count' => 3 ) );
 
-		// トレンドワード（急上昇と人気をまとめて順位をつける）。
-		$lists = SNSCS_Trends::lists( 10 );
-		$words = array();
-		foreach ( $lists['rising'] as $word ) {
-			$words[ $word ] = '急上昇';
-		}
-		foreach ( $lists['popular'] as $word ) {
-			if ( ! isset( $words[ $word ] ) ) {
-				$words[ $word ] = '人気';
-			}
-		}
+		// トレンドワード（急上昇と人気をまとめて順位をつける）。ジャンル別はトレンドのページで。
 		$rows = '';
 		$rank = 0;
-		foreach ( array_slice( $words, 0, 8, true ) as $word => $label ) {
-			$rows .= '<li><span class="snscs-pt-rank">' . ( ++$rank ) . '</span><a href="' . esc_url( add_query_arg( 'snscs_q', rawurlencode( $word ), snscs_search_url() ) ) . '">' . esc_html( $word ) . '</a><span class="snscs-pt-meta">' . esc_html( $label ) . '</span></li>';
+		foreach ( SNSCS_Trends::ranking( '', 8 ) as $row ) {
+			$rows .= '<li><span class="snscs-pt-rank">' . ( ++$rank ) . '</span><a href="' . esc_url( SNSCS_Trends::search_link( $row['term'] ) ) . '">' . esc_html( $row['term'] ) . '</a><span class="snscs-pt-meta">' . esc_html( $row['hot'] ? '急上昇' : '人気' ) . '</span></li>';
 		}
-		$out .= self::box( 'トレンドワード', $rows ? '<ol class="snscs-pt-ranks snscs-pt-ranks--small">' . $rows . '</ol>' : '' );
+		$out .= self::box( 'トレンドワード', $rows ? '<ol class="snscs-pt-ranks snscs-pt-ranks--small">' . $rows . '</ol>' : '', SNSCS_Trends::page_url() );
 
 		// お知らせ（カテゴリ「お知らせ」の投稿）。
 		$news = get_term_by( 'slug', 'news', 'category' );

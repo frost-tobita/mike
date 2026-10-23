@@ -3499,3 +3499,120 @@ a.snscs-share__button:hover {
 .snscs-report__actions .snscs-share__button {
 	justify-content: center;
 }
+
+/* トレンド（X のトレンドのように、総合とジャンル別） */
+.snscs-trends__more {
+	margin: 8px 0 0;
+	font-size: 0.9em;
+}
+
+.snscs-trendtabs ul {
+	display: flex;
+	gap: 4px;
+	margin: 0 0 16px;
+	padding: 0;
+	overflow-x: auto;
+	list-style: none;
+	border-bottom: 1px solid #e5e7eb;
+	scrollbar-width: none;
+}
+
+.snscs-trendtabs ul::-webkit-scrollbar {
+	display: none;
+}
+
+.snscs-trendtabs__tab {
+	display: block;
+	padding: 10px 14px;
+	color: #4b5563;
+	font-weight: 600;
+	white-space: nowrap;
+	text-decoration: none;
+	border-bottom: 3px solid transparent;
+}
+
+.snscs-trendtabs__tab:hover,
+.snscs-trendtabs__tab:focus-visible {
+	color: #111827;
+	background: #f3f4f6;
+}
+
+.snscs-trendtabs__tab.is-current {
+	color: #111827;
+	border-bottom-color: #4f46e5;
+}
+
+.snscs-trendpage__title {
+	margin: 20px 0 4px;
+	font-size: 1.2em;
+}
+
+.snscs-trendpage__empty,
+.snscs-trendpage__note {
+	color: #6b7280;
+	font-size: 0.9em;
+}
+
+.snscs-trendlist {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-trendlist__item + .snscs-trendlist__item {
+	border-top: 1px solid #f0f0f3;
+}
+
+.snscs-trendlist__link {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 12px 8px;
+	color: inherit;
+	text-decoration: none;
+}
+
+.snscs-trendlist__link:hover,
+.snscs-trendlist__link:focus-visible {
+	background: #f9fafb;
+}
+
+.snscs-trendlist__meta,
+.snscs-trendlist__count {
+	color: #6b7280;
+	font-size: 0.8em;
+}
+
+.snscs-trendlist__term {
+	font-weight: 700;
+	font-size: 1.05em;
+	overflow-wrap: anywhere;
+}
+
+.snscs-trendlist__term--hot::after {
+	content: " ↑";
+	color: #dc2626;
+}
+
+.snscs-trendgrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 12px;
+}
+
+.snscs-trendcard {
+	padding: 8px 8px 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+}
+
+.snscs-trendcard__title {
+	margin: 4px 8px;
+	font-size: 1em;
+}
+
+.snscs-trendcard__more {
+	display: inline-block;
+	margin: 4px 8px 0;
+	font-size: 0.85em;
+}

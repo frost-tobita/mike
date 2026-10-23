@@ -83,7 +83,7 @@ class SNSCS_Frontend {
 		SNSCS_Personalize::set_search_context( $args );
 		SNSCS_Personalize::print_search_context();
 		if ( 1 === $args['page'] && '' !== $args['q'] ) {
-			SNSCS_Trends::record( $args['q'], $result['total'] );
+			SNSCS_Trends::record( $args['q'], $result['total'], SNSCS_Trends::genre_of( $args, $result['items'] ) );
 		}
 
 		// 何も指定していない最初の画面か。
@@ -95,7 +95,13 @@ class SNSCS_Frontend {
 		self::render_form( $args );
 		if ( $landing ) {
 			echo SNSCS_Trends::render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
-			echo SNSCS_Personalize::placeholder( 'recent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+			echo SNSCS_Personalize::placeholder( 'recent' );
+		} elseif ( '' === $args['q'] && '' !== $args['genre'] && 1 === $args['page'] ) {
+			// ジャンルだけで探しているときは、そのジャンルで調べられている言葉を出す。
+			$genre_term = get_term_by( 'slug', $args['genre'], SNSCS_Post_Types::TAX_GENRE );
+			if ( $genre_term ) {
+				echo SNSCS_Trends::render( $genre_term->name . 'で人気のキーワード', $genre_term->slug ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+			} // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		}
 		self::render_results( $result );
 		echo SNSCS_Features::related_html( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
