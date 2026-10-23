@@ -470,6 +470,12 @@
 - `SNSCS_Scores`: 信号「伸び率」（7〜60日前の記録と比べる。週1回、全員の数を記録）。表に growth 列
 - `SNSCS_Search_UI`（件数つき絞り込み・理由・色付け・比べる・保存した検索 `snscs_saved_searches`）、`SNSCS_Search_Quality`（表 `snscs_search_daily`）、`SNSCS_Promo`（表 `snscs_promos`・`snscs_promo_stats`。一般化第二価格）、`SNSCS_Business`（ユーザーメタ `_snscs_biz_until`）、`SNSCS_Ads` の内容合わせ
 
+### フェーズ3.13（完了・1.22.0）: スマホアプリ（PWA）
+- `SNSCS_App`: マニフェスト（id・ショートカット・maskable アイコン・share_target・launch_handler）と、サービスワーカー（`assets/js/snscs-sw.js`。ページはネット優先で40件まで覚える・4秒で覚えたものに切り替え、画像などは覚えたものを先に使って裏で更新、管理画面・REST・送信は触らない、`X-SNSCS-Private`（ログイン中）と no-store は覚えない、版ごとに古い保存を消す、プッシュ通知も同じ）を出す。プッシュ（`SNSCS_Push`）はマニフェスト・サービスワーカーを App に任せた
+- `assets/js/snscs-app.js`: 登録・アプリ表示の判定（display-mode）・下のタブと戻るボタン・未読の数（Badging API）・インストールの案内（beforeinstallprompt、iPhone は手順）・ログアウトで保存したページを消す
+- 共有の受け取り: SNSのプロフィールのURL → 掲載している発信者のページへ。文 → 検索
+- Google Play: /.well-known/assetlinks.json（パッケージ名・SHA-256）
+
 ### フェーズ4: 大規模化
 - 検索エンジン部分を OpenSearch または Meilisearch に差し替え（`snscs_search_backend` フィルター）
 - 検索結果のキャッシュ、サーバーの分離

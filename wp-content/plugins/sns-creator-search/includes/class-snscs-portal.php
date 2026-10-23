@@ -302,6 +302,7 @@ class SNSCS_Portal {
 			<?php SNSCS_Sync::render_portal( $creator_id ); ?>
 			<?php SNSCS_Biolink::render_portal( $creator_id ); ?>
 			<?php SNSCS_Promo::render_portal( $creator_id ); ?>
+			<?php echo SNSCS_App::install_box(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 			<?php self::render_referral( $creator_id ); ?>
 			<?php SNSCS_Invites::render_portal( $creator_id, SNSCS_Scores::standing( $creator_id ) ); ?>
 			<?php SNSCS_Share::render_portal( $creator_id ); ?>

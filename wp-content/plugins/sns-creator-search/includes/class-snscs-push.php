@@ -26,8 +26,7 @@ class SNSCS_Push {
 	const TYPES     = array( 'monthly_report', 'new_article', 'repost', 'user_repost', 'bookmark_updated', 'new_follower', 'new_user_follower', 'trend', 'award', 'collab', 'collab_ok', 'listed', 'qa_answer', 'qa_best', 'level_up', 'badge', 'streak', 'invite_ok', 'biolink_week', 'biolink_nudge', 'saved_search' );
 
 	public static function init() {
-		add_action( 'init', array( __CLASS__, 'serve' ), 1 );
-		add_action( 'wp_head', array( __CLASS__, 'head' ) );
+		// マニフェスト・サービスワーカー・ホーム画面のための head は SNSCS_App が出す（1.22）。
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( self::SEND_HOOK, array( __CLASS__, 'send_pending' ) );
