@@ -201,7 +201,23 @@ class SNSCS_People {
 				<p class="snscs-profile__bio"><?php echo esc_html( $bio ); ?></p>
 			<?php endif; ?>
 			<?php echo self::follow_button( $user_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+			<?php echo SNSCS_Gamify::summary_html( $user_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 		</section>
+		<?php
+		$lists = array_filter(
+			SNSCS_Lists::of_user( $user_id ),
+			function ( $l ) {
+				return $l['status'] && $l['items'] > 0;
+			}
+		);
+		if ( $lists ) {
+			echo '<h2 class="snscs-single__heading">推しリスト</h2><ul class="snscs-lists">';
+			foreach ( $lists as $l ) {
+				echo '<li class="snscs-lists__item"><a class="snscs-lists__link" href="' . esc_url( SNSCS_Lists::url( (int) $l['id'] ) ) . '"><span class="snscs-lists__title">' . esc_html( $l['title'] ) . '</span><span class="snscs-lists__meta">' . esc_html( (int) $l['items'] . '人・♥ ' . (int) $l['likes'] ) . '</span></a></li>';
+			}
+			echo '</ul>';
+		}
+		?>
 		<h2 class="snscs-single__heading">リポストした記事</h2>
 		<?php
 		$items = SNSCS_Social::reacted( $user_id, SNSCS_Social::REPOST );

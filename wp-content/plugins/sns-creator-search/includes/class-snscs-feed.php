@@ -247,6 +247,9 @@ class SNSCS_Feed {
 		if ( 'view' === $request['event'] ) {
 			self::bump( $id, 3 );
 		} elseif ( self::bump( $id, 4 ) ) {
+			if ( is_user_logged_in() ) {
+				do_action( 'snscs_points', get_current_user_id(), 'read' );
+			}
 			$qid = preg_replace( '/[^a-f0-9]/', '', (string) $request['qid'] );
 			if ( 16 === strlen( $qid ) ) {
 				global $wpdb;

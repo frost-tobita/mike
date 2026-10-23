@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.14.0
+ * Version:           1.15.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.14.0' );
-define( 'SNSCS_DB_VERSION', '24' );
+define( 'SNSCS_VERSION', '1.15.0' );
+define( 'SNSCS_DB_VERSION', '25' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -63,6 +63,13 @@ require_once SNSCS_DIR . 'includes/class-snscs-collab.php';
 require_once SNSCS_DIR . 'includes/class-snscs-embed.php';
 require_once SNSCS_DIR . 'includes/class-snscs-official.php';
 require_once SNSCS_DIR . 'includes/class-snscs-line.php';
+require_once SNSCS_DIR . 'includes/class-snscs-subpages.php';
+require_once SNSCS_DIR . 'includes/class-snscs-ugc.php';
+require_once SNSCS_DIR . 'includes/class-snscs-lists.php';
+require_once SNSCS_DIR . 'includes/class-snscs-qa.php';
+require_once SNSCS_DIR . 'includes/class-snscs-profile-ai.php';
+require_once SNSCS_DIR . 'includes/class-snscs-gamify.php';
+require_once SNSCS_DIR . 'includes/class-snscs-press.php';
 require_once SNSCS_DIR . 'includes/class-snscs-features.php';
 require_once SNSCS_DIR . 'includes/class-snscs-rankings.php';
 require_once SNSCS_DIR . 'includes/class-snscs-share.php';
@@ -128,7 +135,7 @@ function snscs_after_install() {
 		SNSCS_Post_Types::install_default_terms();
 		// 機能ページを作ってあるサイトには、あとから加わったページ（トレンド・診断）も1度だけ作る。
 		$added = (array) get_option( 'snscs_pages_added', get_option( 'snscs_trends_page_added' ) ? array( 'trends' ) : array() );
-		$new   = array_diff( array( 'trends', 'shindan', 'awards', 'collab', 'similar', 'embed' ), $added );
+		$new   = array_diff( array( 'trends', 'shindan', 'awards', 'collab', 'similar', 'embed', 'lists', 'qa', 'profile-check', 'press' ), $added );
 		if ( get_option( SNSCS_Hub::PAGES ) && $new ) {
 			update_option( 'snscs_pages_added', array_merge( $added, $new ) );
 			SNSCS_Hub::create_pages( array_values( $new ) );
@@ -174,6 +181,9 @@ function snscs_install() {
 	SNSCS_Feed::install();
 	SNSCS_Awards::install();
 	SNSCS_Collab::install();
+	SNSCS_Lists::install();
+	SNSCS_QA::install();
+	SNSCS_Gamify::install();
 	SNSCS_Rankings::install();
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
@@ -244,6 +254,13 @@ SNSCS_Collab::init();
 SNSCS_Embed::init();
 SNSCS_Official::init();
 SNSCS_Line::init();
+SNSCS_Subpages::init();
+SNSCS_UGC::init();
+SNSCS_Lists::init();
+SNSCS_QA::init();
+SNSCS_Profile_AI::init();
+SNSCS_Gamify::init();
+SNSCS_Press::init();
 SNSCS_Features::init();
 SNSCS_Rankings::init();
 SNSCS_Share::init();

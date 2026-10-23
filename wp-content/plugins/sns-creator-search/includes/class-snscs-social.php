@@ -873,6 +873,8 @@ class SNSCS_Social {
 			'inbox'     => 'お知らせ' . ( $unread ? '（' . $unread . '）' : '' ),
 			'foryou'    => 'おすすめ',
 			'timeline'  => 'フォロー中の新着',
+			'lists'     => '推しリスト',
+			'level'     => 'レベル・招待',
 			'bookmarks' => 'ブックマーク',
 			'likes'     => 'いいねした記事',
 			'reposts'   => 'リポストした記事',
@@ -888,6 +890,7 @@ class SNSCS_Social {
 			<?php endif; ?>
 			・<a href="<?php echo esc_url( wp_logout_url( self::member_url() ) ); ?>">ログアウト</a>
 		</p>
+		<?php echo 'level' === $tab ? '' : SNSCS_Gamify::summary_html( $user_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 		<nav class="snscs-tabs snscs-member__tabs" aria-label="会員ページ">
 			<?php foreach ( $tabs as $key => $label ) : ?>
 				<a class="snscs-chip<?php echo $key === $tab ? ' is-current' : ''; ?>" href="<?php echo esc_url( self::member_url( array( 'tab' => $key ) ) ); ?>" <?php echo $key === $tab ? 'aria-current="page"' : ''; ?>><?php echo esc_html( $label ); ?></a>
@@ -908,6 +911,14 @@ class SNSCS_Social {
 		}
 		if ( 'following' === $tab ) {
 			self::render_following( $user_id );
+			return;
+		}
+		if ( 'lists' === $tab ) {
+			SNSCS_Lists::render_member( $user_id );
+			return;
+		}
+		if ( 'level' === $tab ) {
+			SNSCS_Gamify::render_member( $user_id );
 			return;
 		}
 		if ( 'foryou' === $tab ) {

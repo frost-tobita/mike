@@ -108,6 +108,7 @@ class SNSCS_Awards {
 			)
 		);
 		wp_cache_delete( 'snscs_award_' . self::month(), 'snscs' );
+		do_action( 'snscs_points', (int) $user_id, 'vote' );
 		return true;
 	}
 

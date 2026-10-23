@@ -33,7 +33,9 @@ class SNSCS_Tools {
 
 	public static function shortcode_page() {
 		SNSCS_Hub::remember_page( 'tools' );
-		return SNSCS_Hub::quick_nav() . self::engagement() . self::diagnosis();
+		$ai = SNSCS_Hub::page_url( 'profile-check' );
+		$ai = ( $ai && SNSCS_Profile_AI::available() ) ? '<a class="snscs-related__quiz" href="' . esc_url( $ai ) . '"><strong>SNSプロフィールAI診断（新しい）</strong><span>プロフィール文を貼るだけで、AIが点数と直し方、書き直しの例を出します</span></a>' : '';
+		return SNSCS_Hub::quick_nav() . $ai . self::engagement() . self::diagnosis();
 	}
 
 	/* --------------------------------------------------------------------
