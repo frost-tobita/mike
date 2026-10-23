@@ -2717,13 +2717,14 @@ body.snscs-portal-body .snscs-pt-tab span {
 	border: 1px solid #e5e7eb;
 	border-radius: 999px;
 	background: #fff;
+	background-origin: border-box;
 	box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
 	color: #1f2937;
 	font-size: 14px;
 	font-weight: 600;
 	white-space: nowrap;
 	cursor: pointer;
-	transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+	transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
 .snscs-pt-tab__ico {
@@ -2731,12 +2732,9 @@ body.snscs-portal-body .snscs-pt-tab span {
 	color: var(--sns);
 }
 
-body.snscs-portal-body .snscs-pt-tab span:hover {
-	border-color: var(--sns);
-	box-shadow: 0 2px 8px rgba(17, 24, 39, 0.1);
-}
-
-body.snscs-portal-body .snscs-pt-tab input:checked + span {
+body.snscs-portal-body .snscs-pt-tab input:checked + span,
+body.snscs-portal-body .snscs-pt-tab:hover span,
+body.snscs-portal-body .snscs-pt-tab input:focus-visible + span {
 	border-color: transparent;
 	background: var(--sns-bg);
 	box-shadow: 0 3px 10px rgba(17, 24, 39, 0.18);
@@ -2744,7 +2742,13 @@ body.snscs-portal-body .snscs-pt-tab input:checked + span {
 	font-weight: 700;
 }
 
-body.snscs-portal-body .snscs-pt-tab input:checked + span .snscs-pt-tab__ico {
+body.snscs-portal-body .snscs-pt-tab:hover span {
+	transform: translateY(-1px);
+}
+
+body.snscs-portal-body .snscs-pt-tab input:checked + span .snscs-pt-tab__ico,
+body.snscs-portal-body .snscs-pt-tab:hover .snscs-pt-tab__ico,
+body.snscs-portal-body .snscs-pt-tab input:focus-visible + span .snscs-pt-tab__ico {
 	color: #fff;
 }
 
