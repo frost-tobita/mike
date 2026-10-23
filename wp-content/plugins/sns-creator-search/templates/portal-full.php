@@ -2,6 +2,8 @@
 /**
  * ページテンプレート「SNS検索ポータル（全幅）」（SNSCS_Portal_Top）。
  * テーマのヘッダー・フッターの代わりに、ポータルサイトの形のヘッダー・フッターで表示する。
+ * テーマのCSSは header / main / footer / aside などのタグに付くことが多い（AFFINGER など）ので、
+ * それらのタグは使わず、div に役割（role）を付けて同じ意味にする。
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,7 +23,7 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <a class="screen-reader-text" href="#snscs-portal-main">本文へ移動</a>
-<header class="snscs-ph">
+<div class="snscs-ph" role="banner">
 	<div class="snscs-ph__inner">
 		<a class="snscs-ph__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 			<?php if ( has_custom_logo() ) : ?>
@@ -30,7 +32,7 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 				<?php bloginfo( 'name' ); ?>
 			<?php endif; ?>
 		</a>
-		<nav class="snscs-ph__nav" aria-label="サイト全体">
+		<div class="snscs-ph__nav" role="navigation" aria-label="サイト全体">
 			<?php if ( has_nav_menu( 'snscs_portal_header' ) ) : ?>
 				<?php
 				wp_nav_menu(
@@ -50,25 +52,25 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 				</ul>
 			<?php endif; ?>
 			<a class="snscs-ph__login" href="<?php echo esc_url( snscs_portal_url() ); ?>"><?php echo $snscs_user ? 'マイページ' : 'ログイン'; ?></a>
-		</nav>
+		</div>
 	</div>
-</header>
+</div>
 
-<main id="snscs-portal-main" class="snscs-pm<?php echo $snscs_is_top ? ' snscs-pm--top' : ''; ?>">
+<div role="main" id="snscs-portal-main" class="snscs-pm<?php echo $snscs_is_top ? ' snscs-pm--top' : ''; ?>">
 	<?php while ( have_posts() ) : ?>
 		<?php the_post(); ?>
 		<?php if ( $snscs_is_top ) : ?>
 			<?php the_content(); ?>
 		<?php else : ?>
-			<article class="snscs-pm__page">
+			<div class="snscs-pm__page">
 				<h1 class="snscs-pm__title"><?php the_title(); ?></h1>
 				<?php the_content(); ?>
-			</article>
+			</div>
 		<?php endif; ?>
 	<?php endwhile; ?>
-</main>
+</div>
 
-<footer class="snscs-pf">
+<div class="snscs-pf" role="contentinfo">
 	<div class="snscs-pf__inner">
 		<?php if ( has_nav_menu( 'snscs_portal_footer' ) ) : ?>
 			<?php
@@ -90,7 +92,7 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 		<?php endif; ?>
 		<p class="snscs-pf__copy">&copy; <?php echo esc_html( wp_date( 'Y' ) . ' ' . get_bloginfo( 'name' ) ); ?></p>
 	</div>
-</footer>
+</div>
 <?php wp_footer(); ?>
 </body>
 </html>

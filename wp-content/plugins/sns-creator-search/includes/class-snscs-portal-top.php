@@ -6,6 +6,8 @@
  *       テーマのヘッダー・サイドバー・フッターを使わず、このプラグインのヘッダー（サイト名・メニュー・ログイン）と
  *       フッター（規約などのリンク）で表示する。トップページのほか、検索・ランキングなどのページにも選べる。
  *       テーマの見た目（CSS）はこのテンプレートのページでは読み込まない（広告・アクセス解析などのコードは残る）。
+ *       AFFINGER のように、CSSを登録せずに wp_head で直接書き出すテーマもあるので、テーマのファイルにある
+ *       wp_head・wp_footer の処理の出力から <style> と CSSの <link> だけを取り除く（<script> などはそのまま）。
  *   [sns_portal_top]
  *       トップページの中身: 大きな検索窓（SNSのタブつき）・注目のキーワード / 左: カテゴリ・地域 /
  *       中央: 注目の発信者・あなたへのおすすめ・急上昇・特集・新着・コラム / 右: ログイン・発信者の方へ・カレンダー・
@@ -19,11 +21,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SNSCS_Portal_Top {
 
 	const TEMPLATE = 'snscs-portal-full.php';
+	const CHEVRON  = '<svg class="snscs-pt-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+	const CHECK    = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
 
 	public static function init() {
 		add_filter( 'theme_page_templates', array( __CLASS__, 'add_template' ) );
 		add_filter( 'template_include', array( __CLASS__, 'use_template' ), 99 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'drop_theme_styles' ), 1000 );
+		add_action( 'template_redirect', array( __CLASS__, 'tame_theme_output' ), 999 );
 		add_filter( 'body_class', array( __CLASS__, 'body_class' ) );
 		add_shortcode( 'sns_portal_top', array( __CLASS__, 'shortcode' ) );
 		add_action( 'admin_post_snscs_portal_top', array( __CLASS__, 'handle_create' ) );
@@ -66,6 +71,84 @@ class SNSCS_Portal_Top {
 		}
 		// ブロックテーマの全体の文字サイズや色の設定も外す。
 		wp_dequeue_style( 'global-styles' );
+	}
+
+	/**
+	 * テーマが wp_head・wp_body_open・wp_footer に付けた処理を、CSSを取り除く形に包み直す。
+	 */
+	public static function tame_theme_output() {
+		if ( ! self::is_active() ) {
+			return;
+		}
+		global $wp_filter;
+		foreach ( array( 'wp_head', 'wp_body_open', 'wp_footer' ) as $hook ) {
+			if ( empty( $wp_filter[ $hook ] ) ) {
+				continue;
+			}
+			$found = array();
+			foreach ( $wp_filter[ $hook ]->callbacks as $priority => $callbacks ) {
+				foreach ( $callbacks as $cb ) {
+					if ( self::from_theme( $cb['function'] ) ) {
+						$found[] = array( $priority, $cb );
+					}
+				}
+			}
+			foreach ( $found as $item ) {
+				list( $priority, $cb ) = $item;
+				remove_action( $hook, $cb['function'], $priority );
+				add_action(
+					$hook,
+					function () use ( $cb ) {
+						ob_start();
+						call_user_func_array( $cb['function'], array_slice( func_get_args(), 0, (int) $cb['accepted_args'] ) );
+						echo self::strip_styles( (string) ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- テーマが出したHTMLから、CSSだけを取り除いたもの。
+					},
+					$priority,
+					$cb['accepted_args']
+				);
+			}
+		}
+	}
+
+	/**
+	 * その処理がテーマ（親・子）のファイルに書かれているか。
+	 */
+	public static function from_theme( $callback ) {
+		try {
+			if ( is_string( $callback ) && false !== strpos( $callback, '::' ) ) {
+				$callback = explode( '::', $callback, 2 );
+			}
+			if ( is_array( $callback ) && 2 === count( $callback ) ) {
+				$ref = new ReflectionMethod( $callback[0], $callback[1] );
+			} elseif ( $callback instanceof Closure || ( is_string( $callback ) && function_exists( $callback ) ) ) {
+				$ref = new ReflectionFunction( $callback );
+			} elseif ( is_object( $callback ) && method_exists( $callback, '__invoke' ) ) {
+				$ref = new ReflectionMethod( $callback, '__invoke' );
+			} else {
+				return false;
+			}
+		} catch ( ReflectionException $e ) {
+			return false;
+		}
+		$file = wp_normalize_path( (string) $ref->getFileName() );
+		if ( '' === $file ) {
+			return false;
+		}
+		foreach ( array_unique( array( get_template_directory(), get_stylesheet_directory() ) ) as $dir ) {
+			$dir = trailingslashit( wp_normalize_path( $dir ) );
+			if ( 0 === strpos( $file, $dir ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * HTMLから <style>…</style> と CSSの <link> を取り除く。
+	 */
+	public static function strip_styles( $html ) {
+		$html = preg_replace( '#<style\b[^>]*>.*?</style>#is', '', $html );
+		return (string) preg_replace( '#<link\b(?=[^>]*\brel\s*=\s*["\']?stylesheet)[^>]*>\s*#i', '', (string) $html );
 	}
 
 	public static function body_class( $classes ) {
@@ -148,7 +231,7 @@ class SNSCS_Portal_Top {
 				<div class="snscs-pt-search__row">
 					<label for="snscs-pt-q" class="screen-reader-text">発信者を検索</label>
 					<input id="snscs-pt-q" type="search" name="snscs_q" placeholder="発信者名・ジャンル・キーワードで探す">
-					<button type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>検索</button>
+					<button type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg><span>検索</span></button>
 				</div>
 				<?php if ( $keywords ) : ?>
 					<p class="snscs-pt-search__keywords">
@@ -165,11 +248,11 @@ class SNSCS_Portal_Top {
 	}
 
 	private static function left_column() {
-		$genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'parent' => 0, 'hide_empty' => false, 'number' => 30 ) );
+		$genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'parent' => 0, 'hide_empty' => false, 'number' => 30, 'orderby' => 'count', 'order' => 'DESC' ) );
 		$html   = '';
 		foreach ( is_wp_error( $genres ) ? array() : $genres as $genre ) {
 			$subs  = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'parent' => $genre->term_id, 'hide_empty' => false, 'number' => 4 ) );
-			$html .= '<li><a class="snscs-pt-cat" href="' . esc_url( SNSCS_Features::url( '', $genre->slug ) ) . '">' . esc_html( $genre->name ) . '</a>';
+			$html .= '<li><a class="snscs-pt-cat" href="' . esc_url( SNSCS_Features::url( '', $genre->slug ) ) . '"><span class="snscs-pt-cat__name">' . esc_html( $genre->name ) . '</span>' . ( $genre->count ? '<span class="snscs-pt-cat__count">' . esc_html( number_format_i18n( $genre->count ) ) . '</span>' : '' ) . self::CHEVRON . '</a>';
 			if ( $subs && ! is_wp_error( $subs ) ) {
 				$sub_links = array();
 				foreach ( $subs as $sub ) {
@@ -179,14 +262,14 @@ class SNSCS_Portal_Top {
 			}
 			$html .= '</li>';
 		}
-		$out = self::box( 'カテゴリから探す', $html ? '<ul class="snscs-pt-cats">' . $html . '</ul>' : '' );
+		$out = self::box( 'カテゴリから探す', $html ? '<ul class="snscs-pt-cats">' . $html . '</ul>' : '', '', 'snscs-pt-box--cats' );
 
 		$regions = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_REGION, 'parent' => 0, 'hide_empty' => false, 'number' => 20 ) );
 		$links   = '';
 		foreach ( is_wp_error( $regions ) ? array() : $regions as $region ) {
 			$links .= '<a href="' . esc_url( SNSCS_Features::url( '', '', $region->slug ) ) . '">' . esc_html( $region->name ) . '</a>';
 		}
-		$out .= self::box( '地域から探す', $links ? '<div class="snscs-pt-regions">' . $links . '</div>' : '' );
+		$out .= self::box( '地域から探す', $links ? '<div class="snscs-pt-regions">' . $links . '</div>' : '', '', 'snscs-pt-box--regions' );
 		return $out;
 	}
 
@@ -290,9 +373,18 @@ class SNSCS_Portal_Top {
 		} else {
 			$body = '<p>ログインすると、掲載内容の編集や、カレンダーの予定をどの端末からも使えます。</p><a class="snscs-pt-btn" href="' . esc_url( snscs_portal_url() ) . '">ログイン</a><a class="snscs-pt-sublink" href="' . esc_url( snscs_portal_url() ) . '">新規登録（無料）</a>';
 		}
-		$out .= self::box( '', $body );
+		$out .= self::box( '', $body, '', 'snscs-pt-box--login' );
 
-		$out .= self::box( '発信者の方へ', '<p>あなたのSNSアカウントを無料で掲載できます。SNSのプロフィールに貼れる「マイリンク」も作れ、企業からのお仕事の相談も届きます。</p><a class="snscs-pt-strong" href="' . esc_url( snscs_portal_url() ) . '">掲載を申し込む</a>', '', 'snscs-pt-box--warm' );
+		$points = array( 'SNSアカウントを無料で掲載', 'プロフィールに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
+		$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で。</p><ul class="snscs-pt-cta__points">';
+		foreach ( $points as $point ) {
+			$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
+		}
+		$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a>';
+		if ( SNSCS_Hub::page_url( 'mylink' ) ) {
+			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">マイリンクについて詳しく</a>';
+		}
+		$out .= self::box( '発信者の方へ', $body, '', 'snscs-pt-box--cta' );
 
 		$out .= SNSCS_Calendar::shortcode_link( array( 'title' => 'SNS発信カレンダー', 'count' => 3 ) );
 
@@ -320,9 +412,9 @@ class SNSCS_Portal_Top {
 		wp_enqueue_style( 'snscs' );
 		return '<div class="snscs-pt">' . self::search_band()
 			. '<div class="snscs-pt-columns">'
-			. '<aside class="snscs-pt-left" aria-label="カテゴリと地域">' . self::left_column() . '</aside>'
+			. '<div class="snscs-pt-left" role="complementary" aria-label="カテゴリと地域">' . self::left_column() . '</div>'
 			. '<div class="snscs-pt-center">' . self::center_column() . '</div>'
-			. '<aside class="snscs-pt-right" aria-label="ログインとトレンド">' . self::right_column() . '</aside>'
+			. '<div class="snscs-pt-right" role="complementary" aria-label="ログインとトレンド">' . self::right_column() . '</div>'
 			. '</div></div>';
 	}
 

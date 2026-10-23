@@ -13,6 +13,10 @@
  * - 1.16: いちばん見てほしいリンクを上に大きく出す（「新着」などの札は選ぶだけ）、ボタンの形、受賞・順位のバッジ、
  *   似ている発信者（発信者が消せる）、どのSNSから来たか（?s=ig のような印、無ければ参照元）と開かれた数・押された率、
  *   日本語以外の閲覧者には英語の表示（英訳があれば紹介文も英語。SNSCS_English）
+ * - 1.17: 名刺・チラシ用のQRコード（SNSCS_QR。?s=qr で数える）、読者が「このサイトでフォロー」（未登録なら登録して戻る）、
+ *   シェアボタン、ProfilePage の構造化データ、IDを決めた人のマイリンクをサイトマップへ、
+ *   週に1回の成績のお知らせと、まだ使っていない人への案内、紹介ページの「今週よく見られたマイリンク」、
+ *   マイページからXやThreadsにそのまま投稿できるボタン
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -41,6 +45,7 @@ class SNSCS_Biolink {
 		'fb'        => 'Facebook',
 		'line'      => 'LINE',
 		'note'      => 'note',
+		'qr'        => 'QRコード（名刺・チラシ）',
 		'search'    => '検索エンジン',
 		'other'     => 'そのほかのサイト',
 		'direct'    => '直接（アプリ内など）',
@@ -65,6 +70,10 @@ class SNSCS_Biolink {
 		add_action( 'before_delete_post', array( __CLASS__, 'delete_for_creator' ) );
 		add_action( SNSCS_Scores::CRON_HOOK, array( __CLASS__, 'purge_old' ) );
 		add_shortcode( 'sns_mylink', array( __CLASS__, 'shortcode_landing' ) );
+		add_action( 'init', array( __CLASS__, 'serve_qr' ), 1 );
+		add_action( 'admin_post_snscs_bio_follow', array( __CLASS__, 'handle_follow' ) );
+		add_action( SNSCS_Scores::CRON_HOOK, array( __CLASS__, 'weekly_notices' ) );
+		SNSCS_Subpages::sitemap( 'snscsbio', array( __CLASS__, 'sitemap_urls' ), array( __CLASS__, 'sitemap_count' ) );
 	}
 
 	public static function table() {
@@ -256,7 +265,7 @@ class SNSCS_Biolink {
 	 */
 	public static function record_click( $creator_id, $key ) {
 		global $wpdb;
-		if ( ! preg_match( '/^(sns|store|link|page|inquiry|article|similar|view|src):[a-z0-9_]{1,20}$/', $key ) ) {
+		if ( ! preg_match( '/^(sns|store|link|page|inquiry|article|similar|view|src|follow):[a-z0-9_]{1,20}$/', $key ) ) {
 			return;
 		}
 		$table = self::table();
@@ -348,6 +357,152 @@ class SNSCS_Biolink {
 		return $stats;
 	}
 
+	/**
+	 * マイリンクからのフォロー（会員だけ。フォローしたら、マイリンクに戻る）。
+	 */
+	public static function handle_follow() {
+		$creator_id = isset( $_POST['creator'] ) ? absint( $_POST['creator'] ) : 0;
+		if ( ! is_user_logged_in() || ! $creator_id || ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_bio_follow_' . $creator_id ) ) {
+			wp_die( 'この操作は許可されていません。' );
+		}
+		$done = SNSCS_Social::toggle( get_current_user_id(), 'follow', $creator_id, true );
+		if ( ! is_wp_error( $done ) ) {
+			self::record_click( $creator_id, 'follow:site' );
+		}
+		wp_safe_redirect( add_query_arg( 'snscs_followed', is_wp_error( $done ) ? 0 : 1, self::url( $creator_id ) ) );
+		exit;
+	}
+
+	/**
+	 * QRコード（?snscs_bio_qr=発信者ID&fmt=svg|png&dl=1）。中身はマイリンクのURL（?s=qr 付き）。
+	 */
+	public static function qr_target( $creator_id ) {
+		return add_query_arg( 's', 'qr', self::url( $creator_id ) );
+	}
+
+	public static function qr_url( $creator_id, $fmt = 'svg', $download = false ) {
+		return add_query_arg( array_filter( array( 'snscs_bio_qr' => (int) $creator_id, 'fmt' => $fmt, 'dl' => $download ? 1 : 0 ) ), home_url( '/' ) );
+	}
+
+	public static function serve_qr() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['snscs_bio_qr'] ) ) {
+			return;
+		}
+		$creator_id = absint( $_GET['snscs_bio_qr'] );
+		$fmt        = isset( $_GET['fmt'] ) && 'png' === $_GET['fmt'] ? 'png' : 'svg';
+		$download   = ! empty( $_GET['dl'] );
+		// phpcs:enable
+		if ( ! $creator_id || 'publish' !== get_post_status( $creator_id ) || SNSCS_Post_Types::POST_TYPE !== get_post_type( $creator_id ) ) {
+			status_header( 404 );
+			exit;
+		}
+		$body = 'png' === $fmt ? SNSCS_QR::png( self::qr_target( $creator_id ), 16 ) : SNSCS_QR::svg( self::qr_target( $creator_id ), 480 );
+		if ( ! $body ) {
+			status_header( 404 );
+			exit;
+		}
+		header( 'Content-Type: ' . ( 'png' === $fmt ? 'image/png' : 'image/svg+xml' ) );
+		header( 'Cache-Control: public, max-age=86400' );
+		header( 'X-Robots-Tag: noindex' );
+		if ( $download ) {
+			header( 'Content-Disposition: attachment; filename="mylink-' . self::name_for( $creator_id ) . '.' . $fmt . '"' );
+		}
+		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 自分で作った画像。
+		exit;
+	}
+
+	/**
+	 * 今週（直近7日）よく開かれたマイリンク。
+	 *
+	 * @return array<int,int> 発信者ID => 開いた人数
+	 */
+	public static function top_week( $limit = 10 ) {
+		$cached = get_transient( 'snscs_biolink_top_week' );
+		if ( ! is_array( $cached ) ) {
+			global $wpdb;
+			$table = self::table();
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows      = $wpdb->get_results( $wpdb->prepare( "SELECT c.creator_id, SUM(c.clicks) AS n FROM {$table} c INNER JOIN {$wpdb->posts} p ON p.ID = c.creator_id AND p.post_status = 'publish' WHERE c.link_key = 'view:page' AND c.day >= %s GROUP BY c.creator_id ORDER BY n DESC LIMIT 30", gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -6 days' ) ) ), ARRAY_A );
+			$penalties = SNSCS_Integrity::penalties();
+			$cached    = array();
+			foreach ( $rows as $row ) {
+				if ( ! isset( $penalties[ (int) $row['creator_id'] ] ) ) {
+					$cached[ (int) $row['creator_id'] ] = (int) $row['n'];
+				}
+			}
+			set_transient( 'snscs_biolink_top_week', $cached, HOUR_IN_SECONDS );
+		}
+		return array_slice( $cached, 0, $limit, true );
+	}
+
+	/**
+	 * 週に1回（月曜の朝）: 先週の成績のお知らせと、まだマイリンクを使っていない人への案内。
+	 */
+	public static function weekly_notices() {
+		$week = current_time( 'o-W' );
+		if ( (int) current_time( 'G' ) < 9 || get_option( 'snscs_biolink_week' ) === $week ) {
+			return;
+		}
+		update_option( 'snscs_biolink_week', $week, false );
+		global $wpdb;
+		$table = self::table();
+		$since = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -7 days' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$active = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT creator_id FROM {$table} WHERE link_key = 'view:page' AND day >= %s AND day < %s", $since, current_time( 'Y-m-d' ) ) ) );
+		foreach ( $active as $creator_id ) {
+			$user = (int) get_post_field( 'post_author', $creator_id );
+			if ( $user && 'publish' === get_post_status( $creator_id ) ) {
+				SNSCS_Inbox::add( $user, 'biolink_week', $creator_id );
+			}
+		}
+		// 掲載から3日以上たっても、2週間だれにも開かれていない人へ（1人に月1回まで）。
+		$quiet = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -14 days' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$table} c ON c.creator_id = p.ID AND c.link_key = 'view:page' AND c.day >= %s LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_snscs_bio_nudged' WHERE p.post_type = %s AND p.post_status = 'publish' AND p.post_author > 0 AND p.post_date < %s AND c.creator_id IS NULL AND (m.meta_value IS NULL OR m.meta_value < %s) LIMIT 500", $quiet, SNSCS_Post_Types::POST_TYPE, gmdate( 'Y-m-d H:i:s', strtotime( current_time( 'mysql' ) . ' -3 days' ) ), gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -30 days' ) ) ) );
+		foreach ( array_map( 'intval', $ids ) as $creator_id ) {
+			SNSCS_Inbox::add( (int) get_post_field( 'post_author', $creator_id ), 'biolink_nudge', $creator_id );
+			update_post_meta( $creator_id, '_snscs_bio_nudged', current_time( 'Y-m-d' ) );
+		}
+	}
+
+	/**
+	 * お知らせの文（SNSCS_Inbox::describe から）。
+	 */
+	public static function describe( array $row ) {
+		$creator_id = (int) $row['object_id'];
+		if ( 'publish' !== get_post_status( $creator_id ) ) {
+			return null;
+		}
+		if ( 'biolink_nudge' === $row['type'] ) {
+			return array( 'text' => 'マイリンクをSNSのプロフィールに貼ってみませんか？開かれるほど、このサイトのおすすめ順でも上に出やすくなります。', 'url' => snscs_portal_url() . '#snscs-biolink' );
+		}
+		$s = self::stats( $creator_id, 7 );
+		if ( ! $s['views'] ) {
+			return null;
+		}
+		$top = $s['sources'] ? self::SOURCES[ array_search( max( $s['sources'] ), $s['sources'], true ) ] ?? '' : '';
+		return array(
+			'text' => sprintf( 'この1週間で、マイリンクが%d人に開かれ、リンクが%d回押されました。%s', $s['views'], $s['clicks'], '' !== $top ? 'いちばん多く来たのは「' . $top . '」からです。' : '' ),
+			'url'  => snscs_portal_url() . '#snscs-biolink',
+		);
+	}
+
+	/**
+	 * サイトマップ（自分でIDを決めた人のマイリンク。使っている人のページだけ）。
+	 */
+	public static function sitemap_urls( $offset, $limit ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = %s WHERE p.post_type = %s AND p.post_status = 'publish' ORDER BY p.ID LIMIT %d, %d", self::META_NAME, SNSCS_Post_Types::POST_TYPE, $offset, $limit ) );
+		return array_map( array( __CLASS__, 'url' ), array_map( 'intval', $ids ) );
+	}
+
+	public static function sitemap_count() {
+		global $wpdb;
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} p INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = %s WHERE p.post_type = %s AND p.post_status = 'publish'", self::META_NAME, SNSCS_Post_Types::POST_TYPE ) );
+	}
+
 	public static function purge_old() {
 		global $wpdb;
 		$table = self::table();
@@ -416,7 +571,7 @@ class SNSCS_Biolink {
 				return $button['label'];
 			}
 		}
-		$fixed = array( 'page:profile' => '詳しいプロフィール', 'inquiry:form' => 'お仕事の相談', 'similar:creator' => '似ている発信者' );
+		$fixed = array( 'page:profile' => '詳しいプロフィール', 'inquiry:form' => 'お仕事の相談', 'similar:creator' => '似ている発信者', 'follow:site' => 'このサイトでフォロー' );
 		if ( isset( $fixed[ $key ] ) ) {
 			return $fixed[ $key ];
 		}
@@ -554,6 +709,41 @@ class SNSCS_Biolink {
 		}
 		$display_name = $en_text ? $en_text['name'] : $name;
 
+		// このサイトでフォロー（読者の登録の入口）。
+		$user       = get_current_user_id();
+		$is_owner   = $user && (int) get_post_field( 'post_author', $creator_id ) === $user;
+		$following  = $user && ! empty( SNSCS_Social::state( $user, array( $creator_id ) )['follows'][ $creator_id ] );
+		$can_follow = ! $is_owner && SNSCS_Hub::page_id( 'member' );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$ask_follow = $can_follow && $user && ! $following && ! empty( $_GET['snscs_follow'] );
+		$followed   = ! empty( $_GET['snscs_followed'] );
+		// phpcs:enable
+		$follow_url = $user ? '' : SNSCS_Social::member_url( array( 'redirect_to' => rawurlencode( add_query_arg( 'snscs_follow', 1, self::url( $creator_id ) ) ) ) );
+		$follow_form = function ( $label, $class ) use ( $creator_id ) {
+			return '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="bio__followform"><input type="hidden" name="action" value="snscs_bio_follow"><input type="hidden" name="creator" value="' . (int) $creator_id . '">' . wp_nonce_field( 'snscs_bio_follow_' . $creator_id, 'snscs_nonce', true, false ) . '<button type="submit" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
+		};
+
+		// 構造化データ（この人のプロフィールのページ）。
+		$same = array_values( array_unique( array_filter( wp_list_pluck( $buttons, 'url' ) ) ) );
+		if ( $pinned ) {
+			$same[] = $pinned['url'];
+		}
+		$ld = array(
+			'@context'   => 'https://schema.org',
+			'@type'      => 'ProfilePage',
+			'url'        => self::url( $creator_id ),
+			'mainEntity' => array_filter(
+				array(
+					'@type'       => 'Person',
+					'name'        => $display_name,
+					'description' => $bio,
+					'image'       => $photo ? $photo : null,
+					'url'         => get_permalink( $creator_id ),
+					'sameAs'      => array_values( array_unique( $same ) ),
+				)
+			),
+		);
+
 		ob_start();
 		?>
 <!doctype html>
@@ -570,6 +760,7 @@ class SNSCS_Biolink {
 <meta property="og:url" content="<?php echo esc_url( self::url( $creator_id ) ); ?>">
 <meta property="og:image" content="<?php echo esc_url( SNSCS_Share::share_url( $creator_id ) ); ?>">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json"><?php echo wp_json_encode( $ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG ); ?></script>
 <style>
 *{box-sizing:border-box}
 html{min-height:100%;background:<?php echo esc_html( $t['bg'] ); ?>}
@@ -598,6 +789,14 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 .bio__foot a{color:<?php echo esc_html( $t['text'] ); ?>}
 .bio__foot p{margin:6px 0}
 .bio__make{display:inline-block;margin-top:8px;padding:6px 16px;border:1px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;text-decoration:none}
+.bio__actions{display:flex;justify-content:center;gap:8px;margin:0 0 16px}
+.bio__followform{margin:0}
+.bio__pill{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 18px;border:2px solid <?php echo esc_html( $t['border'] ); ?>;border-radius:999px;background:<?php echo esc_html( $t['button'] ); ?>;color:<?php echo esc_html( $t['button_text'] ); ?>;font:inherit;font-size:.9em;font-weight:700;text-decoration:none;cursor:pointer}
+.bio__pill--on{opacity:.75}
+.bio__notice{margin:0 0 16px;padding:10px 14px;border-radius:12px;background:rgba(16,185,129,.15);font-size:.9em}
+.bio__ask{position:fixed;left:12px;right:12px;bottom:12px;z-index:10;max-width:536px;margin:0 auto;padding:14px 16px;border-radius:16px;background:#111827;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92em;text-align:center}
+.bio__ask p{margin:0 0 10px}
+.bio__ask button{min-height:42px;padding:0 22px;border:0;border-radius:999px;background:#fff;color:#111827;font:inherit;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -621,6 +820,22 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 	<?php if ( '' !== $bio ) : ?>
 		<p class="bio__text"><?php echo esc_html( $bio ); ?></p>
 	<?php endif; ?>
+
+	<?php if ( $followed ) : ?>
+		<p class="bio__notice" role="status"><?php echo esc_html( $l( 'フォローしました。新しい記事などを、会員ページでお知らせします。', 'Followed. You will get updates on your member page.' ) ); ?></p>
+	<?php endif; ?>
+	<div class="bio__actions">
+		<?php if ( $can_follow ) : ?>
+			<?php if ( $following ) : ?>
+				<span class="bio__pill bio__pill--on">✓ <?php echo esc_html( $l( 'フォロー中', 'Following' ) ); ?></span>
+			<?php elseif ( $user ) : ?>
+				<?php echo $follow_form( $l( '＋ フォロー', '+ Follow' ), 'bio__pill' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 中でエスケープ済み。 ?>
+			<?php else : ?>
+				<a class="bio__pill" href="<?php echo esc_url( $follow_url ); ?>" rel="nofollow"><?php echo esc_html( $l( '＋ フォロー', '+ Follow' ) ); ?></a>
+			<?php endif; ?>
+		<?php endif; ?>
+		<button type="button" class="bio__pill" id="bio-share" data-title="<?php echo esc_attr( $display_name ); ?>" data-url="<?php echo esc_url( self::url( $creator_id ) ); ?>" data-done="<?php echo esc_attr( $l( 'リンクをコピーしました', 'Link copied' ) ); ?>"><?php echo esc_html( $l( 'シェア', 'Share' ) ); ?></button>
+	</div>
 
 	<ul class="bio__list">
 		<?php if ( $pinned ) : ?>
@@ -660,6 +875,28 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 		<?php endif; ?>
 	</footer>
 </main>
+<?php if ( $ask_follow ) : ?>
+	<div class="bio__ask" role="dialog" aria-label="<?php echo esc_attr( $l( 'フォローの確認', 'Confirm follow' ) ); ?>">
+		<p><?php echo esc_html( sprintf( $l( '%sさんをフォローしますか？', 'Follow %s?' ), $display_name ) ); ?></p>
+		<?php echo $follow_form( $l( 'フォローする', 'Follow' ), '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 中でエスケープ済み。 ?>
+	</div>
+<?php endif; ?>
+<script>
+( function () {
+	var b = document.getElementById( 'bio-share' );
+	if ( ! b ) { return; }
+	b.addEventListener( 'click', function () {
+		var url = b.getAttribute( 'data-url' );
+		if ( navigator.share ) {
+			navigator.share( { title: b.getAttribute( 'data-title' ), url: url } ).catch( function () {} );
+		} else if ( navigator.clipboard ) {
+			navigator.clipboard.writeText( url ).then( function () { b.textContent = b.getAttribute( 'data-done' ); } );
+		} else {
+			window.prompt( '', url );
+		}
+	} );
+} )();
+</script>
 <?php if ( $tracking ) : ?>
 <script>window.snscsPageview = <?php echo wp_json_encode( $tracking ); ?>;</script>
 <script src="<?php echo esc_url( SNSCS_URL . 'assets/js/snscs-pageview.js?ver=' . SNSCS_VERSION ); ?>" defer></script>
@@ -702,7 +939,8 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 			array( '本当に無料ですか？', 'はい。マイリンクの作成・デザインの変更・アクセスの分析まで、すべて無料です。' ),
 			array( 'lit.link や Linktree と何が違いますか？', 'マイリンクは、発信者を探せるサイトの中にあります。開かれた数がサイトのおすすめ順に反映されるので、マイリンクを貼るほど、このサイトでもあなたが見つかりやすくなります。' ),
 			array( 'どんなリンクを載せられますか？', 'X・Instagram・TikTok・YouTube・Threads などのSNS、note・Brain、ブログやお店のページなどです。いちばん見てほしいリンクを上に大きく出すこともできます。' ),
-			array( 'どのSNSから見られたか分かりますか？', 'はい。SNSごとのURLを貼ると、どのSNSから何人が来たか、どのリンクが何回押されたかを、マイページで確かめられます。' ),
+			array( 'どのSNSから見られたか分かりますか？', 'はい。SNSごとのURLを貼ると、どのSNSから何人が来たか、どのリンクが何回押されたかを、マイページで確かめられます。毎週の成績もお知らせします。' ),
+			array( '名刺やチラシにも使えますか？', 'はい。マイページからQRコードの画像（PNG・印刷用のSVG）を保存できます。' ),
 			array( '海外の人にも見てもらえますか？', '日本語以外の環境の人には、ボタンなどが自動で英語の表示になります。紹介文も英訳されたものが出ます。' ),
 		);
 	}
@@ -714,6 +952,7 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 		$cta_url  = $creator ? snscs_portal_url() . '#snscs-biolink' : snscs_portal_url();
 		$cta      = $creator ? 'マイページでマイリンクを設定する' : '無料でマイリンクを作る';
 		$examples = self::examples();
+		$week     = self::top_week( 10 );
 		$preview  = $examples ? add_query_arg( 'snscs_preview', 1, self::url( $examples[0] ) ) : '';
 		$features = array(
 			array( '🔗', 'SNSをまとめて1ページに', 'X・Instagram・TikTok・YouTube・note などを、大きなボタンで並べます。' ),
@@ -722,6 +961,8 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 			array( '🎨', '9種類のデザイン', 'デザインとボタンの形を選ぶだけ。スマホで見やすく、表示も速いです。' ),
 			array( '🏆', '受賞や順位のバッジ', 'アワードの受賞やジャンルでの順位が、自動でバッジになります。' ),
 			array( '🌏', '海外の人には英語で表示', '日本語以外の環境の人には、自動で英語の表示になります。' ),
+			array( '📱', 'QRコードで名刺やチラシにも', 'QRコードを保存して、名刺・チラシ・イベントのポップに。来た人数も数えます。' ),
+			array( '🔔', 'ファンがフォローできる', '読者はマイリンクからこのサイトでフォローでき、あなたの新しい記事のお知らせを受け取れます。' ),
 		);
 		$ld = array(
 			'@context'   => 'https://schema.org',
@@ -762,6 +1003,16 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 				<li>マイページで<strong>デザインといちばん見てほしいリンク</strong>を選びます。</li>
 				<li>できたURLを、各SNSの<strong>プロフィール欄に貼ります</strong>。</li>
 			</ol>
+
+			<?php if ( count( $week ) >= 3 ) : ?>
+				<h2>今週よく見られたマイリンク</h2>
+				<ol class="snscs-mylink__rank">
+					<?php $snscs_r = 0; ?>
+					<?php foreach ( $week as $id => $views ) : ?>
+						<li><span class="snscs-mylink__no"><?php echo (int) ++$snscs_r; ?></span><a href="<?php echo esc_url( self::url( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a><span class="snscs-help">@<?php echo esc_html( self::name_for( $id ) ); ?></span><span class="snscs-mylink__views"><?php echo esc_html( number_format_i18n( $views ) . '人' ); ?></span></li>
+					<?php endforeach; ?>
+				</ol>
+			<?php endif; ?>
 
 			<?php if ( $examples ) : ?>
 				<h2>人気の発信者のマイリンク</h2>
@@ -815,6 +1066,7 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 			'th' => array( 'Threads', 'プロフィールを編集 →「リンク」' ),
 		);
 		$rate    = $stats['views'] ? round( min( 1, $stats['clicks'] / $stats['views'] ) * 100 ) : 0;
+		$post_text = 'SNSやブログのリンクを1ページにまとめました。ぜひのぞいてみてください！';
 		?>
 		<section class="snscs-panel snscs-biolink" id="snscs-biolink">
 			<h2 class="snscs-panel__title">マイリンク（SNSのプロフィールに貼るリンク）</h2>
@@ -824,7 +1076,19 @@ body{margin:0;color:<?php echo esc_html( $t['text'] ); ?>;font-family:"Hiragino 
 				<input id="snscs-bio-link" type="text" readonly value="<?php echo esc_url( $url ); ?>" onclick="this.select();">
 				<button type="button" class="snscs-button snscs-button--primary" onclick="var i=document.getElementById('snscs-bio-link');i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);this.textContent='コピーしました';">コピー</button>
 			</div>
-			<p><a class="snscs-button" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">マイリンクを見る</a></p>
+			<p class="snscs-biolink__share">
+				<a class="snscs-button" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">マイリンクを見る</a>
+				<a class="snscs-button snscs-biolink__x" href="<?php echo esc_url( 'https://x.com/intent/post?text=' . rawurlencode( $post_text ) . '&url=' . rawurlencode( add_query_arg( 's', 'x', $url ) ) ); ?>" target="_blank" rel="noopener">Xでお知らせ</a>
+				<a class="snscs-button snscs-biolink__threads" href="<?php echo esc_url( 'https://www.threads.net/intent/post?text=' . rawurlencode( $post_text . ' ' . add_query_arg( 's', 'th', $url ) ) ); ?>" target="_blank" rel="noopener">Threadsでお知らせ</a>
+			</p>
+			<div class="snscs-biolink__qr">
+				<div class="snscs-biolink__qrimg"><?php echo SNSCS_QR::svg( self::qr_target( $creator_id ), 132 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 自分で作ったSVG。 ?></div>
+				<div>
+					<p><strong>QRコード</strong>（名刺・チラシ・イベントのポップに）</p>
+					<p class="snscs-help">読み取ると、あなたのマイリンクが開きます。QRコードから来た人は「どこから来たか」に別に数えます。</p>
+					<p><a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'png', true ) ); ?>">画像（PNG）を保存</a> <a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'svg', true ) ); ?>">印刷用（SVG）を保存</a></p>
+				</div>
+			</div>
 			<?php if ( '' === $own ) : ?>
 				<p class="snscs-help">「@hanako」のような覚えやすいIDにしたいときは、下の掲載内容のフォームの「マイリンクのID」に入れて申請してください（審査のあとに切り替わります。今のURLもそのまま使えます）。</p>
 			<?php endif; ?>
