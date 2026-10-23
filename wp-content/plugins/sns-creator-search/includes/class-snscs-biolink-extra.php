@@ -27,6 +27,9 @@ class SNSCS_Biolink_Extra {
 	const FEED_TTL   = 3 * HOUR_IN_SECONDS;
 	const MAX_PAID   = 6;
 
+	/** 読み直しのあいだに、読み込めなかった先があったか。 */
+	private static $fetch_failed = false;
+
 	public static function init() {
 		add_action( 'admin_post_snscs_link_extra', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_snscs_bio_sub', array( __CLASS__, 'handle_subscribe' ) );
@@ -229,7 +232,7 @@ class SNSCS_Biolink_Extra {
 	/**
 	 * 期間を付けられるもの（並んでいるボタンと、追加のボタン）。キー => 表示名
 	 */
-	public static function schedulable( $creator_id, array $extra = null ) {
+	public static function schedulable( $creator_id, ?array $extra = null ) {
 		$extra = null === $extra ? self::get( $creator_id ) : $extra;
 		$out   = array();
 		foreach ( SNSCS_Biolink::buttons( $creator_id ) as $b ) {
@@ -564,8 +567,9 @@ class SNSCS_Biolink_Extra {
 	 * 読み直して保存する。
 	 */
 	public static function refresh_feed( $creator_id ) {
-		$creator_id = (int) $creator_id;
-		$f          = self::get( $creator_id )['feeds'];
+		$creator_id         = (int) $creator_id;
+		$f                  = self::get( $creator_id )['feeds'];
+		self::$fetch_failed = false;
 		$items      = array();
 		$sources    = self::feed_sources( $creator_id );
 		if ( $f['yt'] && isset( $sources['yt'] ) ) {
@@ -595,6 +599,11 @@ class SNSCS_Biolink_Extra {
 				return $b['date'] <=> $a['date'];
 			}
 		);
+		// 一時的に読み込めなかったときは、前に読んだ投稿を出し続ける。
+		$prev = get_post_meta( $creator_id, self::META_CACHE, true );
+		if ( ! $items && self::$fetch_failed && is_array( $prev ) && ! empty( $prev['items'] ) ) {
+			$items = (array) $prev['items'];
+		}
 		update_post_meta( $creator_id, self::META_CACHE, array( 'at' => time(), 'items' => array_slice( $items, 0, 12 ) ) );
 		return $items;
 	}
@@ -602,6 +611,7 @@ class SNSCS_Biolink_Extra {
 	private static function fetch( $url ) {
 		$res = wp_safe_remote_get( $url, array( 'timeout' => 8, 'redirection' => 3, 'limit_response_size' => 1024 * 1024, 'user-agent' => 'Mozilla/5.0 (compatible; ' . SNSCS_Brand::NAME . '/' . SNSCS_VERSION . '; +' . home_url( '/' ) . ')' ) );
 		if ( is_wp_error( $res ) || 200 !== (int) wp_remote_retrieve_response_code( $res ) ) {
+			self::$fetch_failed = true;
 			return '';
 		}
 		return (string) wp_remote_retrieve_body( $res );
@@ -628,7 +638,8 @@ class SNSCS_Biolink_Extra {
 			return $handle;
 		}
 		$saved = get_post_meta( $creator_id, self::META_YTID, true );
-		if ( is_array( $saved ) && ( $saved['handle'] ?? '' ) === $handle ) {
+		// 見つからなかったときは、1日たってから調べ直す。
+		if ( is_array( $saved ) && ( $saved['handle'] ?? '' ) === $handle && ( '' !== ( $saved['id'] ?? '' ) || (int) ( $saved['at'] ?? 0 ) > time() - DAY_IN_SECONDS ) ) {
 			return (string) $saved['id'];
 		}
 		$id   = '';
@@ -636,7 +647,10 @@ class SNSCS_Biolink_Extra {
 		if ( preg_match( '#<link rel="canonical" href="https://www\.youtube\.com/channel/(UC[A-Za-z0-9_-]{22})"#', $html, $m ) || preg_match( '#"(?:externalId|channelId)":"(UC[A-Za-z0-9_-]{22})"#', $html, $m ) ) {
 			$id = $m[1];
 		}
-		update_post_meta( $creator_id, self::META_YTID, array( 'handle' => $handle, 'id' => $id ) );
+		if ( '' !== $html ) {
+			// 読み込めなかった（通信の失敗）ときは覚えずに、次の読み直しで調べ直す。
+			update_post_meta( $creator_id, self::META_YTID, array( 'handle' => $handle, 'id' => $id, 'at' => time() ) );
+		}
 		return $id;
 	}
 
