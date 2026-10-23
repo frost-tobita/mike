@@ -2652,7 +2652,9 @@ body.snscs-portal-body .snscs-pt-search {
 
 body.snscs-portal-body .snscs-pt-tabs {
 	display: flex;
-	gap: 4px;
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 2px 2px 4px;
 	overflow-x: auto;
 	scrollbar-width: none;
 }
@@ -2661,9 +2663,38 @@ body.snscs-portal-body .snscs-pt-tabs {
 	display: none;
 }
 
+/* SNSのボタン（アイコンはブランドの色。選ぶとボタン全体がその色に） */
 body.snscs-portal-body .snscs-pt-tab {
+	--sns: #1d4ed8;
+	--sns-bg: #1d4ed8;
 	position: relative;
 	flex: 0 0 auto;
+}
+
+body.snscs-portal-body .snscs-pt-tab--x,
+body.snscs-portal-body .snscs-pt-tab--threads {
+	--sns: #000;
+	--sns-bg: #000;
+}
+
+body.snscs-portal-body .snscs-pt-tab--youtube {
+	--sns: #ff0000;
+	--sns-bg: #ff0000;
+}
+
+body.snscs-portal-body .snscs-pt-tab--instagram {
+	--sns: #d62976;
+	--sns-bg: linear-gradient(45deg, #feda75 0%, #fa7e1e 25%, #d62976 55%, #962fbf 80%, #4f5bd5 100%);
+}
+
+body.snscs-portal-body .snscs-pt-tab--tiktok {
+	--sns: #010101;
+	--sns-bg: #010101;
+}
+
+body.snscs-portal-body .snscs-pt-tab--substack {
+	--sns: #ff6719;
+	--sns-bg: #ff6719;
 }
 
 body.snscs-portal-body .snscs-pt-tab input {
@@ -2679,29 +2710,53 @@ body.snscs-portal-body .snscs-pt-tab input {
 body.snscs-portal-body .snscs-pt-tab span {
 	display: inline-flex;
 	align-items: center;
-	min-height: 40px;
-	padding: 0 16px;
+	gap: 7px;
+	min-height: 42px;
+	padding: 0 16px 0 12px;
 	box-sizing: border-box;
 	border: 1px solid #e5e7eb;
-	border-bottom: 0;
-	border-radius: 10px 10px 0 0;
-	background: #f9fafb;
-	color: #374151;
+	border-radius: 999px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
+	color: #1f2937;
 	font-size: 14px;
+	font-weight: 600;
 	white-space: nowrap;
 	cursor: pointer;
+	transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.snscs-pt-tab__ico {
+	flex: 0 0 auto;
+	color: var(--sns);
+}
+
+body.snscs-portal-body .snscs-pt-tab span:hover {
+	border-color: var(--sns);
+	box-shadow: 0 2px 8px rgba(17, 24, 39, 0.1);
 }
 
 body.snscs-portal-body .snscs-pt-tab input:checked + span {
-	border-color: #1d4ed8;
-	background: #1d4ed8;
+	border-color: transparent;
+	background: var(--sns-bg);
+	box-shadow: 0 3px 10px rgba(17, 24, 39, 0.18);
 	color: #fff;
 	font-weight: 700;
 }
 
-.snscs-pt-tab input:focus-visible + span {
+body.snscs-portal-body .snscs-pt-tab input:checked + span .snscs-pt-tab__ico {
+	color: #fff;
+}
+
+body.snscs-portal-body .snscs-pt-tab input:focus-visible + span {
 	outline: 3px solid #93c5fd;
 	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body.snscs-portal-body .snscs-pt-tab span {
+		transition: none;
+	}
 }
 
 body.snscs-portal-body .snscs-pt-search__row {
@@ -2720,7 +2775,7 @@ body.snscs-portal-body .snscs-pt-search__row input {
 	padding: 0 18px;
 	box-sizing: border-box;
 	border: 2px solid #1d4ed8;
-	border-radius: 0 10px 10px 10px;
+	border-radius: 10px;
 	background: #fff;
 	box-shadow: 0 2px 8px rgba(29, 78, 216, 0.08);
 	color: #111827;
@@ -3322,8 +3377,8 @@ body.snscs-portal-body .snscs-pt-cta__points li {
 	}
 
 	body.snscs-portal-body .snscs-pt-tab span {
-		min-height: 36px;
-		padding: 0 12px;
+		min-height: 38px;
+		padding: 0 13px 0 10px;
 		font-size: 13px;
 	}
 

@@ -211,6 +211,23 @@ class SNSCS_Portal_Top {
 		return '<section class="snscs-pt-box' . ( $class ? ' ' . esc_attr( $class ) : '' ) . '">' . $head . $body . '</section>';
 	}
 
+	/**
+	 * SNSを思い浮かべやすい小さなアイコン（SVG。色は CSS の currentColor）。
+	 */
+	public static function sns_icon( $key ) {
+		$paths = array(
+			'all'       => '<path fill="currentColor" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+			'x'         => '<path fill="currentColor" d="M17.8 3h3.1l-6.8 7.8L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8L17.8 3zm-1.1 16.2h1.7L7.4 4.7H5.5l11.2 14.5z"/>',
+			'youtube'   => '<path fill="currentColor" fill-rule="evenodd" d="M6.5 4.5h11A4.5 4.5 0 0 1 22 9v6a4.5 4.5 0 0 1-4.5 4.5h-11A4.5 4.5 0 0 1 2 15V9a4.5 4.5 0 0 1 4.5-4.5zM10 8.6v6.8l5.8-3.4L10 8.6z"/>',
+			'instagram' => '<g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/></g><circle fill="currentColor" cx="17.4" cy="6.6" r="1.3"/>',
+			'threads'   => '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16.2 9.6C15.5 7.6 14 6.6 12 6.6c-3 0-4.6 2.3-4.6 5.4s1.6 5.4 4.6 5.4c2.4 0 4-1.3 4-3.2 0-2.2-2.3-3-4.6-2.8-1.6.1-2.6 1-2.5 2.1.1 1.2 1.3 1.8 2.6 1.7 2.3-.2 3.3-2.3 3-5.4M12 21.5c-5.5 0-9-3.7-9-9.5S6.5 2.5 12 2.5c4.4 0 7.4 2.3 8.5 6"/>',
+			'tiktok'    => '<path fill="currentColor" d="M13.5 2.5h3.2a4.8 4.8 0 0 0 4.3 4.3v3.3a8 8 0 0 1-4.3-1.3v6.4a6.3 6.3 0 1 1-6.3-6.3h.6v3.3H10a3 3 0 1 0 3.5 3V2.5z"/>',
+			'substack'  => '<path fill="currentColor" d="M4 3.5h16v2.6H4zM4 8.3h16v2.6H4zM4 13.1h16v7.9l-8-4.5-8 4.5z"/>',
+		);
+		$path = $paths[ $key ] ?? '<circle fill="currentColor" cx="12" cy="12" r="8"/>';
+		return '<svg class="snscs-pt-tab__ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' . $path . '</svg>';
+	}
+
 	private static function search_band() {
 		$keywords = SNSCS_Trends::lists( 8 )['popular'];
 		if ( ! $keywords ) {
@@ -225,7 +242,7 @@ class SNSCS_Portal_Top {
 				<fieldset class="snscs-pt-tabs">
 					<legend class="screen-reader-text">検索するSNS</legend>
 					<?php foreach ( $tabs as $key => $label ) : ?>
-						<label class="snscs-pt-tab"><input type="radio" name="snscs_platform" value="<?php echo esc_attr( $key ); ?>" <?php checked( '', $key ); ?>><span><?php echo esc_html( $label ); ?></span></label>
+						<label class="snscs-pt-tab snscs-pt-tab--<?php echo esc_attr( '' === $key ? 'all' : $key ); ?>"><input type="radio" name="snscs_platform" value="<?php echo esc_attr( $key ); ?>" <?php checked( '', $key ); ?>><span><?php echo self::sns_icon( '' === $key ? 'all' : $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったSVG。 ?><?php echo esc_html( $label ); ?></span></label>
 					<?php endforeach; ?>
 				</fieldset>
 				<div class="snscs-pt-search__row">
