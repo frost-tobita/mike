@@ -553,6 +553,10 @@ class SNSCS_Biolink {
 		if ( isset( $fixed[ $key ] ) ) {
 			return $fixed[ $key ];
 		}
+		$extra = SNSCS_Biolink_Extra::key_label( $key );
+		if ( '' !== $extra ) {
+			return $extra;
+		}
 		return 0 === strpos( $key, 'article:' ) ? '記事' : $key;
 	}
 
@@ -671,7 +675,15 @@ class SNSCS_Biolink {
 		if ( SNSCS_Portal_Top::is_founder( $creator_id ) ) {
 			$badges[] = array( '🌱', $l( '創設メンバー', 'Founding member' ) );
 		}
-		$buttons = self::buttons( $creator_id, $english );
+		// 期間の外のボタンを外し、有料リンクを「販売中」に分ける（SNSCS_Biolink_Extra）。
+		$arranged   = SNSCS_Biolink_Extra::arrange( $creator_id, self::buttons( $creator_id, $english ), $english );
+		$buttons    = $arranged['buttons'];
+		$paid       = $arranged['paid'];
+		$extra_btns = SNSCS_Biolink_Extra::extra_buttons( $creator_id, $english );
+		$feed       = SNSCS_Biolink_Extra::feed_items( $creator_id );
+		$mail_on    = SNSCS_Biolink_Extra::mail_on( $creator_id );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$sub_state  = isset( $_GET['snscs_sub'] ) ? sanitize_key( wp_unslash( $_GET['snscs_sub'] ) ) : '';
 		foreach ( SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( $creator_id ) ) as $account ) {
 			if ( $account['verified'] ) {
 				$badges[] = array( '✓', $l( 'フォロワー数を公式に確認済み', 'Verified follower count' ) );
@@ -703,8 +715,8 @@ class SNSCS_Biolink {
 				}
 			}
 		}
-		$btn_inner = function ( $label, $sub, $key ) {
-			return '<span class="bio__btn__ico">' . SNSCS_Biolink_Design::icon( $key ) . '</span><span class="bio__btn__txt">' . esc_html( $label ) . ( '' !== $sub ? '<small>' . esc_html( $sub ) . '</small>' : '' ) . '</span>';
+		$btn_inner = function ( $label, $sub, $key, $ends = '' ) {
+			return '<span class="bio__btn__ico">' . SNSCS_Biolink_Design::icon( $key ) . '</span><span class="bio__btn__txt">' . esc_html( $label ) . ( '' !== $sub ? '<small>' . esc_html( $sub ) . '</small>' : '' ) . '</span>' . ( '' !== $ends ? '<span class="bio__ends">' . esc_html( $ends ) . '</span>' : '' );
 		};
 
 		$similar = array();
@@ -823,16 +835,76 @@ class SNSCS_Biolink {
 
 	<ul class="bio__list">
 		<?php if ( $pinned ) : ?>
-			<li><a class="bio__btn bio__btn--pinned bio__btn--<?php echo esc_attr( $pinned['kind'] ); ?>" href="<?php echo esc_url( $pinned['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $pinned['key'] ); ?>"><?php if ( '' !== $pin_tag ) : ?><span class="bio__tag"><?php echo esc_html( $pin_tag ); ?></span><?php endif; ?><?php echo $btn_inner( $pinned['label'], $pinned['sub'], $pinned['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
+			<li><a class="bio__btn bio__btn--pinned bio__btn--<?php echo esc_attr( $pinned['kind'] ); ?>" href="<?php echo esc_url( $pinned['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $pinned['key'] ); ?>"><?php if ( '' !== $pin_tag ) : ?><span class="bio__tag"><?php echo esc_html( $pin_tag ); ?></span><?php endif; ?><?php echo $btn_inner( $pinned['label'], $pinned['sub'], $pinned['key'], $pinned['ends'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endif; ?>
-		<?php foreach ( $buttons as $button ) : ?>
-			<li><a class="bio__btn bio__btn--<?php echo esc_attr( $button['kind'] ); ?>" href="<?php echo esc_url( $button['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $button['key'] ); ?>"><?php echo $btn_inner( $button['label'], $button['sub'], $button['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
+		<?php foreach ( array_merge( $extra_btns, $buttons ) as $button ) : ?>
+			<li><a class="bio__btn bio__btn--<?php echo esc_attr( $button['kind'] ); ?>" href="<?php echo esc_url( $button['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $button['key'] ); ?>"><?php echo $btn_inner( $button['label'], $button['sub'], $button['key'], $button['ends'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endforeach; ?>
 		<?php if ( $inquiry ) : ?>
 			<li><a class="bio__btn" href="<?php echo esc_url( get_permalink( $creator_id ) . '#snscs-inquiry' ); ?>" data-snscs-out="inquiry:form"><?php echo $btn_inner( $l( 'お仕事の相談', 'Business inquiries' ), $l( '企業・団体の方はこちら', 'For brands and organizations (form in Japanese)' ), 'inquiry:form' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 		<?php endif; ?>
 		<li><a class="bio__btn" href="<?php echo esc_url( $profile ); ?>" data-snscs-out="page:profile"><?php echo $btn_inner( $l( '詳しいプロフィール', 'Full profile' ), $site, 'page:profile' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a></li>
 	</ul>
+
+	<?php if ( $paid ) : ?>
+		<h2 class="bio__heading"><?php echo esc_html( $l( '販売中', 'For sale' ) ); ?></h2>
+		<ul class="bio__paid">
+			<?php foreach ( $paid as $item ) : ?>
+				<li><a class="bio__card" href="<?php echo esc_url( $item['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( $item['key'] ); ?>">
+					<span class="bio__card__ico"><?php echo SNSCS_Biolink_Design::icon( $item['key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったSVG。 ?></span>
+					<span class="bio__card__body"><span class="bio__card__kind"><?php echo esc_html( $item['kind'] ); ?></span><strong><?php echo esc_html( $item['label'] ); ?></strong><small><?php echo esc_html( $item['sub'] ); ?></small></span>
+					<span class="bio__card__price"><?php echo esc_html( SNSCS_Biolink_Extra::price( $item['price'], $english ) ); ?><?php if ( '' !== $item['ends'] ) : ?><span class="bio__ends"><?php echo esc_html( $item['ends'] ); ?></span><?php endif; ?></span>
+				</a></li>
+			<?php endforeach; ?>
+		</ul>
+	<?php endif; ?>
+
+	<?php if ( $feed ) : ?>
+		<h2 class="bio__heading"><?php echo esc_html( $l( '最新の投稿', 'Latest posts' ) ); ?></h2>
+		<ul class="bio__feed">
+			<?php foreach ( $feed as $i => $item ) : ?>
+				<?php $src_label = array( 'yt' => 'YouTube', 'note' => 'note', 'blog' => $l( 'ブログ', 'Blog' ) )[ $item['src'] ] ?? ''; ?>
+				<li class="<?php echo 0 === $i ? 'bio__feed--top' : ''; ?>"><a href="<?php echo esc_url( $item['url'] ); ?>" target="_blank" rel="noopener nofollow ugc" data-snscs-out="<?php echo esc_attr( 'feed:' . $item['src'] ); ?>">
+					<?php if ( '' !== $item['thumb'] ) : ?>
+						<img src="<?php echo esc_url( $item['thumb'] ); ?>" alt="" loading="lazy" width="320" height="180"<?php echo 'yt' === $item['src'] ? ' class="is-video"' : ''; ?>>
+					<?php else : ?>
+						<span class="bio__feed__noimg" aria-hidden="true"><?php echo SNSCS_Biolink_Design::icon( 'feed:' . $item['src'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったSVG。 ?></span>
+					<?php endif; ?>
+					<span class="bio__feed__txt"><span class="bio__feed__src"><?php echo esc_html( $src_label ); ?><?php echo $item['date'] ? esc_html( ' · ' . wp_date( $english ? 'M j' : 'n月j日', (int) $item['date'] ) ) : ''; ?></span><strong><?php echo esc_html( $item['title'] ); ?></strong></span>
+				</a></li>
+			<?php endforeach; ?>
+		</ul>
+	<?php endif; ?>
+
+	<?php if ( $mail_on ) : ?>
+		<section class="bio__mail" id="bio-mail" aria-labelledby="bio-mail-title">
+			<h2 id="bio-mail-title"><?php echo esc_html( $l( 'メールで最新情報を受け取る', 'Get updates by email' ) ); ?></h2>
+			<?php
+			$sub_msgs = array(
+				'check'   => $l( '確認のメールを送りました。メールのURLを開くと登録が完了します。', 'Check your inbox and open the link to confirm.' ),
+				'ok'      => $l( '登録しました。ありがとうございます！', 'You are subscribed. Thank you!' ),
+				'bye'     => $l( '登録をやめました。', 'You have unsubscribed.' ),
+				'invalid' => $l( 'メールアドレスと同意のチェックを確かめてください。', 'Please check your email address and the consent box.' ),
+				'expired' => $l( 'もう一度お試しください。', 'Please try again.' ),
+				'limit'   => $l( '短い時間に何度も送られました。時間をおいてお試しください。', 'Too many attempts. Please try again later.' ),
+			);
+			?>
+			<?php if ( isset( $sub_msgs[ $sub_state ] ) ) : ?>
+				<p class="bio__notice" role="status"><?php echo esc_html( $sub_msgs[ $sub_state ] ); ?></p>
+			<?php endif; ?>
+			<?php if ( 'ok' !== $sub_state && 'check' !== $sub_state ) : ?>
+				<p><?php echo esc_html( sprintf( $l( '新しい投稿やお知らせを、%sさんからメールで受け取れます。', 'Get new posts and news from %s by email.' ), $display_name ) ); ?></p>
+				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="bio__mailform">
+					<input type="hidden" name="action" value="snscs_bio_sub">
+					<input type="hidden" name="creator" value="<?php echo (int) $creator_id; ?>">
+					<input type="hidden" name="snscs_form" value="<?php echo esc_attr( snscs_form_token() ); ?>">
+					<p class="bio__hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></p>
+					<div class="bio__mailrow"><label for="bio-mail-email" class="bio__sr"><?php echo esc_html( $l( 'メールアドレス', 'Email' ) ); ?></label><input id="bio-mail-email" type="email" name="email" required autocomplete="email" placeholder="you@example.com"><button type="submit"><?php echo esc_html( $l( '登録する', 'Subscribe' ) ); ?></button></div>
+					<label class="bio__agree"><input type="checkbox" name="agree" value="1" required> <span><?php echo esc_html( sprintf( $l( 'メールアドレスが%sさんに知らされ、お知らせのメールが届くことに同意します。', 'I agree that my email will be shared with %s to receive updates.' ), $display_name ) ); ?> <?php echo wp_kses_post( SNSCS_Legal::link_or_text( 'privacy' ) ); ?></span></label>
+				</form>
+			<?php endif; ?>
+		</section>
+	<?php endif; ?>
 
 	<?php if ( $articles && ! $english ) : ?>
 		<h2 class="bio__heading">最新の記事</h2>
@@ -929,6 +1001,7 @@ class SNSCS_Biolink {
 			array( 'どんなリンクを載せられますか？', 'X・Instagram・TikTok・YouTube・Threads などのSNS、note・Brain、ブログやお店のページなどです。いちばん見てほしいリンクを上に大きく出すこともできます。' ),
 			array( 'どのSNSから見られたか分かりますか？', 'はい。SNSごとのURLを貼ると、どのSNSから何人が来たか、どのリンクが何回押されたかを、マイページで確かめられます。毎週の成績もお知らせします。' ),
 			array( '名刺やチラシにも使えますか？', 'はい。マイページからQRコードの画像（PNG・印刷用のSVG）を保存できます。' ),
+			array( '投げ銭や有料のコンテンツも載せられますか？', 'はい。OFUSE・Ko-fi・PayPal.me・pixivFANBOX などの応援ボタンと、有料記事や講座を値段付きで並べる「販売中」の欄を使えます（お支払いは各サービスで行います）。' ),
 			array( '海外の人にも見てもらえますか？', '日本語以外の環境の人には、ボタンなどが自動で英語の表示になります。紹介文も英訳されたものが出ます。' ),
 		);
 	}
@@ -946,7 +1019,11 @@ class SNSCS_Biolink {
 			array( '🔗', 'SNSをまとめて1ページに', 'X・Instagram・TikTok・YouTube・note などを、大きなボタンで並べます。' ),
 			array( '⭐', 'いちばん見てほしいリンクを目立たせる', '新作や販売中の商品を、「新着」「セール中」の札付きで一番上に出せます。' ),
 			array( '📊', 'どのSNSから来たか分かる', '開かれた数・押されたリンク・来たSNSを、マイページで確かめられます。' ),
-			array( '🎨', '22種類のデザインとテンプレート', '背景・ボタン・書体・写真の枠を選ぶだけ。好きな色も使えます。右のプレビューで確かめながら作れます。' ),
+			array( '🎨', '36種類のデザインとテンプレート', '「シンプル」「かわいい」「クール」「ナチュラル」「プロ」から選ぶだけ。好きな色も使えます。プレビューで確かめながら作れます。' ),
+			array( '💝', '応援ボタンと販売中のコンテンツ', 'OFUSE・Ko-fi などの応援ボタンや、有料記事・講座・商品を値段付きのカードで出せます。' ),
+			array( '📨', 'ファンとつながる', 'LINEの友だち追加と、メールで最新情報を受け取る登録の欄を置けます。登録した人の一覧は保存できます。' ),
+			array( '🆕', '最新の投稿を自動で表示', 'YouTube・note・ブログの新しい投稿を自動で並べます。更新しなくても、いつも新しいページに。' ),
+			array( '⏰', '期間限定のリンク', 'キャンペーンやセールのリンクを、決めた期間だけ出せます。終わりが近いと「あと3日」と出ます。' ),
 			array( '🖼️', 'ストーリーズ用の画像も自動で', 'あなたの色・写真・QRコード入りの画像（ストーリーズ用・シェア用・印刷用）を、ボタン1つで保存できます。' ),
 			array( '🏆', '受賞や順位のバッジ', 'アワードの受賞やジャンルでの順位が、自動でバッジになります。' ),
 			array( '🌏', '海外の人には英語で表示', '日本語以外の環境の人には、自動で英語の表示になります。' ),
@@ -1240,6 +1317,8 @@ class SNSCS_Biolink {
 					<p class="snscs-help">プレビュー</p>
 				</div>
 			</div>
+
+			<?php SNSCS_Biolink_Extra::render_portal( $creator_id ); ?>
 
 			<h3 class="snscs-sharekit__heading">押されたリンク（直近30日）</h3>
 			<?php if ( $clicks ) : ?>

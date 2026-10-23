@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.19.0
+ * Version:           1.20.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.19.0' );
-define( 'SNSCS_DB_VERSION', '26' );
+define( 'SNSCS_VERSION', '1.20.0' );
+define( 'SNSCS_DB_VERSION', '27' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -83,6 +83,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-qr.php';
 require_once SNSCS_DIR . 'includes/class-snscs-biolink-design.php';
 require_once SNSCS_DIR . 'includes/class-snscs-biolink.php';
 require_once SNSCS_DIR . 'includes/class-snscs-biolink-kit.php';
+require_once SNSCS_DIR . 'includes/class-snscs-biolink-extra.php';
 require_once SNSCS_DIR . 'includes/class-snscs-calendar.php';
 require_once SNSCS_DIR . 'includes/class-snscs-brand.php';
 require_once SNSCS_DIR . 'includes/class-snscs-portal-top.php';
@@ -197,6 +198,7 @@ function snscs_install() {
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
 	SNSCS_Biolink::install();
+	SNSCS_Biolink_Extra::install();
 	SNSCS_Calendar::install();
 	SNSCS_Index::install();
 	SNSCS_Feedback::install();
@@ -281,6 +283,7 @@ SNSCS_Interviews::init();
 SNSCS_Inquiries::init();
 SNSCS_Biolink::init();
 SNSCS_Biolink_Kit::init();
+SNSCS_Biolink_Extra::init();
 SNSCS_Calendar::init();
 SNSCS_Brand::init();
 SNSCS_Portal_Top::init();
