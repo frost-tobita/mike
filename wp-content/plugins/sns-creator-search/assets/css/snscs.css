@@ -3864,10 +3864,38 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 }
 
 .snscs-founder__emblem {
-	flex: 0 0 112px;
-	width: 112px;
-	height: 112px;
-	filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+	flex: 0 0 128px;
+	width: 128px;
+	height: 128px;
+	border-radius: 50%;
+	filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
+}
+
+/* 1.24: 記念カードを保存 */
+.snscs-founder__save {
+	align-self: flex-start;
+	margin-top: 8px;
+	padding: 6px 14px;
+	border: 1px solid currentColor;
+	border-radius: 999px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 0.8em;
+	letter-spacing: 0.08em;
+	cursor: pointer;
+	opacity: 0.9;
+}
+
+.snscs-founder__save:hover,
+.snscs-founder__save:focus-visible {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.snscs-founder__save[disabled] {
+	cursor: progress;
+	opacity: 0.5;
 }
 
 .snscs-founder__text {
@@ -3894,7 +3922,7 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	letter-spacing: 0.06em;
 }
 
-.snscs-founder__text span:last-child {
+.snscs-founder__text span:nth-child(3) {
 	opacity: 0.8;
 	font-size: 0.85em;
 }
@@ -3910,9 +3938,9 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 
 @media (max-width: 480px) {
 	.snscs-founder__emblem {
-		flex-basis: 84px;
-		width: 84px;
-		height: 84px;
+		flex-basis: 92px;
+		width: 92px;
+		height: 92px;
 	}
 }
 

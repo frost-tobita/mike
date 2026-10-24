@@ -405,7 +405,7 @@ class SNSCS_Hub {
 						<td>
 							<?php foreach ( SNSCS_Founder::designs() as $snscs_k => $snscs_d ) : ?>
 								<label style="display: inline-flex; flex-direction: column; align-items: center; width: 150px; margin: 0 12px 12px 0; text-align: center; vertical-align: top">
-									<img src="<?php echo esc_url( SNSCS_URL . 'assets/badges/founder-' . $snscs_k . '.svg?ver=' . SNSCS_VERSION ); ?>" alt="" width="110" height="110">
+									<img src="<?php echo esc_url( SNSCS_Founder::medal_url( $snscs_k ) ); ?>" alt="" width="110" height="110">
 									<span><input type="radio" name="founder_badge" value="<?php echo esc_attr( $snscs_k ); ?>" <?php checked( $s['founder_badge'], $snscs_k ); ?>> <?php echo esc_html( $snscs_d[0] ); ?></span>
 									<span class="description" style="font-size: 12px"><?php echo esc_html( $snscs_d[1] ); ?></span>
 								</label>
