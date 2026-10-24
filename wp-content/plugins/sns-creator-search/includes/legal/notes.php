@@ -89,5 +89,5 @@ return <<<'HTML'
 <h2>お問い合わせ</h2>
 <p>%%operator%%<br>%%email%%</p>
 
-<p>%%date%% 制定</p>
+<p>%%date%% 制定%%revised%%</p>
 HTML;

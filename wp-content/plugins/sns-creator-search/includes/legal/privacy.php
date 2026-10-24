@@ -184,5 +184,5 @@ return <<<'HTML'
 <p>このポリシーに関するお問い合わせは、次の窓口までお願いします。</p>
 <p>%%operator%%<br>%%email%%</p>
 
-<p>%%date%% 制定</p>
+<p>%%date%% 制定%%revised%%</p>
 HTML;

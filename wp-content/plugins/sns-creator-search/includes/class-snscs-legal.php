@@ -18,6 +18,8 @@ class SNSCS_Legal {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
 		add_action( 'admin_post_snscs_legal_create', array( __CLASS__, 'handle_create' ) );
+		add_action( 'admin_post_snscs_legal_update', array( __CLASS__, 'handle_update' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'outdated_notice' ) );
 		add_shortcode( 'sns_legal_links', array( __CLASS__, 'links_html' ) );
 	}
 
@@ -157,6 +159,9 @@ class SNSCS_Legal {
 		$date = isset( $info['date'] ) && preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $info['date'], $m )
 			? sprintf( '%d年%d月%d日', $m[1], $m[2], $m[3] )
 			: '【制定日】';
+		$revised = ! empty( $info['revised'] ) && preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $info['revised'], $r ) && $info['revised'] !== ( $info['date'] ?? '' )
+			? sprintf( '・%d年%d月%d日 改定', $r[1], $r[2], $r[3] )
+			: '';
 
 		return strtr(
 			$template,
@@ -166,6 +171,7 @@ class SNSCS_Legal {
 				'%%email%%'       => $text( 'email', 'お問い合わせ先メールアドレス' ),
 				'%%court%%'       => $text( 'court', '運営者の所在地を管轄する地方裁判所' ),
 				'%%date%%'        => esc_html( $date ),
+				'%%revised%%'     => esc_html( $revised ),
 				'%%site%%'        => esc_html( get_bloginfo( 'name' ) ),
 				'%%keep_days%%'   => (int) SNSCS_Referrals::KEEP_DAYS,
 				'%%inflow_days%%' => (int) SNSCS_Scores::inflow_days(),
@@ -176,6 +182,75 @@ class SNSCS_Legal {
 				'%%portal_url%%'  => esc_url( snscs_portal_url() ),
 			)
 		);
+	}
+
+	/**
+	 * いまのひな形で作った文面（改定日は入れずに比べる）。
+	 */
+	private static function latest( $key, array $info ) {
+		unset( $info['revised'] );
+		return self::fill( self::template( $key ), $info, (array) get_option( 'snscs_legal_pages', array() ) );
+	}
+
+	/**
+	 * ページの文面が、プラグインの更新で変わった最新のひな形と違うか（1.27.7）。
+	 * 作ったあとに運営者が手で直した場合も「違う」になる。
+	 */
+	public static function is_outdated( $key ) {
+		$id = self::page_id( $key );
+		if ( ! $id ) {
+			return false;
+		}
+		$norm = function ( $html ) {
+			$html = preg_replace( '/・\d{4}年\d{1,2}月\d{1,2}日 改定/u', '', (string) $html );
+			return preg_replace( '/\s+/', '', wp_strip_all_tags( $html ) );
+		};
+		return $norm( get_post_field( 'post_content', $id ) ) !== $norm( self::latest( $key, (array) get_option( 'snscs_legal_info', array() ) ) );
+	}
+
+	/**
+	 * 作成済みのページを最新のひな形の文面に置き換える（前の文面は「リビジョン」に残る）。
+	 */
+	public static function update_pages( array $keys ) {
+		$info            = (array) get_option( 'snscs_legal_info', array() );
+		$info['revised'] = current_time( 'Y-m-d' );
+		$ids             = (array) get_option( 'snscs_legal_pages', array() );
+		$done            = 0;
+		foreach ( $keys as $key ) {
+			if ( ! self::page_id( $key ) ) {
+				continue;
+			}
+			wp_update_post( wp_slash( array( 'ID' => (int) $ids[ $key ], 'post_content' => self::fill( self::template( $key ), $info, $ids ) ) ) );
+			++$done;
+		}
+		return $done;
+	}
+
+	/**
+	 * 管理画面の上に「規約ページに新しい文面があります」。
+	 */
+	public static function outdated_notice() {
+		if ( ! current_user_can( 'manage_options' ) || ( isset( $_GET['page'] ) && self::PAGE === $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+		$old = array_filter( array_keys( self::pages() ), array( __CLASS__, 'is_outdated' ) );
+		if ( $old ) {
+			$titles = array_map( function ( $key ) {
+				return self::pages()[ $key ]['title'];
+			}, $old );
+			echo '<div class="notice notice-info"><p>' . esc_html( implode( '・', $titles ) ) . ' に、プラグインの更新で新しい文面があります。<a href="' . esc_url( self::url() ) . '">規約ページ</a>で確認して更新してください。</p></div>';
+		}
+	}
+
+	public static function handle_update() {
+		if ( ! current_user_can( 'manage_options' ) || ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_legal_update' ) ) {
+			wp_die( 'この操作は許可されていません。' );
+		}
+		$key  = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : '';
+		$keys = isset( self::pages()[ $key ] ) ? array( $key ) : array_filter( array_keys( self::pages() ), array( __CLASS__, 'is_outdated' ) );
+		self::update_pages( $keys );
+		wp_safe_redirect( add_query_arg( 'snscs_done', 'updated', self::url() ) );
+		exit;
 	}
 
 	/* --------------------------------------------------------------------
@@ -210,19 +285,34 @@ class SNSCS_Legal {
 				<div class="notice notice-success is-dismissible"><p>ページを作成して公開しました。【 】で囲まれた項目が残っていないか確認してください。</p></div>
 			<?php elseif ( 'drafted' === $done ) : ?>
 				<div class="notice notice-success is-dismissible"><p>ページを下書きとして作成しました。内容を確認してから公開してください。</p></div>
+			<?php elseif ( 'updated' === $done ) : ?>
+				<div class="notice notice-success is-dismissible"><p>最新の文面に更新しました（改定日も入れました）。前の文面は、ページの編集画面の「リビジョン」から戻せます。</p></div>
 			<?php endif; ?>
 
 			<p>利用規約・プライバシーポリシー・利用上の注意事項のページを、このサイトの機能（発信者の登録と審査、紹介リンク、おすすめ順、広告）に合わせた文面で作成します。</p>
 			<p><strong>公開する前に、必ず内容を確認してください。</strong>事業の内容に合わせた修正や、弁護士など専門家への確認をおすすめします。</p>
 
 			<table class="widefat striped" style="max-width: 800px; margin: 16px 0 24px">
-				<thead><tr><th>ページ</th><th>状態</th><th></th></tr></thead>
+				<thead><tr><th>ページ</th><th>状態</th><th>文面</th><th></th></tr></thead>
 				<tbody>
 					<?php foreach ( self::pages() as $key => $page ) : ?>
 						<?php $id = self::page_id( $key ); ?>
 						<tr>
 							<td><strong><?php echo esc_html( $page['title'] ); ?></strong></td>
 							<td><?php echo $id ? esc_html( isset( $labels[ get_post_status( $id ) ] ) ? $labels[ get_post_status( $id ) ] : get_post_status( $id ) ) : '未作成'; ?></td>
+							<td>
+								<?php if ( $id && self::is_outdated( $key ) ) : ?>
+									<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( $page['title'] ); ?>を最新の文面に置き換えます。手で直したところも元に戻ります（前の文面はリビジョンに残ります）。よろしいですか？');">
+										<input type="hidden" name="action" value="snscs_legal_update">
+										<input type="hidden" name="key" value="<?php echo esc_attr( $key ); ?>">
+										<?php wp_nonce_field( 'snscs_legal_update', 'snscs_nonce' ); ?>
+										<span style="color:#b45309">新しい文面があります</span>
+										<button type="submit" class="button button-small">最新の文面に更新</button>
+									</form>
+								<?php elseif ( $id ) : ?>
+									最新
+								<?php endif; ?>
+							</td>
 							<td>
 								<?php if ( $id ) : ?>
 									<a href="<?php echo esc_url( get_edit_post_link( $id ) ); ?>">編集</a> ・

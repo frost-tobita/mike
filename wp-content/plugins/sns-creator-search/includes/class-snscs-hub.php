@@ -80,6 +80,13 @@ class SNSCS_Hub {
 				wp_update_post( array( 'ID' => $id, 'post_title' => self::pages()[ $key ]['title'] ) );
 			}
 		}
+		// 用語集（最初に1度だけ入れた文）に残る古い呼び名も直す（1.27.7）。
+		$terms = get_posts( array( 'post_type' => SNSCS_Glossary::POST_TYPE, 'post_status' => 'any', 'posts_per_page' => -1, 's' => 'マイリンク' ) );
+		foreach ( $terms as $term ) {
+			if ( false !== strpos( $term->post_content, 'マイリンク' ) ) {
+				wp_update_post( wp_slash( array( 'ID' => $term->ID, 'post_content' => str_replace( 'マイリンク', 'FolloLink', $term->post_content ) ) ) );
+			}
+		}
 	}
 
 	public static function page_id( $key ) {

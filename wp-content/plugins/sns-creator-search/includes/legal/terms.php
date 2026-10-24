@@ -243,5 +243,5 @@ return <<<'HTML'
 <li>本サービスに関して紛争が生じた場合は、%%court%%を第一審の専属的合意管轄裁判所とします。</li>
 </ol>
 
-<p>%%date%% 制定</p>
+<p>%%date%% 制定%%revised%%</p>
 HTML;

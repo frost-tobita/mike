@@ -3577,6 +3577,12 @@ body.snscs-portal-body p.snscs-pt-founders__left strong {
 
 body.snscs-portal-body p.snscs-pt-founders__left span {
 	opacity: 0.7;
+	white-space: nowrap;
+}
+
+/* 言葉の途中で折り返さない（「先着1,000人」の「人」だけが次の行に行かないように）。 */
+body.snscs-portal-body p.snscs-pt-founders__tag span {
+	white-space: nowrap;
 }
 
 .snscs-portal-body .snscs-pt-founders__btn {
@@ -3725,6 +3731,20 @@ body.snscs-portal-body p.snscs-pt-founders__first em {
 
 	body.snscs-portal-body p.snscs-pt-founders__left strong {
 		font-size: 24px;
+	}
+
+	body.snscs-portal-body p.snscs-pt-founders__tag {
+		padding: 2px 8px;
+		font-size: 11px;
+		letter-spacing: 0.04em;
+	}
+
+	body.snscs-portal-body p.snscs-pt-founders__title {
+		font-size: 17px;
+	}
+
+	body.snscs-portal-body p.snscs-pt-founders__left span {
+		display: block;
 	}
 
 	.snscs-pt-founders__tier {

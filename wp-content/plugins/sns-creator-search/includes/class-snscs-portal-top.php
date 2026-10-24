@@ -517,8 +517,8 @@ class SNSCS_Portal_Top {
 
 		return '<section class="snscs-pt-founders snscs-pt-founders--' . esc_attr( $now ) . '">'
 			. '<div class="snscs-pt-founders__head"><img class="snscs-pt-founders__medal" src="' . esc_url( SNSCS_Founder::medal_url( $now ) ) . '" alt="" width="150" height="150">'
-			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
-			. '<p class="snscs-pt-founders__title">いま登録して掲載されると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
+			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag"><span>創設メンバー募集中</span> ・ <span>' . esc_html( sprintf( '先着%s人', number_format_i18n( $limit ) ) ) . '</span></p>'
+			. '<p class="snscs-pt-founders__title"><span>いま登録して</span><span>掲載されると、</span><span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
 			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
 			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で登録して受け取る</a></div>'
 			. '<div class="snscs-pt-founders__tiers">' . $rows . '</div>'
