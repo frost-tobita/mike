@@ -225,10 +225,13 @@
 
 .snscs-portal {
 	display: grid;
+	/* 列は画面の幅まで（中の部品が広くても、スマホで横にはみ出さない）。 */
+	grid-template-columns: minmax(0, 1fr);
 	gap: 20px;
 }
 
 .snscs-portal > * {
+	min-width: 0;
 	margin-top: 0;
 	margin-bottom: 0;
 }
@@ -7065,11 +7068,18 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 }
 
 .snscs-bioed__group {
+	/* fieldset は中身より細くならないのが標準なので、スマホの幅に収める。 */
+	min-width: 0;
 	margin: 0 0 14px;
 	padding: 12px 14px;
 	border: 1px solid #e5e7eb;
 	border-radius: 12px;
 	background: #fff;
+}
+
+.snscs-bioed__group select {
+	box-sizing: border-box;
+	max-width: 100%;
 }
 
 .snscs-bioed__group legend {
@@ -7112,6 +7122,7 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 }
 
 .snscs-bioed__tplsw {
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -7222,7 +7233,7 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 
 @media (max-width: 900px) {
 	.snscs-bioed {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.snscs-bioed__preview {
@@ -7330,7 +7341,12 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
+	max-width: 100%;
 	margin: 0 12px 8px 0;
+}
+
+.snscs-bioextra .snscs-bioed__group label select {
+	min-width: 0;
 }
 
 .snscs-bioextra .snscs-biolink__check {
@@ -7376,6 +7392,13 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 	vertical-align: middle;
 }
 
+/* ポータルの見た目のページの「表」の枠（全部の辺に線）を、この表では使わない。 */
+body.snscs-portal-body .snscs-pm__page .snscs-bioextra__table :is(th, td) {
+	padding: 6px 6px 6px 0;
+	border: 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
 .snscs-bioextra__table th {
 	color: #6b7280;
 	font-size: 12px;
@@ -7415,17 +7438,44 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 		display: none;
 	}
 
+	.snscs-bioextra__table,
+	.snscs-bioextra__table tbody {
+		display: block;
+	}
+
 	.snscs-bioextra__table tr {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		gap: 4px 8px;
 		padding: 8px 0;
 		border-bottom: 1px solid #e5e7eb;
 	}
 
-	.snscs-bioextra__table td {
+	.snscs-bioextra__table td,
+	body.snscs-portal-body .snscs-pm__page .snscs-bioextra__table td {
 		padding: 0;
 		border: 0;
+	}
+
+	/* 期間限定: スマホでは「いつから」「いつまで」を1行ずつ、見出し付きで。 */
+	.snscs-bioextra__table--sched tr {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.snscs-bioextra__table--sched td:nth-child(2)::before,
+	.snscs-bioextra__table--sched td:nth-child(3)::before {
+		display: block;
+		margin: 2px 0;
+		color: #6b7280;
+		font-size: 12px;
+	}
+
+	.snscs-bioextra__table--sched td:nth-child(2)::before {
+		content: "いつから";
+	}
+
+	.snscs-bioextra__table--sched td:nth-child(3)::before {
+		content: "いつまで";
 	}
 
 	.snscs-bioextra__table td:first-child {
@@ -7433,8 +7483,11 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 		font-weight: 600;
 	}
 
-	.snscs-bioextra__table input[type="datetime-local"] {
+	.snscs-bioextra__table select,
+	.snscs-bioextra__table input {
+		box-sizing: border-box;
 		width: 100%;
+		min-width: 0;
 	}
 }
 
@@ -8611,8 +8664,8 @@ body.snscs-portal-body .snscs-pt-box--mypage .snscs-provisional .snscs-button {
 	text-align: center;
 }
 
-/* 1.27.3: マイページ枠の「マイリンク」 */
-.snscs-portal-body a.snscs-pt-mylink {
+/* 1.27.3: マイページ枠の「FolloLink」（新着のFolloLink の .snscs-pt-mylink とは別の名前） */
+.snscs-portal-body a.snscs-pt-follo {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
@@ -8626,16 +8679,16 @@ body.snscs-portal-body .snscs-pt-box--mypage .snscs-provisional .snscs-button {
 	text-decoration: none;
 }
 
-.snscs-portal-body a.snscs-pt-mylink:hover {
+.snscs-portal-body a.snscs-pt-follo:hover {
 	border-color: #1B27B0;
 	background: #eef0ff;
 }
 
-.snscs-portal-body a.snscs-pt-mylink strong {
+.snscs-portal-body a.snscs-pt-follo strong {
 	font-size: 15px;
 }
 
-.snscs-portal-body a.snscs-pt-mylink span {
+.snscs-portal-body a.snscs-pt-follo span {
 	display: block;
 	max-width: 100%;
 	overflow: hidden;

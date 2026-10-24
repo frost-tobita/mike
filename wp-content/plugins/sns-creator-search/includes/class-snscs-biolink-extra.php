@@ -926,7 +926,7 @@ class SNSCS_Biolink_Extra {
 				<fieldset class="snscs-bioed__group">
 					<legend>⏰ 期間限定で出す</legend>
 					<p class="snscs-help">「いつから・いつまで」を入れたボタンは、その期間だけ出ます。終わりの7日前からは「あと◯日」と出します。空ならずっと出します。</p>
-					<table class="snscs-bioextra__table">
+					<table class="snscs-bioextra__table snscs-bioextra__table--sched">
 						<thead><tr><th>ボタン</th><th>いつから</th><th>いつまで</th><th>いま</th></tr></thead>
 						<tbody>
 							<?php foreach ( self::schedulable( $creator_id, $extra ) as $key => $label ) : ?>

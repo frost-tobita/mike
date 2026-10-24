@@ -755,10 +755,10 @@ class SNSCS_Portal_Top {
 			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>';
 		// マイページのすぐ下に、FolloLink（掲載中なら自分のFolloLink、まだなら作り方の案内）。
 		if ( $creator && 'publish' === get_post_status( $creator ) ) {
-			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '"><strong>FolloLink（フォロリンク）</strong><span>' . esc_html( SNSCS_Biolink::display_address( $creator ) ) . '</span></a>';
+			$body .= '<a class="snscs-pt-follo" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '"><strong>FolloLink（フォロリンク）</strong><span>' . esc_html( SNSCS_Biolink::display_address( $creator ) ) . '</span></a>';
 		} else {
 			$about = SNSCS_Hub::page_url( 'mylink' );
-			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( $about ? $about : snscs_portal_url() ) . '"><strong>FolloLink（フォロリンク）</strong><span>SNSのプロフィールに貼れる、あなただけのリンク集</span></a>';
+			$body .= '<a class="snscs-pt-follo" href="' . esc_url( $about ? $about : snscs_portal_url() ) . '"><strong>FolloLink（フォロリンク）</strong><span>SNSのプロフィールに貼れる、あなただけのリンク集</span></a>';
 		}
 		$body .= SNSCS_Social::member_url() ? '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'level' ) ) ) . '">冒険の記録を見る</a>' : '';
 		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
