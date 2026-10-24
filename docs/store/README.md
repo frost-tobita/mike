@@ -38,12 +38,12 @@ Google Play のほうが費用が安く、パソコンが Windows でも進め�
 
 ### ステップ2: アプリのファイルを作る（15分・PWABuilder）
 1. https://www.pwabuilder.com/ を開く
-2. 入力欄に **サイトのURL**（例: `https://あなたのサイト/`）を入れて「Start」
+2. 入力欄に **サイトのURL**（FolloFind は `https://follofind.com/`。転送元の `follofind.jp` ではなく、転送先の本番サイトを入れる）を入れて「Start」
 3. 点数が出ます。赤い ✕ があっても、「Package For Stores」が押せればOK
 4. 「Package For Stores」→ **Android** →「Generate Package」
 5. 設定画面が出たら、次のように入れる
    - **Package ID**: `com.（サイトのドメインを逆にしたもの）.app`
-     例: サイトが `follofind.jp` なら `jp.follofind.app`（あとから変えられないので、よく確かめる）
+     FolloFind は本番サイトが `follofind.com` なので **`com.follofind.app`**（あとから変えられないので、よく確かめる。`follofind.jp` は `follofind.com` への転送用）
    - **App name**: `FolloFind`
    - **Launcher name**（アイコンの下の名前）: `FolloFind`
    - **Signing key**: 「Create new」（新しく作る）のまま
@@ -61,7 +61,7 @@ ZIP の中身:
 
 ### ステップ3: サイトにアプリのことを登録する（5分）
 1. ZIP の中の `assetlinks.json` をメモ帳で開く
-2. `"package_name"` のあとの値（例: `jp.follofind.app`）と、
+2. `"package_name"` のあとの値（例: `com.follofind.app`）と、
    `"sha256_cert_fingerprints"` のあとの `AB:CD:...` の長い値をコピー
 3. WordPress の「発信者 → スマホアプリ」の
    - 「パッケージ名」に package_name の値
