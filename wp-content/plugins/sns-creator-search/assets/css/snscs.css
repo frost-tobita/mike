@@ -7032,6 +7032,16 @@ body.snscs-portal-body .snscs-pf img,
 	max-width: none;
 }
 
+/* ふだんは白の地に青い文字（テーマのボタンの色に上書きされないよう、こちらも強く指定する） */
+body .snscs-quicknav a.snscs-quicknav__link {
+	border: 1px solid #c7d2fe !important;
+	background: #fff !important;
+	box-shadow: none !important;
+	color: #1B27B0 !important;
+	text-decoration: none !important;
+	transition: background 0.15s, color 0.15s;
+}
+
 /* サイト内ナビのボタン: カーソルを合わせたとき・今いるページは、青の地に白い文字 */
 body .snscs-quicknav a.snscs-quicknav__link:hover,
 body .snscs-quicknav a.snscs-quicknav__link:focus-visible,
@@ -7040,10 +7050,6 @@ body .snscs-quicknav a.snscs-quicknav__link[aria-current="page"] {
 	background: #1B27B0 !important;
 	color: #fff !important;
 	text-decoration: none !important;
-}
-
-body .snscs-quicknav a.snscs-quicknav__link {
-	transition: background 0.15s, color 0.15s;
 }
 
 /* ---------------------------------------------------------------------
