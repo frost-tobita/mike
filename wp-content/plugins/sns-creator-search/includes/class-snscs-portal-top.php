@@ -473,7 +473,7 @@ class SNSCS_Portal_Top {
 		$tiers['platinum'][1] = $limit;
 		$range = $tiers[ $now ];
 		$left  = $range[1] - $total;
-		$top   = 'noir' === $now ? '最上位の' : '';
+		$top   = 'noir' === $now ? '最上位' : '';
 
 		$rows = '';
 		foreach ( $tiers as $design => $r ) {
@@ -489,7 +489,7 @@ class SNSCS_Portal_Top {
 			} else {
 				$status = sprintf( '残り%s枠', number_format_i18n( $size ) );
 			}
-			$rows .= '<div class="snscs-pt-founders__tier is-' . $state . '"><img src="' . esc_url( SNSCS_Founder::medal_url( $design ) ) . '" alt="" width="46" height="46" loading="lazy">'
+			$rows .= '<div class="snscs-pt-founders__tier is-' . $state . '"><img src="' . esc_url( SNSCS_Founder::medal_url( $design ) ) . '" alt="" width="46" height="46">'
 				. '<div class="snscs-pt-founders__tierbody"><p class="snscs-pt-founders__tiername">' . esc_html( SNSCS_Founder::name( $design ) ) . '</p>'
 				. '<p class="snscs-pt-founders__range">Nº ' . esc_html( SNSCS_Founder::serial( $r[0] ) . '〜' . SNSCS_Founder::serial( $r[1] ) ) . '</p>'
 				. '<p class="snscs-pt-founders__status">' . esc_html( $status ) . '</p>'
@@ -504,7 +504,7 @@ class SNSCS_Portal_Top {
 		return '<section class="snscs-pt-founders snscs-pt-founders--' . esc_attr( $now ) . '">'
 			. '<div class="snscs-pt-founders__head"><img class="snscs-pt-founders__medal" src="' . esc_url( SNSCS_Founder::medal_url( $now ) ) . '" alt="" width="150" height="150">'
 			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
-			. '<p class="snscs-pt-founders__title">いま掲載すると、' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</p>'
+			. '<p class="snscs-pt-founders__title">いま掲載すると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
 			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
 			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載して受け取る</a></div>'
 			. '<div class="snscs-pt-founders__tiers">' . $rows . '</div>'

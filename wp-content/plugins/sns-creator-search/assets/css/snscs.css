@@ -3519,14 +3519,18 @@ body.snscs-portal-body p.snscs-pt-founders__tag {
 body.snscs-portal-body p.snscs-pt-founders__title {
 	margin: 0 0 6px;
 	color: #f5f1e6;
-	font-size: 24px;
+	/* 案内の幅に合わせて小さくし、パソコンでは1行に収める（スマホは「、」のあとで折り返す） */
+	font-size: clamp(18px, 3.3cqi, 24px);
 	font-weight: 700;
 	line-height: 1.45;
 }
 
+body.snscs-portal-body p.snscs-pt-founders__title span {
+	white-space: nowrap;
+}
+
 body.snscs-portal-body p.snscs-pt-founders__title b {
 	color: var(--fd-accent);
-	white-space: nowrap;
 }
 
 body.snscs-portal-body p.snscs-pt-founders__left {
@@ -3548,6 +3552,7 @@ body.snscs-portal-body p.snscs-pt-founders__left span {
 }
 
 .snscs-portal-body .snscs-pt-founders__btn {
+	box-sizing: border-box;
 	flex: 1 0 auto;
 	max-width: 100%;
 	padding: 14px 26px;
@@ -3669,20 +3674,25 @@ body.snscs-portal-body p.snscs-pt-founders__first em {
 	white-space: nowrap;
 }
 
-@media (max-width: 700px) {
+/* 案内の幅が狭いとき（スマホ・細い列）: メダルを小さくして、文字の横に並べる。 */
+@container (max-width: 560px) {
 	.snscs-pt-founders__head {
 		gap: 14px;
 		padding: 20px 18px 16px;
+	}
+
+	.snscs-pt-founders__body {
+		flex-basis: 0;
+	}
+
+	.snscs-portal-body .snscs-pt-founders__btn {
+		flex-basis: 100%;
 	}
 
 	body.snscs-portal-body img.snscs-pt-founders__medal {
 		flex-basis: 84px;
 		width: 84px;
 		height: 84px;
-	}
-
-	body.snscs-portal-body p.snscs-pt-founders__title {
-		font-size: 18px;
 	}
 
 	body.snscs-portal-body p.snscs-pt-founders__left strong {
