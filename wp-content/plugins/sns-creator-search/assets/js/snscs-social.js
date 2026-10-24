@@ -95,6 +95,11 @@
 		var id = parseInt( button.getAttribute( 'data-id' ), 10 );
 		var on = 'true' !== button.getAttribute( 'aria-pressed' );
 
+		if ( config.provisional ) {
+			toast( 'いまは仮登録です。運営の承認で本登録になると' + labels[ action ] + 'できます。', config.apply ? { href: config.apply, label: '申請の状況を見る' } : null );
+			return;
+		}
+
 		if ( ! config.loggedIn ) {
 			if ( 'bookmark' === action ) {
 				var list = readLocal().filter( function ( x ) {
@@ -126,13 +131,13 @@
 	 * ---------------------------------------------------------------- */
 
 	function closeMenus() {
-		Array.prototype.forEach.call( document.querySelectorAll( '.snscs-repost-menu' ), function ( menu ) {
+		Array.prototype.forEach.call( document.querySelectorAll( '.snscs-repost-menu, .snscs-share-menu' ), function ( menu ) {
 			menu.remove();
 		} );
 	}
 
 	document.addEventListener( 'click', function ( event ) {
-		if ( ! event.target.closest || ( ! event.target.closest( '.snscs-repost-menu' ) && ! event.target.closest( '[data-snscs-social="repost"]' ) ) ) {
+		if ( ! event.target.closest || ( ! event.target.closest( '.snscs-repost-menu, .snscs-share-menu' ) && ! event.target.closest( '[data-snscs-social="repost"], [data-snscs-share]' ) ) ) {
 			closeMenus();
 		}
 	} );
@@ -200,6 +205,89 @@
 		button.parentNode.insertBefore( menu, button.nextSibling );
 	}
 
+	/* ------------------------------------------------------------------
+	 * シェア: スマホは端末の共有メニュー。パソコンは行き先を選ぶメニュー。
+	 * ---------------------------------------------------------------- */
+
+	function copyText( text ) {
+		if ( navigator.clipboard && window.isSecureContext ) {
+			return navigator.clipboard.writeText( text );
+		}
+		var area = document.createElement( 'textarea' );
+		area.value = text;
+		area.setAttribute( 'readonly', '' );
+		area.style.position = 'fixed';
+		area.style.opacity = '0';
+		document.body.appendChild( area );
+		area.select();
+		var ok = false;
+		try {
+			ok = document.execCommand( 'copy' );
+		} catch ( e ) {}
+		area.remove();
+		return ok ? Promise.resolve() : Promise.reject();
+	}
+
+	function shareMenu( button ) {
+		var wasOpen = button.nextSibling && button.nextSibling.classList && button.nextSibling.classList.contains( 'snscs-share-menu' );
+		closeMenus();
+		if ( wasOpen ) {
+			return;
+		}
+		var url = button.getAttribute( 'data-url' );
+		var title = button.getAttribute( 'data-title' ) || '';
+		var u = encodeURIComponent( url );
+		var t = encodeURIComponent( title );
+		var menu = document.createElement( 'div' );
+		menu.className = 'snscs-share-menu';
+		menu.setAttribute( 'role', 'dialog' );
+		menu.setAttribute( 'aria-label', 'シェア' );
+		[
+			[ 'X（旧Twitter）', 'https://x.com/intent/post?text=' + t + '&url=' + u ],
+			[ 'Threads', 'https://www.threads.net/intent/post?text=' + encodeURIComponent( title + ' ' + url ) ],
+			[ 'LINE', 'https://social-plugins.line.me/lineit/share?url=' + u ],
+			[ 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u ],
+		].forEach( function ( row ) {
+			var a = document.createElement( 'a' );
+			a.href = row[ 1 ];
+			a.target = '_blank';
+			a.rel = 'noopener';
+			a.textContent = row[ 0 ];
+			a.addEventListener( 'click', closeMenus );
+			menu.appendChild( a );
+		} );
+		var copy = document.createElement( 'button' );
+		copy.type = 'button';
+		copy.textContent = 'リンクをコピー';
+		copy.addEventListener( 'click', function ( event ) {
+			event.stopPropagation();
+			copyText( url ).then( function () {
+				toast( 'リンクをコピーしました。' );
+			}, function () {
+				window.prompt( 'このリンクをコピーしてください', url );
+			} );
+			closeMenus();
+		} );
+		menu.appendChild( copy );
+		button.parentNode.insertBefore( menu, button.nextSibling );
+		// ボタンの真下に出す（列の幅からはみ出さないように左へ寄せる）。
+		var room = button.parentNode.clientWidth - menu.offsetWidth;
+		menu.style.left = Math.max( 0, Math.min( button.offsetLeft, room ) ) + 'px';
+	}
+
+	document.addEventListener( 'click', function ( event ) {
+		var button = event.target.closest ? event.target.closest( '[data-snscs-share]' ) : null;
+		if ( ! button ) {
+			return;
+		}
+		var url = button.getAttribute( 'data-url' );
+		if ( navigator.share && /Android|iPhone|iPad|iPod/i.test( navigator.userAgent ) ) {
+			navigator.share( { title: button.getAttribute( 'data-title' ) || '', url: url } ).catch( function () {} );
+			return;
+		}
+		shareMenu( button );
+	} );
+
 	function send( button, action, id, on, comment ) {
 		button.disabled = true;
 		renderAll( action, id, on );
@@ -219,6 +307,12 @@
 			} )
 			.then( function ( data ) {
 				renderAll( action, id, data.on, data.count );
+				// プロフィールの上の「フォロワー ○」も同じ数に。
+				if ( 'follow_user' === action && 'number' === typeof data.count ) {
+					Array.prototype.forEach.call( document.querySelectorAll( '[data-snscs-followers="' + id + '"]' ), function ( el ) {
+						el.textContent = data.count.toLocaleString( 'ja-JP' );
+					} );
+				}
 			} )
 			.catch( function ( error ) {
 				renderAll( action, id, ! on );

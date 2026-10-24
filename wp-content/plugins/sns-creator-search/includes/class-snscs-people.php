@@ -194,7 +194,7 @@ class SNSCS_People {
 				<span class="snscs-profile__avatar" aria-hidden="true"><?php echo esc_html( mb_substr( $name, 0, 1 ) ); ?></span>
 				<div>
 					<h2 class="snscs-profile__name"><?php echo esc_html( $name ); ?></h2>
-					<p class="snscs-profile__stats">フォロー <?php echo esc_html( number_format_i18n( self::following_count( $user_id ) ) ); ?>　フォロワー <?php echo esc_html( number_format_i18n( self::follower_count( $user_id ) ) ); ?>　登録から<?php echo esc_html( number_format_i18n( $days ) ); ?>日</p>
+					<p class="snscs-profile__stats"><span>フォロー <?php echo esc_html( number_format_i18n( self::following_count( $user_id ) ) ); ?></span>　<span>フォロワー <span data-snscs-followers="<?php echo (int) $user_id; ?>"><?php echo esc_html( number_format_i18n( self::follower_count( $user_id ) ) ); ?></span></span>　<span>登録から<?php echo esc_html( number_format_i18n( $days ) ); ?>日</span></p>
 				</div>
 			</div>
 			<?php if ( '' !== $bio ) : ?>

@@ -533,6 +533,9 @@ class SNSCS_Social {
 					'progress' => self::my_progress(),
 					'nonce'    => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 					'loggedIn' => is_user_logged_in(),
+					// 仮登録の人は、押した時点で「本登録になると使えます」と案内する（サーバーでも止めている: SNSCS_Provisional）。
+					'provisional' => is_user_logged_in() && ! snscs_is_full_member(),
+					'apply'    => esc_url_raw( snscs_portal_url() ),
 					'join'     => self::member_url( array( 'redirect_to' => rawurlencode( $current ) ) ),
 				)
 			) . ';',
@@ -576,7 +579,7 @@ class SNSCS_Social {
 	}
 
 	/**
-	 * 記事の「いいね・リポスト・ブックマーク」の列。
+	 * 記事の「いいね・リポスト・ブックマーク・シェア」の列。
 	 */
 	public static function action_bar( $article_id ) {
 		$article_id = (int) $article_id;
@@ -595,12 +598,12 @@ class SNSCS_Social {
 		foreach ( $buttons as $action => $def ) {
 			if ( $own && 'bookmark' !== $action ) {
 				// 自分の記事には数だけ出す。
-				$html .= sprintf( '<span class="snscs-actions__item is-static"><span aria-hidden="true">%s</span> %s <span>%s</span></span>', esc_html( $def[1] ), esc_html( $def[3] ), esc_html( number_format_i18n( $counts[ $def[0] ] ) ) );
+				$html .= sprintf( '<span class="snscs-actions__item is-static"><span class="snscs-actions__icon" aria-hidden="true">%s</span> <span class="snscs-actions__label">%s</span> <span>%s</span></span>', esc_html( $def[1] ), esc_html( $def[3] ), esc_html( number_format_i18n( $counts[ $def[0] ] ) ) );
 				continue;
 			}
 			$on    = ! empty( $mine[ $def[0] ] );
 			$html .= sprintf(
-				'<button type="button" class="snscs-actions__item snscs-actions__item--%1$s%2$s" data-snscs-social="%1$s" data-id="%3$d" aria-pressed="%4$s" data-icon-on="%5$s" data-icon-off="%6$s"><span class="snscs-actions__icon" aria-hidden="true">%7$s</span> %8$s%9$s</button>',
+				'<button type="button" class="snscs-actions__item snscs-actions__item--%1$s%2$s" data-snscs-social="%1$s" data-id="%3$d" aria-pressed="%4$s" data-icon-on="%5$s" data-icon-off="%6$s"><span class="snscs-actions__icon" aria-hidden="true">%7$s</span> <span class="snscs-actions__label">%8$s</span>%9$s</button>',
 				esc_attr( $action ),
 				$on ? ' is-on' : '',
 				$article_id,
@@ -612,6 +615,12 @@ class SNSCS_Social {
 				$def[4] ? ' <span data-snscs-count>' . esc_html( number_format_i18n( $counts[ $def[0] ] ) ) . '</span>' : ''
 			);
 		}
+		// シェア（だれでも使える。スマホは端末の共有メニュー、パソコンは X・Threads・LINE・Facebook・リンクのコピー）。
+		$html .= sprintf(
+			'<button type="button" class="snscs-actions__item snscs-actions__item--share" data-snscs-share data-url="%s" data-title="%s"><span class="snscs-actions__icon" aria-hidden="true">↗</span> <span class="snscs-actions__label">シェア</span></button>',
+			esc_url( get_permalink( $article_id ) ),
+			esc_attr( html_entity_decode( get_the_title( $article_id ), ENT_QUOTES, 'UTF-8' ) )
+		);
 		$html .= '</div>';
 		return $html;
 	}

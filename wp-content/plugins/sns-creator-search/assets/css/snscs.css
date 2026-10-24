@@ -4546,6 +4546,37 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	opacity: 0.6;
 }
 
+/* スマホ: 4つのボタンを1列に（アイコンと数の下に、小さく名前）。 */
+@media (max-width: 520px) {
+	.snscs-actions {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 6px;
+	}
+
+	.snscs-actions__item {
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0 4px;
+		padding: 6px 2px;
+		border-radius: 12px;
+		font-size: 0.78em;
+		line-height: 1.35;
+		white-space: nowrap;
+	}
+
+	/* アイコンを上に、名前と数を下に（どのボタンも同じ形）。 */
+	.snscs-actions__item .snscs-actions__icon {
+		flex-basis: 100%;
+		font-size: 1.25em;
+		text-align: center;
+	}
+
+	.snscs-actions__resume {
+		grid-column: 1 / -1;
+	}
+}
+
 .snscs-toast {
 	position: fixed;
 	left: 50%;
@@ -4767,14 +4798,18 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	white-space: pre-wrap;
 }
 
-.snscs-repost-menu {
+.snscs-repost-menu,
+.snscs-share-menu {
 	position: absolute;
+	top: 100%;
+	left: 0;
 	z-index: 50;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+	box-sizing: border-box;
 	width: min(320px, calc(100vw - 32px));
-	margin-top: 44px;
+	margin-top: 6px;
 	padding: 10px;
 	border: 1px solid #d0d5dd;
 	border-radius: 10px;
@@ -4784,6 +4819,31 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 
 .snscs-actions {
 	position: relative;
+}
+
+.snscs-share-menu {
+	width: min(240px, calc(100vw - 32px));
+}
+
+.snscs-share-menu a,
+.snscs-share-menu button {
+	display: block;
+	padding: 8px 12px;
+	border: 1px solid #d0d5dd;
+	border-radius: 6px;
+	background: #fff;
+	color: #1f2937;
+	font: inherit;
+	font-size: 0.9em;
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.snscs-share-menu a:hover,
+.snscs-share-menu button:hover {
+	border-color: #1B27B0;
+	color: #1B27B0;
 }
 
 .snscs-repost-menu button {
@@ -8715,5 +8775,10 @@ body.snscs-portal-body .snscs-pt-box--mypage .snscs-provisional .snscs-button {
 	color: #4b5568;
 	font-size: 12px;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* プロフィールの「フォロー ○　フォロワー ○　登録から○日」は、項目の途中で折り返さない。 */
+.snscs-profile__stats > span {
 	white-space: nowrap;
 }
