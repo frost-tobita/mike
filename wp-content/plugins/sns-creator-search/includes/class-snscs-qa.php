@@ -2,9 +2,9 @@
 /**
  * SNS運用の質問箱（Q&A）。
  *
- *   質問 : 会員が、SNS・ジャンルを選んで質問する（題名10〜100字、本文20〜1500字、1日3件まで）。
+ *   質問 : メンバーが、SNS・ジャンルを選んで質問する（題名10〜100字、本文20〜1500字、1日3件まで）。
  *   回答 : 掲載中の発信者だけが答えられる（20〜2000字、1つの質問に1回、1日20件まで、自分の質問には答えない）。
- *          質問した人にお知らせ。「参考になった」は会員が1回ずつ押せる（自分の回答は押せない）。
+ *          質問した人にお知らせ。「参考になった」はメンバーが1回ずつ押せる（自分の回答は押せない）。
  *          質問した人が「ベストアンサー」を選べる（選ばれた発信者にお知らせ）。
  *   回答者バッジ: 5回以上答えた発信者に「回答者」、ベストアンサー3回以上で「ベストアンサー常連」。
  *   ページ: [sns_qa]（機能ページ「質問箱」）に新着・回答待ち・人気（SNS・ジャンルで絞り込み）と質問のフォーム。
@@ -438,7 +438,7 @@ class SNSCS_QA {
 	private static function ask_form() {
 		if ( ! is_user_logged_in() ) {
 			$url = SNSCS_Social::member_url( array( 'redirect_to' => SNSCS_Hub::page_url( 'qa' ) ) );
-			return $url ? '<p><a class="snscs-button snscs-button--primary" href="' . esc_url( $url ) . '">無料の会員登録をして質問する</a></p>' : '';
+			return $url ? '<p><a class="snscs-button snscs-button--primary" href="' . esc_url( $url ) . '">無料のメンバー登録をして質問する</a></p>' : '';
 		}
 		$genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'hide_empty' => true ) );
 		ob_start();
@@ -600,13 +600,13 @@ class SNSCS_QA {
 				<input type="hidden" name="action" value="snscs_qa_answer">
 				<input type="hidden" name="question" value="<?php echo (int) $q['id']; ?>">
 				<?php wp_nonce_field( 'snscs_qa_answer', 'snscs_nonce' ); ?>
-				<h3>発信者として回答する</h3>
+				<h3>メンバーとして回答する</h3>
 				<textarea class="snscs-input" name="body" rows="6" minlength="20" maxlength="2000" required placeholder="あなたの経験から、具体的に教えてください（20〜2000字）"></textarea>
 				<button type="submit" class="snscs-button snscs-button--primary">回答する</button>
 				<p class="snscs-help">回答には、あなたの名前と発信者ページへのリンクが表示されます。<?php echo esc_html( self::BADGE_COUNT ); ?>回答えると「回答者」バッジが付きます。</p>
 			</form>
 		<?php elseif ( ! $me ) : ?>
-			<p class="snscs-help">回答できるのは、このサイトに掲載中の発信者です。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">発信者として掲載する（無料）</a></p>
+			<p class="snscs-help">回答できるのは、このサイトに掲載中の発信者です。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">メンバーとして掲載する（無料）</a></p>
 		<?php endif; ?>
 		<?php
 		$related = array_filter(

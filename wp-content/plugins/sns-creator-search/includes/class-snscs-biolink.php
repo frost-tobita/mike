@@ -336,7 +336,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * マイリンクからのフォロー（会員だけ。フォローしたら、マイリンクに戻る）。
+	 * マイリンクからのフォロー（メンバーだけ。フォローしたら、マイリンクに戻る）。
 	 */
 	public static function handle_follow() {
 		$creator_id = isset( $_POST['creator'] ) ? absint( $_POST['creator'] ) : 0;
@@ -674,7 +674,7 @@ class SNSCS_Biolink {
 		}
 		if ( SNSCS_Portal_Top::is_founder( $creator_id ) ) {
 			$founder_no = SNSCS_Founder::number( $creator_id );
-			$badges[]   = array( 'founder', $l( '創設セイント Nº ', 'Founding Saint Nº ' ) . SNSCS_Founder::serial( $founder_no ), SNSCS_Founder::mini_url( $founder_no ) );
+			$badges[]   = array( 'founder', $l( '創設メンバー Nº ', 'Founding member Nº ' ) . SNSCS_Founder::serial( $founder_no ), SNSCS_Founder::mini_url( $founder_no ) );
 		}
 		// 期間の外のボタンを外し、有料リンクを「販売中」に分ける（SNSCS_Biolink_Extra）。
 		$arranged   = SNSCS_Biolink_Extra::arrange( $creator_id, self::buttons( $creator_id, $english ), $english );
@@ -819,7 +819,7 @@ class SNSCS_Biolink {
 		</ul>
 	<?php endif; ?>
 	<?php if ( $followed ) : ?>
-		<p class="bio__notice" role="status"><?php echo esc_html( $l( 'フォローしました。新しい記事などを、会員ページでお知らせします。', 'Followed. You will get updates on your member page.' ) ); ?></p>
+		<p class="bio__notice" role="status"><?php echo esc_html( $l( 'フォローしました。新しい記事などを、メンバーページでお知らせします。', 'Followed. You will get updates on your member page.' ) ); ?></p>
 	<?php endif; ?>
 	<div class="bio__actions">
 		<?php if ( $can_follow ) : ?>

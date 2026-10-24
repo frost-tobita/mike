@@ -5,7 +5,7 @@
  * 流れ:
  *   1. 誰かが発信者Aの紹介リンク（/r/コード/）か招待リンク（/join/コード/）から来ると、
  *      「Aからの招待」をクッキーに30日覚える（あとから来た別の招待で上書きする）。
- *   2. その人が発信者として会員登録すると、招待した発信者を記録する（招待コードの手入力もできる）。
+ *   2. その人がメンバーとしてメンバー登録すると、招待した発信者を記録する（招待コードの手入力もできる）。
  *   3. 運営の審査を通って掲載されたときに、はじめて「Aが招待した発信者」になる（架空の登録では増やせない）。
  *
  * 表示順位への影響（SNSCS_Scores の「紹介ネットワーク」）:
@@ -113,7 +113,7 @@ class SNSCS_Invites {
 	}
 
 	/**
-	 * 会員登録したときに、招待した発信者を覚えておく（まだ掲載前なので、ここでは数えない）。
+	 * メンバー登録したときに、招待した発信者を覚えておく（まだ掲載前なので、ここでは数えない）。
 	 */
 	public static function record_signup( $user_id, $code ) {
 		$inviter = self::inviter_for_code( $code );
@@ -216,7 +216,7 @@ class SNSCS_Invites {
 		$link     = self::join_url( $creator_id );
 		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		$message  = sprintf( "SNSで発信している人を探せる「%s」に掲載されています。発信者は無料で掲載できて、記事も書けます。よかったら一緒に参加しませんか？\n%s", $site, $link );
-		$share    = sprintf( '「%s」に発信者として掲載されています。発信者は無料で掲載できます。', $site );
+		$share    = sprintf( '「%s」にメンバーとして掲載されています。発信者は無料で掲載できます。', $site );
 		$tiers    = $standing && ! empty( $standing['tiers'] ) ? $standing['tiers'] : array_fill( 0, (int) $settings['tiers'], 0 );
 		?>
 		<section class="snscs-panel snscs-invite" id="snscs-invite">

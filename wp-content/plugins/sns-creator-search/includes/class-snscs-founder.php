@@ -1,6 +1,6 @@
 <?php
 /**
- * 創設セイントの徽章（1.23）。
+ * 創設メンバーの徽章（1.23）。
  *
  * - 先着（設定した人数まで）で掲載された発信者に、通し番号（Nº 001〜）を付ける。番号は一度付けたら変わらない
  *   （あとでほかの人が掲載をやめても、詰めたり付け直したりしない）。投稿メタ _snscs_founder_no
@@ -54,7 +54,7 @@ class SNSCS_Founder {
 			return null;
 		}
 		return array(
-			'text' => '創設セイントになりました！ Nº ' . self::serial( $no ) . '（' . self::name( self::design( $no ) ) . '）' . ( self::is_first( $no ) ? '・FIRST 10' : '' ) . '。発信者ページで記念メダルと記念カードを受け取れます。',
+			'text' => '創設メンバーになりました！ Nº ' . self::serial( $no ) . '（' . self::name( self::design( $no ) ) . '）' . ( self::is_first( $no ) ? '・FIRST 10' : '' ) . '。発信者ページで記念メダルと記念カードを受け取れます。',
 			'url'  => get_permalink( (int) $row['object_id'] ),
 		);
 	}
@@ -114,7 +114,7 @@ class SNSCS_Founder {
 	}
 
 	/**
-	 * 通し番号（創設セイントでなければ 0）。先着の人数に入っていて、まだ番号が無ければ、ここで付ける。
+	 * 通し番号（創設メンバーでなければ 0）。先着の人数に入っていて、まだ番号が無ければ、ここで付ける。
 	 */
 	public static function number( $creator_id ) {
 		$creator_id = (int) $creator_id;
@@ -150,7 +150,7 @@ class SNSCS_Founder {
 	}
 
 	/**
-	 * 更新のとき（1.24）: 創設セイントの人数が前の初期値（100人）のままなら、1000人にする（一度だけ）。
+	 * 更新のとき（1.24）: 創設メンバーの人数が前の初期値（100人）のままなら、1000人にする（一度だけ）。
 	 */
 	public static function install() {
 		if ( get_option( 'snscs_founders_1000' ) ) {
@@ -341,7 +341,7 @@ class SNSCS_Founder {
 			return '';
 		}
 		$design = self::design( $no );
-		$label  = '創設セイント Nº ' . self::serial( $no );
+		$label  = '創設メンバー Nº ' . self::serial( $no );
 		$card   = array(
 			'medal'  => self::medal_url( $design ),
 			'bg'     => SNSCS_URL . 'assets/badges/founder-' . $design . '-card-bg.webp?ver=' . SNSCS_VERSION,
@@ -371,7 +371,7 @@ class SNSCS_Founder {
 		if ( ! $no ) {
 			return '';
 		}
-		$label = '創設セイント Nº ' . self::serial( $no );
+		$label = '創設メンバー Nº ' . self::serial( $no );
 		return '<img class="snscs-founder-mini" src="' . esc_url( self::mini_url( $no ) ) . '" alt="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '" width="' . (int) $size . '" height="' . (int) $size . '">';
 	}
 }

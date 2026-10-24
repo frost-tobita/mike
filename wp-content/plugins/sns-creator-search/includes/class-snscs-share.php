@@ -537,7 +537,7 @@ class SNSCS_Share {
 		if ( $position['invite_rank'] ) {
 			$lines[] = sprintf( '今月の招待ランキング%d位', $position['invite_rank'] );
 		}
-		$text = $lines ? sprintf( '「%s」で%sになりました！ありがとうございます。', $site, implode( '・', $lines ) ) : sprintf( '「%s」に発信者として掲載されています。', $site );
+		$text = $lines ? sprintf( '「%s」で%sになりました！ありがとうございます。', $site, implode( '・', $lines ) ) : sprintf( '「%s」にメンバーとして掲載されています。', $site );
 		?>
 		<section class="snscs-panel snscs-sharekit" id="snscs-sharekit">
 			<h2 class="snscs-panel__title">シェア画像と順位バッジ</h2>

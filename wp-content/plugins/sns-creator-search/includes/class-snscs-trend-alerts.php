@@ -109,7 +109,7 @@ class SNSCS_Trend_Alerts {
 	}
 
 	/**
-	 * そのジャンルで掲載中の発信者の会員ID。
+	 * そのジャンルで掲載中の発信者のメンバーID。
 	 *
 	 * @return int[]
 	 */

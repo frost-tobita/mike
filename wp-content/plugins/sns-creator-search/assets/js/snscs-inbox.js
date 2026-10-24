@@ -1,5 +1,5 @@
 /**
- * 未読のお知らせの数を、サイト内の「会員ページ」へのリンク（メニュー・ナビ）に付ける（SNSCS_Inbox）。
+ * 未読のお知らせの数を、サイト内の「メンバーページ」へのリンク（メニュー・ナビ）に付ける（SNSCS_Inbox）。
  * ページのキャッシュに左右されないよう、表示したあとに数だけを取りに行く。
  */
 ( function () {
@@ -19,7 +19,7 @@
 			var base = config.member.replace( /\/$/, '' );
 			var links = document.querySelectorAll( 'a[href]' );
 			Array.prototype.forEach.call( links, function ( link ) {
-				// メニューなどの「会員ページ」そのものへのリンクだけ（?user= などの付いたリンクは除く）。
+				// メニューなどの「メンバーページ」そのものへのリンクだけ（?user= などの付いたリンクは除く）。
 				var href = link.getAttribute( 'href' ).replace( /\/$/, '' );
 				if ( href !== base || link.querySelector( '.snscs-unread' ) || link.closest( '.snscs-member__tabs' ) ) {
 					return;

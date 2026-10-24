@@ -455,7 +455,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 	}
 
 	/**
-	 * 会員ページ・マイページに出す「アプリとして使う」。
+	 * メンバーページ・マイページに出す「アプリとして使う」。
 	 */
 	public static function install_box() {
 		if ( ! self::on() ) {

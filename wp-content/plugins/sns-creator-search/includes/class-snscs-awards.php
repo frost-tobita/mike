@@ -2,7 +2,7 @@
 /**
  * 月間アワード（ジャンルごとのファン投票）。
  *
- *   投票: 会員が、ジャンルごとに月1人（月の途中で変えられる）。発信者本人は自分に投票できない。
+ *   投票: メンバーが、ジャンルごとに月1人（月の途中で変えられる）。発信者本人は自分に投票できない。
  *         投票はすぐにできるが、数えるのは登録から3日たったアカウントの票だけ（作ったばかりのアカウントでの水増しを防ぐ）。
  *         同じ端末・同じ日（日付入りのハッシュ）からの票は、ジャンルごとに2アカウント分まで。
  *         不正対策で順位を下げられている発信者は、受賞の対象にしない。
@@ -129,7 +129,7 @@ class SNSCS_Awards {
 	}
 
 	/**
-	 * 会員がそのジャンルで今月投票した発信者（なければ0）。
+	 * メンバーがそのジャンルで今月投票した発信者（なければ0）。
 	 */
 	public static function my_vote( $user_id, $genre_id ) {
 		global $wpdb;
@@ -296,14 +296,14 @@ class SNSCS_Awards {
 	}
 
 	/**
-	 * 投票ボタン（ログインしていなければ会員登録へ）。
+	 * 投票ボタン（ログインしていなければメンバー登録へ）。
 	 */
 	public static function vote_button( $creator_id, $genre_id, $label = '投票する' ) {
 		wp_enqueue_script( 'snscs-awards' );
 		if ( ! is_user_logged_in() ) {
 			$back = get_permalink( $creator_id ) . '#snscs-award';
 			$url  = SNSCS_Social::member_url( array( 'redirect_to' => $back ) );
-			return $url ? '<a class="snscs-button snscs-button--primary" href="' . esc_url( $url ) . '">無料の会員登録をして投票する</a>' : '';
+			return $url ? '<a class="snscs-button snscs-button--primary" href="' . esc_url( $url ) . '">無料のメンバー登録をして投票する</a>' : '';
 		}
 		$mine = self::my_vote( get_current_user_id(), $genre_id ) === (int) $creator_id;
 		return sprintf(
@@ -371,7 +371,7 @@ class SNSCS_Awards {
 		echo SNSCS_Hub::quick_nav(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		?>
 		<div class="snscs-awards">
-			<p class="snscs-awards__lead"><?php echo esc_html( self::month_label( self::month() ) . 'の発信者アワード。ジャンルごとに、いちばん応援したい発信者に投票してください（投票は' . $end . 'まで。会員なら誰でも、無料で投票できます）。' ); ?></p>
+			<p class="snscs-awards__lead"><?php echo esc_html( self::month_label( self::month() ) . 'の発信者アワード。ジャンルごとに、いちばん応援したい発信者に投票してください（投票は' . $end . 'まで。メンバーなら誰でも、無料で投票できます）。' ); ?></p>
 			<nav class="snscs-trendtabs" aria-label="アワードのジャンル"><ul>
 				<?php foreach ( $genres as $genre ) : ?>
 					<li><a class="snscs-trendtabs__tab<?php echo $genre->term_id === $current->term_id ? ' is-current' : ''; ?>" href="<?php echo esc_url( self::page_url( $genre->slug ) ); ?>"><?php echo esc_html( $genre->name ); ?></a></li>
@@ -419,7 +419,7 @@ class SNSCS_Awards {
 					</ul>
 				<?php endforeach; ?>
 			<?php endif; ?>
-			<p class="snscs-help">票に数えるのは、登録から3日たった会員の票です。同じ端末からたくさんのアカウントで投票した分や、不正な順位上げをしている発信者への票は数えません。毎月1日に前の月を締め、ジャンルごとに3票以上の上位3人が受賞します。</p>
+			<p class="snscs-help">票に数えるのは、登録から3日たったメンバーの票です。同じ端末からたくさんのアカウントで投票した分や、不正な順位上げをしている発信者への票は数えません。毎月1日に前の月を締め、ジャンルごとに3票以上の上位3人が受賞します。</p>
 		</div>
 		<?php
 		return ob_get_clean();

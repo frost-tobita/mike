@@ -435,7 +435,7 @@ class SNSCS_Calendar {
 		?>
 		<div class="snscs-calendar" data-snscs-calendar>
 			<?php if ( ! $logged_in ) : ?>
-				<p class="snscs-calendar__guest">予定はこのブラウザの中にだけ保存されます。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">発信者としてログイン</a>すると、どの端末からも見られ、当日の朝にメールでお知らせも受け取れます。</p>
+				<p class="snscs-calendar__guest">予定はこのブラウザの中にだけ保存されます。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">メンバーとしてログイン</a>すると、どの端末からも見られ、当日の朝にメールでお知らせも受け取れます。</p>
 			<?php endif; ?>
 			<noscript><p>カレンダーを使うには、JavaScript を有効にしてください。</p></noscript>
 		</div>

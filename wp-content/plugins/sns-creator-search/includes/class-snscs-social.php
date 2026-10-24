@@ -1,10 +1,10 @@
 <?php
 /**
- * フォロー・いいね・リポスト・ブックマークと、読者の会員登録。
+ * フォロー・いいね・リポスト・ブックマークと、読者のメンバー登録。
  *
- * 使える人: ログインした会員（読者・発信者）。ブックマークだけは登録しなくても使える（このブラウザに保存し、
+ * 使える人: ログインしたメンバー（読者・発信者）。ブックマークだけは登録しなくても使える（このブラウザに保存し、
  *           登録・ログインしたときにアカウントへ移す）。
- *   フォロー     : 発信者をフォローすると、会員ページ「フォロー中」に、その人の新しい記事とリポストが並ぶ
+ *   フォロー     : 発信者をフォローすると、メンバーページ「フォロー中」に、その人の新しい記事とリポストが並ぶ
  *   いいね       : 記事への「よかった」。数を記事に表示する
  *   リポスト     : 記事を自分のフォロワーに紹介する。発信者がリポストすると、その発信者のフォロワーの「フォロー中」と、
  *                  発信者ページの「リポストした記事」に出る（読者のリポストは数として数えるだけ）
@@ -95,12 +95,12 @@ class SNSCS_Social {
 	}
 
 	/* --------------------------------------------------------------------
-	 * 会員（読者）
+	 * メンバー（読者）
 	 * ------------------------------------------------------------------ */
 
 	public static function is_reader( $user = null ) {
 		$user = $user ? ( $user instanceof WP_User ? $user : get_userdata( $user ) ) : wp_get_current_user();
-		// 発信者としても登録した人は、発信者として扱う（退会などは発信者マイページから）。
+		// メンバーとしても登録した人は、メンバーとして扱う（退会などはマイページから）。
 		return $user && $user->exists() && in_array( self::ROLE, (array) $user->roles, true ) && ! in_array( SNSCS_Portal::ROLE, (array) $user->roles, true ) && ! user_can( $user, 'edit_posts' );
 	}
 
@@ -143,13 +143,13 @@ class SNSCS_Social {
 	}
 
 	public static function handle_register() {
-		// 1.27: 登録はセイントの1つだけ（発信者マイページの登録）。古いページのフォームから来たら、そちらへ。
+		// 1.27: 登録はメンバーの1つだけ（マイページの登録）。古いページのフォームから来たら、そちらへ。
 		wp_safe_redirect( snscs_portal_url() );
 		exit;
 	}
 
 	/**
-	 * 1.26 までの読者会員の登録（いまは使わない。古いデータの互換のために残す）。
+	 * 1.26 までの以前の読者登録の方の登録（いまは使わない。古いデータの互換のために残す）。
 	 */
 	public static function handle_register_legacy() {
 		if ( ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_member_register' ) ) {
@@ -226,7 +226,7 @@ class SNSCS_Social {
 		if ( ! $signed || is_wp_error( $signed ) ) {
 			self::back( 'login_error' );
 		}
-		// 発信者は発信者マイページへ（戻り先の指定があればそちら）。
+		// 発信者はマイページへ（戻り先の指定があればそちら）。
 		if ( ! $redirect && snscs_is_creator_user( $signed ) ) {
 			$redirect = snscs_portal_url();
 		}
@@ -253,7 +253,7 @@ class SNSCS_Social {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * 会員の状態（フォロー中の発信者・反応した記事）を、指定したIDについてまとめて調べる。
+	 * メンバーの状態（フォロー中の発信者・反応した記事）を、指定したIDについてまとめて調べる。
 	 *
 	 * @return array{follows:array<int,bool>,reactions:array<int,array<int,bool>>}
 	 */
@@ -320,7 +320,7 @@ class SNSCS_Social {
 	}
 
 	/**
-	 * 発信者である会員の、発信者ID（なければ 0）。
+	 * 発信者であるメンバーの、発信者ID（なければ 0）。
 	 */
 	public static function own_creator( $user_id ) {
 		return (int) get_user_meta( $user_id, 'snscs_creator_id', true );
@@ -644,7 +644,7 @@ class SNSCS_Social {
 	}
 
 	/**
-	 * 記事の一覧（会員ページ・みんなの記事・発信者ページ用）。
+	 * 記事の一覧（メンバーページ・みんなの記事・発信者ページ用）。
 	 *
 	 * @param array $items [['id' => 記事ID, 'note' => 上に出す一言, 'comment' => ひとこと, 'rp' => リポストした発信者ID,
 	 *                       'progress' => 読んだ割合（ブックマーク）, 'read' => 読み終えたか,
@@ -734,7 +734,7 @@ class SNSCS_Social {
 			ARRAY_A
 		);
 		$users = $creators ? wp_list_pluck( $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'snscs_creator_id' AND meta_value IN ({$in})", ARRAY_A ), 'meta_value', 'user_id' ) : array();
-		// リポストを流す人: フォローしている発信者のアカウントと、フォローしている会員。
+		// リポストを流す人: フォローしている発信者のアカウントと、フォローしているメンバー。
 		$reposters = array_unique( array_merge( array_map( 'intval', array_keys( $users ) ), $people ) );
 		$reposts   = array();
 		if ( $reposters ) {
@@ -767,7 +767,7 @@ class SNSCS_Social {
 	}
 
 	/**
-	 * 会員が反応した記事（新しい順）。
+	 * メンバーが反応した記事（新しい順）。
 	 */
 	public static function reacted( $user_id, $type, $page = 1 ) {
 		global $wpdb;
@@ -806,12 +806,12 @@ class SNSCS_Social {
 	}
 
 	/* --------------------------------------------------------------------
-	 * 会員ページ
+	 * メンバーページ
 	 * ------------------------------------------------------------------ */
 
 	private static function notice() {
 		$messages = array(
-			'registered'     => array( 'success', '会員登録が完了しました。発信者をフォローしたり、記事にいいね・リポスト・ブックマークしたりできます。' ),
+			'registered'     => array( 'success', 'メンバー登録が完了しました。発信者をフォローしたり、記事にいいね・リポスト・ブックマークしたりできます。' ),
 			'logged_in'      => array( 'success', 'ログインしました。' ),
 			'withdrawn'      => array( 'success', '退会しました。フォロー・いいねなどの記録もすべて削除しました。' ),
 			'inbox_saved'    => array( 'success', 'お知らせメールの設定を保存しました。' ),
@@ -859,9 +859,9 @@ class SNSCS_Social {
 		$redirect = self::return_to();
 		?>
 		<section class="snscs-panel">
-			<h2 class="snscs-panel__title">セイントに登録（無料）</h2>
-			<p>FolloFind の会員は「セイント」。登録は1つだけです。ハンドルネーム・メールアドレス・パスワードで仮登録し、プロフィールとSNSアカウント（1つ以上）を入れて申請します。運営が確認して承認すると本登録になり、検索結果に載って、フォロー・いいね・経験値などが使えます。</p>
-			<p><a class="snscs-button snscs-button--primary" href="<?php echo esc_url( snscs_portal_url() ); ?>">セイントに登録する</a></p>
+			<h2 class="snscs-panel__title">メンバーに登録（無料）</h2>
+			<p>登録は1つだけです。ハンドルネーム・メールアドレス・パスワードで仮登録し、プロフィールとSNSアカウント（1つ以上）を入れて申請します。運営が確認して承認すると本登録になり、検索結果に載って、フォロー・いいね・経験値などが使えます。</p>
+			<p><a class="snscs-button snscs-button--primary" href="<?php echo esc_url( snscs_portal_url() ); ?>">メンバーに登録する</a></p>
 		</section>
 		<section class="snscs-panel">
 			<h2 class="snscs-panel__title">ログイン</h2>
@@ -902,13 +902,13 @@ class SNSCS_Social {
 		?>
 		<p class="snscs-member__who"><?php echo esc_html( $user->user_email ); ?> でログイン中
 			<?php if ( snscs_is_creator_user() ) : ?>
-				・<a href="<?php echo esc_url( snscs_portal_url() ); ?>">発信者マイページ</a>
+				・<a href="<?php echo esc_url( snscs_portal_url() ); ?>">マイページ</a>
 			<?php endif; ?>
 			・<a href="<?php echo esc_url( wp_logout_url( self::member_url() ) ); ?>">ログアウト</a>
 		</p>
 		<?php echo SNSCS_Provisional::banner_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 		<?php echo 'level' === $tab || SNSCS_Provisional::is_provisional() ? '' : SNSCS_Gamify::summary_html( $user_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
-		<nav class="snscs-tabs snscs-member__tabs" aria-label="会員ページ">
+		<nav class="snscs-tabs snscs-member__tabs" aria-label="メンバーページ">
 			<?php foreach ( $tabs as $key => $label ) : ?>
 				<a class="snscs-chip<?php echo $key === $tab ? ' is-current' : ''; ?>" href="<?php echo esc_url( self::member_url( array( 'tab' => $key ) ) ); ?>" <?php echo $key === $tab ? 'aria-current="page"' : ''; ?>><?php echo esc_html( $label ); ?></a>
 			<?php endforeach; ?>
@@ -983,7 +983,7 @@ class SNSCS_Social {
 	private static function render_following( $user_id ) {
 		$people = SNSCS_People::following_ids( $user_id );
 		if ( $people ) {
-			echo '<h2 class="snscs-single__heading">フォロー中の会員</h2><ul class="snscs-people">';
+			echo '<h2 class="snscs-single__heading">フォロー中のメンバー</h2><ul class="snscs-people">';
 			foreach ( $people as $person ) {
 				echo '<li><a href="' . esc_url( SNSCS_People::profile_url( $person ) ) . '"><span class="snscs-profile__avatar snscs-profile__avatar--small" aria-hidden="true">' . esc_html( mb_substr( SNSCS_People::nickname( $person ), 0, 1 ) ) . '</span>' . esc_html( SNSCS_People::nickname( $person ) ) . '</a></li>';
 			}
@@ -1001,7 +1001,7 @@ class SNSCS_Social {
 
 	private static function render_account() {
 		if ( ! self::is_reader() ) {
-			echo '<p>アカウントの変更・退会は、<a href="' . esc_url( snscs_portal_url() ) . '">発信者マイページ</a>から行えます。</p>';
+			echo '<p>アカウントの変更・退会は、<a href="' . esc_url( snscs_portal_url() ) . '">マイページ</a>から行えます。</p>';
 			return;
 		}
 		?>

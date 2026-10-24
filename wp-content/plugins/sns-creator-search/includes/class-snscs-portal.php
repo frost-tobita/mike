@@ -1,6 +1,6 @@
 <?php
 /**
- * 発信者ポータル: 発信者本人が会員登録し、掲載内容を申請・変更するページ。
+ * 発信者ポータル: 発信者本人がメンバー登録し、掲載内容を申請・変更するページ。
  *
  * 固定ページに [sns_creator_portal] と書くと、
  *   ログインしていない人 → 「ログイン」と「新規登録」
@@ -81,11 +81,11 @@ class SNSCS_Portal {
 		if ( ! is_user_logged_in() ) {
 			self::render_auth();
 		} elseif ( SNSCS_Social::is_reader() ) {
-			// 読者会員: 同じアカウントのまま、発信者としても登録できる。
+			// 以前の読者登録の方: 同じアカウントのまま、メンバーとしても登録できる。
 			?>
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">本登録の申請</h2>
-				<p>FolloFind の会員（セイント）は、SNSアカウントを登録した発信者として掲載されます。同じアカウントのまま、プロフィールとSNSアカウント（1つ以上）を入れて申請してください。運営が確認して承認すると本登録になります。</p>
+				<p>FolloFind のメンバーは、SNSアカウントを登録した発信者として掲載されます。同じアカウントのまま、プロフィールとSNSアカウント（1つ以上）を入れて申請してください。運営が確認して承認すると本登録になります。</p>
 				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_become_creator">
 					<?php wp_nonce_field( 'snscs_become_creator', 'snscs_nonce' ); ?>
@@ -159,13 +159,13 @@ class SNSCS_Portal {
 		?>
 		<?php if ( $inviter ) : ?>
 			<p class="snscs-notice snscs-notice--invite">
-				<strong><?php echo esc_html( get_the_title( $inviter ) ); ?></strong> さんからの招待です。下の「新規登録」から、無料で発信者として掲載を申し込めます。
+				<strong><?php echo esc_html( get_the_title( $inviter ) ); ?></strong> さんからの招待です。下の「新規登録」から、無料でメンバーとして掲載を申し込めます。
 			</p>
 		<?php endif; ?>
 		<div class="snscs-auth<?php echo $inviter ? ' snscs-auth--invited' : ''; ?>">
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">ログイン</h2>
-				<p>登録済みのセイントの方はこちら。</p>
+				<p>登録済みのメンバーの方はこちら。</p>
 				<?php
 				wp_login_form(
 					array(
@@ -182,7 +182,7 @@ class SNSCS_Portal {
 			</section>
 
 			<section class="snscs-panel">
-				<h2 class="snscs-panel__title">セイントに登録（無料）</h2>
+				<h2 class="snscs-panel__title">メンバーに登録（無料）</h2>
 				<ol class="snscs-steps">
 					<li>ハンドルネーム・メールアドレス・パスワードで登録（仮登録）</li>
 					<li>プロフィールとSNSアカウント（1つ以上）を入力して申請</li>
@@ -275,7 +275,7 @@ class SNSCS_Portal {
 					<a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">掲載ページを見る</a>
 					<?php $snscs_no = SNSCS_Founder::number( $creator_id ); ?>
 					<?php if ( $snscs_no ) : ?>
-						<br><?php echo SNSCS_Founder::mini_html( $creator_id, 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?> <strong><?php echo esc_html( '創設セイント Nº ' . SNSCS_Founder::serial( $snscs_no ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_no ) ) . '）' ); ?></strong> — <a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">記念メダルと記念カード</a>
+						<br><?php echo SNSCS_Founder::mini_html( $creator_id, 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?> <strong><?php echo esc_html( '創設メンバー Nº ' . SNSCS_Founder::serial( $snscs_no ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_no ) ) . '）' ); ?></strong> — <a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">記念メダルと記念カード</a>
 					<?php endif; ?>
 				<?php elseif ( $creator_id ) : ?>
 					<span class="snscs-badge snscs-badge--off">掲載停止中</span>
@@ -301,7 +301,7 @@ class SNSCS_Portal {
 							$snscs_taken = count( SNSCS_Portal_Top::founders() );
 							?>
 							<?php if ( $snscs_limit > $snscs_taken ) : ?>
-								<br><strong><?php echo esc_html( '審査に通って掲載されると、創設セイントのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_taken + 1 ) ) . '」）が付きます。' ); ?></strong>
+								<br><strong><?php echo esc_html( '審査に通って掲載されると、創設メンバーのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_taken + 1 ) ) . '」）が付きます。' ); ?></strong>
 							<?php endif; ?>
 						<?php endif; ?>
 					</p>
@@ -703,7 +703,7 @@ class SNSCS_Portal {
 	}
 
 	/**
-	 * 読者会員が、同じアカウントのまま発信者としても登録する。
+	 * 以前の読者登録の方が、同じアカウントのままメンバーとしても登録する。
 	 */
 	public static function handle_become_creator() {
 		if ( ! SNSCS_Social::is_reader() || ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_become_creator' ) ) {

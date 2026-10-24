@@ -3478,7 +3478,7 @@ body.snscs-portal-body .snscs-pt-hero--compact p.snscs-pt-hero__title {
 	font-size: 21px;
 }
 
-/* 創設セイント募集（1.24.2: ランクと残りの枠） */
+/* 創設メンバー募集（1.24.2: ランクと残りの枠） */
 body.snscs-portal-body .snscs-pt-founders {
 	--fd-accent: #e7cd85;
 	container-type: inline-size;
@@ -4029,7 +4029,7 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	font-weight: 700;
 }
 
-/* 創設セイントのバッジ（発信者ページ） */
+/* 創設メンバーのバッジ（発信者ページ） */
 .snscs-badge--founder {
 	background: linear-gradient(135deg, #f59e0b, #ea580c);
 	color: #fff;
@@ -8042,7 +8042,7 @@ body.snscs-portal-body ul.snscs-pt-picks span {
 	font-weight: 400;
 }
 
-/* 1.25.1: 名前の横の札。メンバーは控えめに、創設セイントはランクの色と小さな徽章で */
+/* 1.25.1: 名前の横の札。メンバーは控えめに、創設メンバーはランクの色と小さな徽章で */
 .snscs-who-tag {
 	display: inline-flex;
 	gap: 4px;
@@ -8104,7 +8104,7 @@ body.snscs-portal-body .snscs-who-tag img {
 	letter-spacing: 0.04em;
 }
 
-/* 1.25.2: マイページの枠（会員カード） */
+/* 1.25.2: マイページの枠（メンバーカード） */
 body.snscs-portal-body .snscs-pt-box--mypage p.snscs-pt-login__who {
 	margin-bottom: 10px;
 }
@@ -8312,7 +8312,7 @@ body.snscs-portal-body .snscs-mypage__up {
 	line-height: 1.5;
 }
 
-/* 1.26: セイントの冒険（カードランクの色・レベル・貢献度ゲージ・イベント） */
+/* 1.26: メンバーの冒険（カードランクの色・レベル・貢献度ゲージ・イベント） */
 .snscs-mycard--white { border-color: #d9dee6; background: linear-gradient(135deg, #ffffff, #e9edf3); color: #2b3240; }
 .snscs-mycard--blue { background: radial-gradient(circle at 85% 20%, rgba(69, 227, 156, 0.35), transparent 45%), linear-gradient(135deg, #2020D2, #1B27B0 55%, #0c1270); color: #fff; }
 .snscs-mycard--bronze { border-color: #c98a55; background: linear-gradient(135deg, #8a5a33, #4a2c15 60%, #2a170a); color: #fbe7d3; }
@@ -8451,7 +8451,7 @@ body.snscs-portal-body .snscs-pt-game .snscs-events li.snscs-event {
 	text-decoration: underline;
 }
 
-/* 冒険の記録（会員ページ） */
+/* 冒険の記録（メンバーページ） */
 .snscs-quest__head {
 	margin: 0 0 16px;
 	padding: 16px;

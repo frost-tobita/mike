@@ -6,7 +6,7 @@
  * - なぜこの人？: カードに理由（「キャンプ」がタグに一致・この1か月でフォロワー+12%・この言葉でよく選ばれています など）を出し、
  *   紹介文の、言葉に合ったところを色付けして、その前後を見せる
  * - 比べる: カードの「比べる」で2〜4人（企業向けプランは10人）を選び、フォロワー数・伸び率・記事の数・相談の受付などを横に並べる
- * - 検索を保存してお知らせ: 会員は条件を保存でき、その条件に新しい発信者が加わると、お知らせ（とメール・プッシュ）で届ける
+ * - 検索を保存してお知らせ: メンバーは条件を保存でき、その条件に新しい発信者が加わると、お知らせ（とメール・プッシュ）で届ける
  *   （1人5件まで。企業向けプランは30件。1日1回調べる）
  * - 読み解いた条件のお知らせ（「大阪府・Instagram・フォロワー1万人以上」で絞り込みました）と、入力したとおりに探すリンク
  * - この条件のまとめページ（特集ページ）へのリンク、AIの言い換えの言葉
@@ -572,7 +572,7 @@ class SNSCS_Search_UI {
 		$saved = ! empty( $_GET['snscs_saved'] );
 		if ( ! is_user_logged_in() ) {
 			$login = SNSCS_Social::member_url( array( 'redirect_to' => rawurlencode( self::search_url( $args ) ) ) );
-			return $login ? '<p class="snscs-savesearch"><a class="snscs-savesearch__btn" href="' . esc_url( $login ) . '" rel="nofollow">🔔 この条件を保存して、新しい発信者をお知らせで受け取る</a> <span class="snscs-help">（無料の会員登録・ログイン）</span></p>' : '';
+			return $login ? '<p class="snscs-savesearch"><a class="snscs-savesearch__btn" href="' . esc_url( $login ) . '" rel="nofollow">🔔 この条件を保存して、新しい発信者をお知らせで受け取る</a> <span class="snscs-help">（無料のメンバー登録・ログイン）</span></p>' : '';
 		}
 		if ( $saved ) {
 			return '<p class="snscs-savesearch" role="status">🔔 この条件を保存しました。新しい発信者が加わると、お知らせで届きます。<a href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'saved' ) ) ) . '">保存した検索</a></p>';
@@ -629,7 +629,7 @@ class SNSCS_Search_UI {
 	}
 
 	/**
-	 * 会員ページ「保存した検索」。
+	 * メンバーページ「保存した検索」。
 	 */
 	public static function render_saved( $user_id ) {
 		$rows = self::saved_for( $user_id );

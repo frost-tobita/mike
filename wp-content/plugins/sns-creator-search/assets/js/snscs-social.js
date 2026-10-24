@@ -2,7 +2,7 @@
  * フォロー・いいね・リポスト・ブックマークのボタン（SNSCS_Social）。
  *
  * ログイン中: サーバーに保存する。
- * ログインしていない: ブックマークだけ、このブラウザ（localStorage）に保存する。ほかのボタンは会員登録へ案内する。
+ * ログインしていない: ブックマークだけ、このブラウザ（localStorage）に保存する。ほかのボタンはメンバー登録へ案内する。
  * ログインしたら、このブラウザのブックマークをアカウントへ移す。
  */
 ( function () {
@@ -105,11 +105,11 @@
 				}
 				writeLocal( list );
 				renderAll( action, id, on );
-				toast( on ? 'このブラウザにブックマークしました。' : 'ブックマークを外しました。', on && config.join ? { href: config.join, label: '会員登録すると、どの端末でも見られます' } : null );
+				toast( on ? 'このブラウザにブックマークしました。' : 'ブックマークを外しました。', on && config.join ? { href: config.join, label: 'メンバー登録すると、どの端末でも見られます' } : null );
 				return;
 			}
 			if ( config.join ) {
-				toast( labels[ action ] + 'するには、会員登録（無料）またはログインが必要です。', { href: config.join, label: '登録・ログインへ' } );
+				toast( labels[ action ] + 'するには、メンバー登録（無料）またはログインが必要です。', { href: config.join, label: '登録・ログインへ' } );
 			}
 			return;
 		}
@@ -338,7 +338,7 @@
 			.catch( function () {} );
 	}
 
-	// 会員ページ（ログイン前）: このブラウザのブックマーク一覧。
+	// メンバーページ（ログイン前）: このブラウザのブックマーク一覧。
 	var box = document.querySelector( '[data-snscs-local-bookmarks]' );
 	var ids = readLocal();
 	if ( box && ids.length && window.fetch ) {

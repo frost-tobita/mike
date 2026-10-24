@@ -257,7 +257,7 @@ class SNSCS_Collab {
 	private static function request_form( $to ) {
 		$me = self::my_creator();
 		if ( ! $me ) {
-			return '<p class="snscs-help"><a href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載されると</a>、申し込めます。</p>';
+			return '<p class="snscs-help"><a href="' . esc_url( snscs_portal_url() ) . '">メンバーとして掲載されると</a>、申し込めます。</p>';
 		}
 		if ( $me === $to ) {
 			return '<p class="snscs-help">あなたの募集です。</p>';
@@ -357,7 +357,7 @@ class SNSCS_Collab {
 			<?php else : ?>
 				<p class="snscs-results__empty">この条件で募集中の発信者は、まだいません。</p>
 			<?php endif; ?>
-			<p class="snscs-help">募集するには、<a href="<?php echo esc_url( snscs_portal_url() . '#snscs-collab' ); ?>">発信者マイページ</a>の「コラボ相手探し」で「募集中」にしてください。</p>
+			<p class="snscs-help">募集するには、<a href="<?php echo esc_url( snscs_portal_url() . '#snscs-collab' ); ?>">マイページ</a>の「コラボ相手探し」で「募集中」にしてください。</p>
 		</div>
 		<?php
 		return ob_get_clean();

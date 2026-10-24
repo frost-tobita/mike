@@ -353,7 +353,7 @@ class SNSCS_Quiz {
 			<?php endif; ?>
 
 			<?php if ( ! is_user_logged_in() && SNSCS_Social::member_url() ) : ?>
-				<p class="snscs-quiz__cta"><a class="snscs-button snscs-button--primary" href="<?php echo esc_url( SNSCS_Social::member_url() ); ?>">無料の会員登録で、気になる発信者をフォロー</a><br><small>フォローすると、新しい記事が出たときにお知らせが届きます。</small></p>
+				<p class="snscs-quiz__cta"><a class="snscs-button snscs-button--primary" href="<?php echo esc_url( SNSCS_Social::member_url() ); ?>">無料のメンバー登録で、気になる発信者をフォロー</a><br><small>フォローすると、新しい記事が出たときにお知らせが届きます。</small></p>
 			<?php endif; ?>
 
 			<h2 class="snscs-trendpage__title">結果をシェア</h2>

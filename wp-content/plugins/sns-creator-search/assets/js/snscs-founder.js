@@ -1,5 +1,5 @@
 /**
- * 創設セイントの記念カード（SNSCS_Founder）。
+ * 創設メンバーの記念カード（SNSCS_Founder）。
  *
  * 「記念カードを保存」を押すと、背景・メダル・通し番号・名前・参加日を 1200×630 の画像にして、
  * スマホでは共有メニュー（Xなどに直接）、パソコンでは PNG の保存にする。
@@ -113,7 +113,7 @@
 
 			ctx.globalAlpha = 0.78;
 			ctx.font = '400 22px ' + SANS;
-			ctx.fillText( 'FolloFind 創設セイント' + ( d.rank ? '・' + d.rank : '' ), x, 448 );
+			ctx.fillText( 'FolloFind 創設メンバー' + ( d.rank ? '・' + d.rank : '' ), x, 448 );
 			ctx.fillText( d.date + ' 参加', x, 482 );
 
 			ctx.globalAlpha = 0.55;
@@ -130,7 +130,7 @@
 				var file = window.File ? new File( [ blob ], d.file, { type: 'image/png' } ) : null;
 				// スマホ: 共有メニュー。使えない・やめたときは保存にする。
 				if ( file && navigator.canShare && navigator.canShare( { files: [ file ] } ) && /Android|iPhone|iPad|iPod/i.test( navigator.userAgent ) ) {
-					navigator.share( { files: [ file ], text: d.name + ' は FolloFind の創設セイント ' + d.serial + ' です' } ).then( resolve, resolve );
+					navigator.share( { files: [ file ], text: d.name + ' は FolloFind の創設メンバー ' + d.serial + ' です' } ).then( resolve, resolve );
 					return;
 				}
 				var a = document.createElement( 'a' );

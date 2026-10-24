@@ -1,6 +1,6 @@
 <?php
 /**
- * セイントの冒険（1.26）: 経験値・レベル・カードランク・イベント。ゲームの仕組みで、FolloFind への集客の貢献に報いる。
+ * メンバーの冒険（1.26）: 経験値・レベル・カードランク・イベント。ゲームの仕組みで、FolloFind への集客の貢献に報いる。
  *
  * 経験値（金品とは交換できない。本サービスの中のゲームの記録）
  *   見せるもの: 訪問（何か行動した日。ログインだけでは数えない）・継続ボーナス（週に3日以上の訪問が続いた週数に応じて。
@@ -10,14 +10,14 @@
  *               本人には合計の経験値と「貢献度ゲージ（★1〜5・先週との比較）」だけを見せる
  *   レベル  : 上限なし。必要な経験値はレベルが上がるほど増える。10レベルごとに称号が変わる
  *   弱い敵  : 小さな行動（読む・反応など）の経験値は、レベルが上がるほど減る（集客・紹介・貢献度は減らない）
- *   創設セイント: 経験値の上乗せ（FIRST 10 +60%、ノワール +50% … プラチナ +20%）。掲載から24か月かけて0%まで少しずつ減る
+ *   創設メンバー: 経験値の上乗せ（FIRST 10 +60%、ノワール +50% … プラチナ +20%）。掲載から24か月かけて0%まで少しずつ減る
  *
  * カードランク（直近365日の経験値と、上位ランクは全体の中での順位で決まる。毎日見直す）
  *   ホワイト → ブルー → ブロンズ → シルバー → ゴールド → ダイヤモンド → レジェンド → ？？？ → ？？？
  *   はじめはホワイトとブルーだけ名前を見せ、だれかが次のランクの8割まで来たら、次の名前を明かす（サイト全体のお知らせ）
  *
  * イベント（運営者が管理画面から始める）
- *   ボーナス: 期間中の経験値が○倍 / ボス戦: 期間内にみんなで目標（会員数・発信者数）を倒すと、経験値の山を参加者で分ける。
+ *   ボーナス: 期間中の経験値が○倍 / ボス戦: 期間内にみんなで目標（メンバー数・発信者数）を倒すと、経験値の山を参加者で分ける。
  *   倒せなければ次のボスへキャリーオーバー / サンクチュアリ・飛び級: 期間中に（見せない）経験値の条件を満たすと、
  *   称号と経験値、または1年間ゴールド以上 / アテナの戦士: 運営者が選んだ人に称号と経験値
  */
@@ -265,7 +265,7 @@ class SNSCS_Game {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * 経験値を付ける。創設セイントの上乗せと、ボーナスイベントの倍率もここで付ける（別の種類として記録）。
+	 * 経験値を付ける。創設メンバーの上乗せと、ボーナスイベントの倍率もここで付ける（別の種類として記録）。
 	 * $day を指定すると、その日の記録にする（貢献度は前の日の分を、前の日の記録にする）。
 	 *
 	 * @return int 増えた経験値（上乗せを含む）。
@@ -273,7 +273,7 @@ class SNSCS_Game {
 	public static function grant( $user_id, $kind, $amount, $boost = true, $day = '' ) {
 		$user_id = (int) $user_id;
 		$amount  = (int) round( $amount );
-		// 運営者と、仮登録（承認前）のセイントには付けない。
+		// 運営者と、仮登録（承認前）のメンバーには付けない。
 		if ( ! $user_id || $amount <= 0 || user_can( $user_id, 'edit_others_posts' ) || ! snscs_is_full_member( $user_id ) ) {
 			return 0;
 		}
@@ -365,7 +365,7 @@ class SNSCS_Game {
 	}
 
 	/**
-	 * 創設セイントの上乗せの割合（掲載から24か月で0まで減る）。
+	 * 創設メンバーの上乗せの割合（掲載から24か月で0まで減る）。
 	 */
 	public static function founder_rate( $user_id ) {
 		static $cache = array();
@@ -881,7 +881,7 @@ class SNSCS_Game {
 	}
 
 	/* --------------------------------------------------------------------
-	 * 表示: 冒険の記録（会員ページのタブ）
+	 * 表示: 冒険の記録（メンバーページのタブ）
 	 * ------------------------------------------------------------------ */
 
 	public static function stars_html( $user_id ) {
@@ -948,13 +948,13 @@ class SNSCS_Game {
 		}
 
 		echo '<h3>カードランク</h3>' . self::ladder_html( $user_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
-		echo '<p class="snscs-help">カードランクは、直近1年間の経験値などで毎日見直されます。上のランクほど、たどり着けるセイントはわずかです。</p>';
+		echo '<p class="snscs-help">カードランクは、直近1年間の経験値などで毎日見直されます。上のランクほど、たどり着けるメンバーはわずかです。</p>';
 
 		echo self::events_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
 		echo '<details class="snscs-quest__how"><summary>経験値のもらい方</summary><ul>'
 			. '<li>何か行動した日（読む・反応する・記事を公開する など）は「訪問」として経験値。週に3日以上続けると「継続ボーナス」。続くほど大きくなります（どこまで大きくなるかは、ひみつ）</li>'
 			. '<li>記事の公開・プロフィールの更新・質問箱への回答など、行動ごとに経験値</li>'
-			. '<li>紹介した人が登録して使い始めると、大きな経験値。紹介した人が発信者として掲載されると、さらに大きな経験値</li>'
+			. '<li>紹介した人が登録して使い始めると、大きな経験値。紹介した人がメンバーとして掲載されると、さらに大きな経験値</li>'
 			. '<li>「貢献度」: あなたの発信が、FolloFind にどれだけ人を連れてきたか・読まれたかを、運営者が定める方法で毎日計算します（計算方法は公開しません）</li>'
 			. '<li>経験値は、本サービスの中のゲームの記録です。金銭や商品と交換することはできません</li></ul></details>';
 		echo '</section>';
@@ -974,7 +974,7 @@ class SNSCS_Game {
 		if ( $boss ) {
 			$pct  = min( 100, (int) floor( $boss['now'] / max( 1, $boss['target'] ) * 100 ) );
 			$out .= '<li class="snscs-event snscs-event--boss"><strong>' . esc_html( 'ボス戦「' . $boss['title'] . '」' ) . '</strong>'
-				. esc_html( ( 'creators' === $boss['metric'] ? '新しい発信者' : '新しいセイント' ) . ' ' . number_format_i18n( $boss['now'] ) . ' / ' . number_format_i18n( $boss['target'] ) . '人' )
+				. esc_html( ( 'creators' === $boss['metric'] ? '新しい本登録メンバー' : '新しいメンバー' ) . ' ' . number_format_i18n( $boss['now'] ) . ' / ' . number_format_i18n( $boss['target'] ) . '人' )
 				. '<span class="snscs-event__bar"><span style="width:' . $pct . '%"></span></span>'
 				. '<span>' . esc_html( '倒せば ' . number_format_i18n( $boss['pool'] ) . ' 経験値を参加者で山分け・' . wp_date( 'n/j', $boss['until'] ) . 'まで' ) . '</span></li>';
 		} elseif ( (int) $state['carry'] > 0 ) {
@@ -1108,7 +1108,7 @@ class SNSCS_Game {
 		$week = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT SUM(amount) FROM ' . self::table() . ' WHERE day >= %s', gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -7 days' ) ) ) );
 		echo '<div class="wrap"><h1>ゲーム（経験値・カードランク・イベント）</h1>';
 		if ( isset( $_GET['msg'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			echo '<div class="notice notice-' . ( 'nouser' === $_GET['msg'] ? 'error' : 'success' ) . '"><p>' . ( 'nouser' === $_GET['msg'] ? 'そのメールアドレスの会員が見つかりません。' : '保存しました。' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			echo '<div class="notice notice-' . ( 'nouser' === $_GET['msg'] ? 'error' : 'success' ) . '"><p>' . ( 'nouser' === $_GET['msg'] ? 'そのメールアドレスのメンバーが見つかりません。' : '保存しました。' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 		echo '<p>経験値は金銭や商品と交換できない、本サービスの中のゲームの記録です（利用規約 第7条の8）。直近7日の経験値の合計: <strong>' . esc_html( number_format_i18n( $week ) ) . '</strong>　貢献度の換算倍率（自動）: <strong>' . esc_html( round( (float) $state['k'], 3 ) ) . '</strong>　明かしたランク: <strong>' . esc_html( self::rank_name( (int) $state['reveal'] ) ) . 'まで</strong></p>';
 		echo self::form( 'run', '', 'いま毎日の計算をする（貢献度・ランク）' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -1126,10 +1126,10 @@ class SNSCS_Game {
 			echo '<p>「' . esc_html( $boss['title'] ) . '」 ' . esc_html( number_format_i18n( $boss['now'] ) . ' / ' . number_format_i18n( $boss['target'] ) ) . '人・経験値の山 ' . esc_html( number_format_i18n( $boss['pool'] ) ) . '・' . esc_html( wp_date( 'n/j G:i', $boss['until'] ) ) . 'まで</p>' . self::form( 'boss_settle', '', 'いま締める（結果を出す）' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		} else {
 			echo '<p>キャリーオーバー: ' . esc_html( number_format_i18n( (int) $state['carry'] ) ) . ' 経験値（次のボスの山に加わります）</p>';
-			echo self::form( 'boss', 'ボスの名前 <input name="title" value="暗黒の巨人"> 目標 <select name="metric"><option value="members">新しい会員（セイント）の人数</option><option value="creators">新しく掲載された発信者の人数</option></select> <input name="target" type="number" min="1" value="1000" class="small-text">人 期間 <input name="days" type="number" min="1" max="365" value="30" class="small-text">日 経験値の山 <input name="pool" type="number" min="1" value="1000000">', '出現させる', 'button button-primary' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo self::form( 'boss', 'ボスの名前 <input name="title" value="暗黒の巨人"> 目標 <select name="metric"><option value="members">新しく登録したメンバーの人数</option><option value="creators">新しく本登録されたメンバーの人数</option></select> <input name="target" type="number" min="1" value="1000" class="small-text">人 期間 <input name="days" type="number" min="1" max="365" value="30" class="small-text">日 経験値の山 <input name="pool" type="number" min="1" value="1000000">', '出現させる', 'button button-primary' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
-		echo '<h2>レアイベント（条件はセイントには見せません）</h2>';
+		echo '<h2>レアイベント（条件はメンバーには見せません）</h2>';
 		foreach ( array( 'sanctuary' => 'サンクチュアリ（期間中に、この経験値を稼いだ人に称号と経験値）', 'skip' => '飛び級（期間中に、この経験値を稼いだ人を1年間ゴールド以上に）' ) as $key => $label ) {
 			echo '<h3>' . esc_html( $label ) . '</h3>';
 			if ( $state[ $key ] && (int) $state[ $key ]['until'] > time() ) {
@@ -1147,7 +1147,7 @@ class SNSCS_Game {
 		foreach ( $labels as $key => $label ) {
 			echo '<tr><th>' . esc_html( $label ) . '</th><td><input name="' . esc_attr( $key ) . '" type="number" step="0.01" min="0" value="' . esc_attr( $s[ $key ] ) . '" class="small-text"></td></tr>';
 		}
-		echo '<tr><th>謎のランク（8番目・9番目）の名前</th><td><input name="secret1" value="' . esc_attr( $s['secret1'] ) . '"> <input name="secret2" value="' . esc_attr( $s['secret2'] ) . '"><p class="description">明かされるまで、セイントには「？？？」と見えます。</p></td></tr>';
+		echo '<tr><th>謎のランク（8番目・9番目）の名前</th><td><input name="secret1" value="' . esc_attr( $s['secret1'] ) . '"> <input name="secret2" value="' . esc_attr( $s['secret2'] ) . '"><p class="description">明かされるまで、メンバーには「？？？」と見えます。</p></td></tr>';
 		echo '</table><p><button class="button button-primary">保存</button></p></form>';
 		echo '<h2>カードランクの条件</h2><table class="widefat striped" style="max-width:640px"><thead><tr><th>ランク</th><th>直近365日の経験値</th><th>上位</th><th>公開</th></tr></thead><tbody>';
 		foreach ( self::rank_keys() as $i => $key ) {

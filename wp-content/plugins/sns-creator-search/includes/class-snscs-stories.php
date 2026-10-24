@@ -267,7 +267,7 @@ class SNSCS_Stories {
 				$photo = get_the_post_thumbnail_url( $id, 'thumbnail' );
 				$who   = '<a class="snscs-spread__who" href="' . esc_url( get_permalink( $id ) ) . '">' . ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="32" height="32" loading="lazy">' : '' ) . esc_html( get_the_title( $id ) ) . '</a>';
 			} elseif ( ! $id && SNSCS_People::is_public( (int) $row['user_id'] ) ) {
-				// 公開プロフィールの会員: プロフィールへ。
+				// 公開プロフィールのメンバー: プロフィールへ。
 				$name = SNSCS_People::nickname( (int) $row['user_id'] );
 				$who  = '<a class="snscs-spread__who" href="' . esc_url( SNSCS_People::profile_url( (int) $row['user_id'] ) ) . '"><span class="snscs-profile__avatar snscs-profile__avatar--small" aria-hidden="true">' . esc_html( mb_substr( $name, 0, 1 ) ) . '</span>' . esc_html( $name ) . '</a>';
 			} else {
@@ -508,7 +508,7 @@ class SNSCS_Stories {
 					<?php endforeach; ?>
 				</p>
 			<?php endif; ?>
-			<p class="snscs-help">記事を書けるのは、掲載中の発信者です。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">発信者マイページ</a>から書けます。</p>
+			<p class="snscs-help">記事を書けるのは、掲載中の発信者です。<a href="<?php echo esc_url( snscs_portal_url() ); ?>">マイページ</a>から書けます。</p>
 		</div>
 		<?php
 		return ob_get_clean();

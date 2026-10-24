@@ -319,7 +319,7 @@ class SNSCS_Business {
 		wp_mail(
 			snscs_operator_info()['email'],
 			'[' . $site . '] 企業向けプランのお問い合わせ（' . $company . '）',
-			implode( "\n", array( '会社名: ' . $company, 'お名前: ' . $name, 'メールアドレス: ' . $email, '', $message, '', '有効にするときは、管理画面の「ユーザー」でこの方のアカウントを開き、「企業向けプランの期限」を入れてください（アカウントが無いときは、会員登録をお願いしてください）。' ) ),
+			implode( "\n", array( '会社名: ' . $company, 'お名前: ' . $name, 'メールアドレス: ' . $email, '', $message, '', '有効にするときは、管理画面の「ユーザー」でこの方のアカウントを開き、「企業向けプランの期限」を入れてください（アカウントが無いときは、メンバー登録をお願いしてください）。' ) ),
 			array( 'Reply-To: ' . $email )
 		);
 		$back( 'sent' );

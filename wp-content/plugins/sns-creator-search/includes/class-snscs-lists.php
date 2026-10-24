@@ -1,8 +1,8 @@
 <?php
 /**
- * 会員が作る「推しリスト」（例: 私の推し料理インスタグラマー5選）。
+ * メンバーが作る「推しリスト」（例: 私の推し料理インスタグラマー5選）。
  *
- *   作る   : 発信者ページの「推しリストに追加」から（新しいリストもその場で作れる）。会員ページ「推しリスト」で
+ *   作る   : 発信者ページの「推しリストに追加」から（新しいリストもその場で作れる）。メンバーページ「推しリスト」で
  *            題名・説明・ひとこと・並び順を直し、外し、消せる。1人20リスト・1リスト30人まで。
  *   見る   : [sns_lists]（機能ページ「みんなの推しリスト」）。人気・新着、ジャンルで絞り込み。
  *            /lists/{番号}/ がリストのページ（ひとこと付きのカード・いいね・シェア・似ている発信者・ほかのリスト）。
@@ -315,7 +315,7 @@ class SNSCS_Lists {
 	}
 
 	/* --------------------------------------------------------------------
-	 * 会員ページ「推しリスト」
+	 * メンバーページ「推しリスト」
 	 * ------------------------------------------------------------------ */
 
 	private static function back( $notice ) {
@@ -632,7 +632,7 @@ class SNSCS_Lists {
 		$base   = SNSCS_Hub::page_url( 'lists' );
 		$genres = get_terms( array( 'taxonomy' => SNSCS_Post_Types::TAX_GENRE, 'hide_empty' => true ) );
 		?>
-		<p class="snscs-feature__lead">会員のみなさんが作った、好きな発信者のまとめです。あなたも「推しリスト」を作って、好きな発信者を紹介しましょう（発信者ページの「推しリストに追加」から作れます）。</p>
+		<p class="snscs-feature__lead">メンバーのみなさんが作った、好きな発信者のまとめです。あなたも「推しリスト」を作って、好きな発信者を紹介しましょう（発信者ページの「推しリストに追加」から作れます）。</p>
 		<nav class="snscs-member__tabs" aria-label="並べ方">
 			<a class="snscs-chip" href="<?php echo esc_url( remove_query_arg( 'lo', add_query_arg( array() ) ) ); ?>" <?php echo 'popular' === $order ? 'aria-current="page"' : ''; ?>>人気</a>
 			<a class="snscs-chip" href="<?php echo esc_url( add_query_arg( 'lo', 'new' ) ); ?>" <?php echo 'new' === $order ? 'aria-current="page"' : ''; ?>>新着</a>
@@ -648,7 +648,7 @@ class SNSCS_Lists {
 		if ( is_user_logged_in() ) {
 			echo '<p><a class="snscs-button snscs-button--primary" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'lists' ) ) ) . '">自分の推しリストを作る・直す</a></p>';
 		} elseif ( SNSCS_Social::member_url() ) {
-			echo '<p><a class="snscs-button snscs-button--primary" href="' . esc_url( SNSCS_Social::member_url( array( 'redirect_to' => $base ) ) ) . '">無料の会員登録をして推しリストを作る</a></p>';
+			echo '<p><a class="snscs-button snscs-button--primary" href="' . esc_url( SNSCS_Social::member_url( array( 'redirect_to' => $base ) ) ) . '">無料のメンバー登録をして推しリストを作る</a></p>';
 		}
 		return ob_get_clean();
 	}

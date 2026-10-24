@@ -2,11 +2,11 @@
 /**
  * LINE公式アカウントでのお知らせ（LINE Messaging API。管理画面「発信者 → LINE連携」）。
  *
- * つなぎ方: 会員ページ・マイページの「LINEで受け取る」で、友だち追加のボタンと6けたのコード（30分有効）を出す。
- *           会員がLINE公式アカウントにコードを送ると、Webhook でその人のLINEと会員を結びつける。
+ * つなぎ方: メンバーページ・マイページの「LINEで受け取る」で、友だち追加のボタンと6けたのコード（30分有効）を出す。
+ *           メンバーがLINE公式アカウントにコードを送ると、Webhook でその人のLINEとメンバーを結びつける。
  *           ブロック（友だち解除）されたら、結びつきを外す。Webhook は署名（X-Line-Signature）を確かめる。
  * 送るもの: スマホ通知と同じお知らせ（フォロー中の新着記事・リポスト・アワード・コラボなど）を、
- *           LINEとつながっている会員に、まとめて1通で送る（プッシュメッセージ）。
+ *           LINEとつながっているメンバーに、まとめて1通で送る（プッシュメッセージ）。
  *           1か月に送る数の上限を決められる（無料プランの上限に合わせる。初期200通）。
  *           任意で、毎週月曜に「今週のおすすめ」を友だち全員に送る（一斉送信。上限の数に含む）。
  */
@@ -119,7 +119,7 @@ class SNSCS_Line {
 	}
 
 	/**
-	 * まだLINEで送っていないお知らせを、つながっている会員にまとめて送る。
+	 * まだLINEで送っていないお知らせを、つながっているメンバーにまとめて送る。
 	 *
 	 * @return int 送った通数。
 	 */
@@ -251,7 +251,7 @@ class SNSCS_Line {
 			}
 			$type = $event['type'] ?? '';
 			if ( 'follow' === $type && '' !== $token ) {
-				self::reply( $token, '友だち追加ありがとうございます！' . "\n" . 'お知らせを受け取るには、' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . 'の会員ページ（アカウント）に出ている6けたのコードを、このトークに送ってください。' );
+				self::reply( $token, '友だち追加ありがとうございます！' . "\n" . 'お知らせを受け取るには、' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . 'のメンバーページ（アカウント）に出ている6けたのコードを、このトークに送ってください。' );
 			} elseif ( 'unfollow' === $type ) {
 				foreach ( get_users( array( 'meta_key' => self::META_USER, 'meta_value' => $line_user, 'fields' => 'ID' ) ) as $user_id ) { // phpcs:ignore WordPress.DB.SlowDBQuery
 					delete_user_meta( (int) $user_id, self::META_USER );
@@ -268,7 +268,7 @@ class SNSCS_Line {
 	}
 
 	/**
-	 * コードで会員と結びつける。
+	 * コードでメンバーと結びつける。
 	 *
 	 * @return string|null 返事（コードでなければ null）。
 	 */
@@ -278,24 +278,24 @@ class SNSCS_Line {
 		}
 		$users = get_users( array( 'meta_key' => self::META_CODE, 'meta_value' => $code, 'fields' => 'ID', 'number' => 1 ) ); // phpcs:ignore WordPress.DB.SlowDBQuery
 		if ( ! $users ) {
-			return 'コードが見つかりませんでした。会員ページで新しいコードを出して、もう一度送ってください。';
+			return 'コードが見つかりませんでした。メンバーページで新しいコードを出して、もう一度送ってください。';
 		}
 		$user_id = (int) $users[0];
 		$expires = (int) get_user_meta( $user_id, self::META_CODE . '_expires', true );
 		delete_user_meta( $user_id, self::META_CODE );
 		if ( $expires < time() ) {
-			return 'コードの有効期限（30分）が切れています。会員ページで新しいコードを出してください。';
+			return 'コードの有効期限（30分）が切れています。メンバーページで新しいコードを出してください。';
 		}
-		// 同じLINEがほかの会員とつながっていたら外す。
+		// 同じLINEがほかのメンバーとつながっていたら外す。
 		foreach ( get_users( array( 'meta_key' => self::META_USER, 'meta_value' => $line_user, 'fields' => 'ID' ) ) as $other ) { // phpcs:ignore WordPress.DB.SlowDBQuery
 			delete_user_meta( (int) $other, self::META_USER );
 		}
 		update_user_meta( $user_id, self::META_USER, $line_user );
-		return '連携しました！これから、フォロー中の新着記事などのお知らせをLINEでお届けします。止めるときは、会員ページの「LINEで受け取る」から解除できます。';
+		return '連携しました！これから、フォロー中の新着記事などのお知らせをLINEでお届けします。止めるときは、メンバーページの「LINEで受け取る」から解除できます。';
 	}
 
 	/* --------------------------------------------------------------------
-	 * 会員ページ・マイページ
+	 * メンバーページ・マイページ
 	 * ------------------------------------------------------------------ */
 
 	public static function handle_unlink() {
@@ -391,11 +391,11 @@ class SNSCS_Line {
 			<?php if ( isset( $_GET['snscs_msg'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success"><p>保存しました。</p></div>
 			<?php endif; ?>
-			<p>LINE公式アカウントから、会員にお知らせ（フォロー中の新着記事・リポスト・アワード・コラボなど）を届けます。日本ではブラウザの通知より見てもらいやすい方法です。</p>
+			<p>LINE公式アカウントから、メンバーにお知らせ（フォロー中の新着記事・リポスト・アワード・コラボなど）を届けます。日本ではブラウザの通知より見てもらいやすい方法です。</p>
 			<table class="widefat striped" style="max-width: 760px">
 				<tbody>
 					<tr><th style="width: 240px">状態</th><td><?php echo self::active() ? '<strong>オン</strong>' : 'オフ（チャネルシークレットとアクセストークンを入れ、オンにしてください）'; ?></td></tr>
-					<tr><th>LINEとつながっている会員</th><td><?php echo (int) $linked; ?>人</td></tr>
+					<tr><th>LINEとつながっているメンバー</th><td><?php echo (int) $linked; ?>人</td></tr>
 					<tr><th>今月送った数</th><td><?php echo esc_html( self::sent_this_month() . '通' . ( $s['limit'] ? ' / 上限 ' . $s['limit'] . '通' : '' ) ); ?></td></tr>
 					<tr><th>Webhook URL</th><td><code><?php echo esc_html( self::webhook_url() ); ?></code></td></tr>
 				</tbody>

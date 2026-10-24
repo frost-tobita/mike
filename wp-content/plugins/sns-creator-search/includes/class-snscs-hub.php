@@ -49,7 +49,7 @@ class SNSCS_Hub {
 			'glossary'   => array( 'title' => 'SNS用語集', 'slug' => 'glossary', 'shortcode' => '[sns_glossary]', 'nav' => '用語集' ),
 			'mylink'     => array( 'title' => 'マイリンク（無料のリンクまとめ）', 'slug' => 'mylink', 'shortcode' => '[sns_mylink]', 'nav' => '' ),
 			'embed'      => array( 'title' => 'ブログに貼れるランキング', 'slug' => 'blog-parts', 'shortcode' => '[sns_embed]', 'nav' => '' ),
-			'member'     => array( 'title' => '会員ページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
+			'member'     => array( 'title' => 'メンバーページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
 			'newsletter' => array( 'title' => 'メールマガジン', 'slug' => 'newsletter', 'shortcode' => '[sns_newsletter]', 'nav' => '' ),
 			'business'   => array( 'title' => '企業の方へ（お仕事のご相談）', 'slug' => 'business', 'shortcode' => '[sns_business]', 'nav' => '' ),
@@ -397,7 +397,7 @@ class SNSCS_Hub {
 					<tr>
 						<th scope="row">ポータルの見た目にするページ</th>
 						<td>
-							<?php foreach ( array( 'top' => 'トップページだけ（テンプレート「SNS検索ポータル（全幅）」を選んだページ）', 'plugin' => 'このプラグインのページすべて（おすすめ）: 機能ページ・検索・マイページ・会員ページ・規約・発信者・記事・コラム', 'site' => 'サイト全体（すべての固定ページ・投稿）' ) as $snscs_k => $snscs_l ) : ?>
+							<?php foreach ( array( 'top' => 'トップページだけ（テンプレート「SNS検索ポータル（全幅）」を選んだページ）', 'plugin' => 'このプラグインのページすべて（おすすめ）: 機能ページ・検索・マイページ・メンバーページ・規約・発信者・記事・コラム', 'site' => 'サイト全体（すべての固定ページ・投稿）' ) as $snscs_k => $snscs_l ) : ?>
 								<label style="display:block;margin:4px 0"><input type="radio" name="portal_scope" value="<?php echo esc_attr( $snscs_k ); ?>" <?php checked( $s['portal_scope'], $snscs_k ); ?>> <?php echo esc_html( $snscs_l ); ?></label>
 							<?php endforeach; ?>
 							<p class="description">選んだページは、トップページと同じヘッダー・フッター・右の列で表示し、テーマ（AFFINGER など）の見た目は使いません。広告・アクセス解析のコードはそのまま動きます。</p>
@@ -410,12 +410,12 @@ class SNSCS_Hub {
 						<p class="description">トップページの中央のいちばん上に出す、サイトの紹介です。掲載が10人を超えると、人数・ジャンル数も出します。</p></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="founders_limit">創設セイントの人数</label></th>
+						<th scope="row"><label for="founders_limit">創設メンバーの人数</label></th>
 						<td>先着 <input id="founders_limit" type="number" name="founders_limit" min="0" max="100000" value="<?php echo (int) $s['founders_limit']; ?>" class="small-text"> 人
-						<p class="description">最初に掲載された発信者から、この人数までに「創設セイント」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
+						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
 					</tr>
 					<tr>
-						<th scope="row">創設セイントのランク</th>
+						<th scope="row">創設メンバーのランク</th>
 						<td>
 							<?php $snscs_b = SNSCS_Founder::bounds(); $snscs_i = 0; ?>
 							<?php foreach ( SNSCS_Founder::tiers() as $snscs_k => $snscs_r ) : ?>

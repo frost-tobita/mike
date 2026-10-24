@@ -261,7 +261,7 @@ class SNSCS_Feed {
 	}
 
 	/**
-	 * 「興味がない」（ログイン中は会員情報に、そうでなければブラウザのクッキーに残す）。
+	 * 「興味がない」（ログイン中はメンバー情報に、そうでなければブラウザのクッキーに残す）。
 	 */
 	public static function rest_hide( WP_REST_Request $request ) {
 		$id      = (int) $request['article'];
@@ -297,7 +297,7 @@ class SNSCS_Feed {
 	}
 
 	/**
-	 * 読んだ記事（ブラウザに残した最近の記事と、会員なら80%以上読んだ記事）。
+	 * 読んだ記事（ブラウザに残した最近の記事と、メンバーなら80%以上読んだ記事）。
 	 *
 	 * @return int[]
 	 */
@@ -478,7 +478,7 @@ class SNSCS_Feed {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * @param array $context user（会員ID）、seed（この記事を起点に）、profile（閲覧の傾向）。
+	 * @param array $context user（メンバーID）、seed（この記事を起点に）、profile（閲覧の傾向）。
 	 * @return array<int,array> 記事ID => [follow, coeng, repost_by, sources]
 	 */
 	private static function candidates( array $context, array $stats ) {
@@ -624,7 +624,7 @@ class SNSCS_Feed {
 	}
 
 	/**
-	 * 閲覧の傾向のジャンル（term_id => 0〜1）。会員なら、反応した記事の書き手のジャンルも足す。
+	 * 閲覧の傾向のジャンル（term_id => 0〜1）。メンバーなら、反応した記事の書き手のジャンルも足す。
 	 */
 	private static function genre_affinity( $user ) {
 		$weights = array();
@@ -667,7 +667,7 @@ class SNSCS_Feed {
 	/**
 	 * おすすめの記事（並べ終わったもの）。
 	 *
-	 * @param array $args user（会員ID。初期は今の人）、seed（この記事に続けて読むもの）、limit、log（表示を記録するか）。
+	 * @param array $args user（メンバーID。初期は今の人）、seed（この記事に続けて読むもの）、limit、log（表示を記録するか）。
 	 * @return array<int,array{id:int,score:float,reason:string,x:array,rp:int,ru:int,fq:string,fp:int}>
 	 */
 	public static function items( array $args = array() ) {
