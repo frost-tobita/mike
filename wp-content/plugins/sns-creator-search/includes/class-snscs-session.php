@@ -104,7 +104,7 @@ class SNSCS_Session {
 		$user   = wp_get_current_user();
 		// ハンドルネーム → 表示名。メールアドレスの「@」の前と同じ表示名（1.26.2 までの登録）は出さない。
 		$name   = (string) get_user_meta( $user->ID, SNSCS_People::META_NICKNAME, true );
-		if ( '' === $name && $user->display_name !== strstr( (string) $user->user_email, '@', true ) ) {
+		if ( '' === $name && $user->display_name !== strstr( (string) $user->user_email, '@', true ) && false === strpos( $user->display_name, '@' ) ) {
 			$name = $user->display_name;
 		}
 		$design = '';
@@ -120,7 +120,7 @@ class SNSCS_Session {
 			}
 		}
 		return array(
-			'name'   => '' !== trim( (string) $name ) ? $name : 'ゲスト',
+			'name'   => '' !== trim( (string) $name ) ? $name : ( user_can( $user, 'manage_options' ) ? '運営者' : 'ゲスト' ),
 			'role'   => $design ? SNSCS_Founder::name( $design ) : ( snscs_is_full_member( $user ) ? 'メンバー' : '仮登録' ),
 			'design' => $design,
 			'no'     => (int) $no,

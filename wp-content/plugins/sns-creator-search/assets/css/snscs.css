@@ -8610,3 +8610,37 @@ body.snscs-portal-body .snscs-pt-box--mypage .snscs-provisional .snscs-button {
 	display: block;
 	text-align: center;
 }
+
+/* 1.27.3: マイページ枠の「マイリンク」 */
+.snscs-portal-body a.snscs-pt-mylink {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 10px 0 4px;
+	padding: 10px 14px;
+	border: 1px solid #c7d2fe;
+	border-radius: 10px;
+	background: #f4f6ff;
+	color: #1B27B0;
+	text-align: center;
+	text-decoration: none;
+}
+
+.snscs-portal-body a.snscs-pt-mylink:hover {
+	border-color: #1B27B0;
+	background: #eef0ff;
+}
+
+.snscs-portal-body a.snscs-pt-mylink strong {
+	font-size: 15px;
+}
+
+.snscs-portal-body a.snscs-pt-mylink span {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	color: #4b5568;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

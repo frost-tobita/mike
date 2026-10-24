@@ -752,15 +752,19 @@ class SNSCS_Portal_Top {
 		$home       = $is_creator ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() );
 		$body       = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__state">ログイン中</span></p>'
 			. $card . $level . $events
-			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>'
-			. ( SNSCS_Social::member_url() ? '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'level' ) ) ) . '">冒険の記録を見る</a>' : '' );
+			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>';
+		// マイページのすぐ下に、マイリンク（掲載中なら自分のマイリンク、まだなら作り方の案内）。
 		if ( $creator && 'publish' === get_post_status( $creator ) ) {
-			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
+			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '"><strong>マイリンク</strong><span>' . esc_html( preg_replace( '#^https?://#', '', SNSCS_Biolink::url( $creator ) ) ) . '</span></a>';
+		} else {
+			$about = SNSCS_Hub::page_url( 'mylink' );
+			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( $about ? $about : snscs_portal_url() ) . '"><strong>マイリンク</strong><span>SNSのプロフィールに貼れる、あなただけのリンク集</span></a>';
 		}
+		$body .= SNSCS_Social::member_url() ? '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'level' ) ) ) . '">冒険の記録を見る</a>' : '';
 		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
 		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
 		$taken = count( self::founders() );
-		if ( ! $is_creator && $limit > $taken ) {
+		if ( ! $is_creator && ! current_user_can( 'edit_posts' ) && $limit > $taken ) {
 			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">メンバーとして掲載すると「創設メンバー」のメダル（残り' . esc_html( number_format_i18n( $limit - $taken ) ) . '枠）</a>';
 		} elseif ( $is_creator && ! ( $creator && 'publish' === get_post_status( $creator ) ) && $limit > $taken ) {
 			// 審査待ち・申請前の発信者: 承認されるとメダルが付くことを伝える。
