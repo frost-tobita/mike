@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.25.2
+ * Version:           1.26.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.25.2' );
-define( 'SNSCS_DB_VERSION', '29' );
+define( 'SNSCS_VERSION', '1.26.0' );
+define( 'SNSCS_DB_VERSION', '30' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -69,6 +69,7 @@ require_once SNSCS_DIR . 'includes/class-snscs-lists.php';
 require_once SNSCS_DIR . 'includes/class-snscs-qa.php';
 require_once SNSCS_DIR . 'includes/class-snscs-profile-ai.php';
 require_once SNSCS_DIR . 'includes/class-snscs-gamify.php';
+require_once SNSCS_DIR . 'includes/class-snscs-game.php';
 require_once SNSCS_DIR . 'includes/class-snscs-press.php';
 require_once SNSCS_DIR . 'includes/class-snscs-glossary.php';
 require_once SNSCS_DIR . 'includes/class-snscs-english.php';
@@ -203,6 +204,7 @@ function snscs_install() {
 	SNSCS_Lists::install();
 	SNSCS_QA::install();
 	SNSCS_Gamify::install();
+	SNSCS_Game::install();
 	SNSCS_Rankings::install();
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
@@ -285,6 +287,7 @@ SNSCS_Lists::init();
 SNSCS_QA::init();
 SNSCS_Profile_AI::init();
 SNSCS_Gamify::init();
+SNSCS_Game::init();
 SNSCS_Press::init();
 SNSCS_Glossary::init();
 SNSCS_English::init();

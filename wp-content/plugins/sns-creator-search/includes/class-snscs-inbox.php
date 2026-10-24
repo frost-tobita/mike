@@ -30,7 +30,7 @@ class SNSCS_Inbox {
 	const KEEP_DAYS   = 90;
 
 	/** メールで送る種類 */
-	const EMAIL_TYPES = array( 'award', 'collab', 'collab_ok', 'qa_answer', 'qa_best', 'listed', 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction', 'biolink_week', 'biolink_nudge', 'saved_search' );
+	const EMAIL_TYPES = array( 'game_week', 'rank_up', 'game_boss', 'game_rare', 'award', 'collab', 'collab_ok', 'qa_answer', 'qa_best', 'listed', 'monthly_report', 'new_article', 'bookmark_updated', 'bookmark_unread', 'new_follower', 'new_user_follower', 'reaction', 'biolink_week', 'biolink_nudge', 'saved_search' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'schedule' ) );
@@ -231,6 +231,11 @@ class SNSCS_Inbox {
 			case 'qa_answer':
 			case 'qa_best':
 				return SNSCS_QA::describe( $row );
+			case 'rank_up':
+			case 'game_week':
+			case 'game_boss':
+			case 'game_rare':
+				return SNSCS_Game::describe( $row );
 			case 'level_up':
 			case 'badge':
 			case 'streak':

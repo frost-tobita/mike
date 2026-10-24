@@ -4,7 +4,7 @@
  *
  *   ポイント: 記事を読む・いいね・フォロー・アワードの投票・推しリスト・質問・回答などで増える。
  *             行動ごとに1日の上限があり、ためすぎ（水増し）はできない。ほかの機能は do_action( 'snscs_points', 会員ID, 行動 ) で知らせる。
- *   レベル  : ポイントの合計で上がる（12段階。名前つき）。上がるとお知らせ。
+ *   レベル  : 1.26 から SNSCS_Game（経験値・上限なし・カードランク）。ここは行動の回数と上限・連続記録・バッジ・招待を受け持つ。
  *   連続記録: 読む・反応・投票・投稿のどれかをした日が続いた日数（最高記録も残す）。3日以上続いている人には、
  *             その日まだ何もしていなければ20時ごろに「連続記録が途切れそう」とお知らせ（スマホ通知・LINEにも）。
  *   バッジ  : 「7日連続」「記事を10本読んだ」「推しリストを作った」など。手に入れるとお知らせ。
@@ -42,29 +42,14 @@ class SNSCS_Gamify {
 		'helpful_received' => array( 3, 20, false ),
 		'best_answer'      => array( 20, 5, false ),
 		'visit'            => array( 2, 1, false ),
-		'invite'           => array( 50, 5, false ),
+		'invite'           => array( 300, 5, false ),
 		'welcome'          => array( 20, 1, false ),
-	);
-
-	const LEVELS = array(
-		1  => array( 0, 'はじめまして' ),
-		2  => array( 30, 'ビギナー' ),
-		3  => array( 80, 'ファン' ),
-		4  => array( 160, '常連' ),
-		5  => array( 300, '目利き' ),
-		6  => array( 500, '推し活上手' ),
-		7  => array( 800, '発見名人' ),
-		8  => array( 1200, '案内人' ),
-		9  => array( 1800, '達人' ),
-		10 => array( 2600, 'マスター' ),
-		11 => array( 3600, 'レジェンド' ),
-		12 => array( 5000, '殿堂入り' ),
 	);
 
 	public static function init() {
 		add_action( 'snscs_points', array( __CLASS__, 'award' ), 10, 2 );
 		add_action( 'snscs_social_changed', array( __CLASS__, 'on_social' ), 10, 4 );
-		add_action( 'init', array( __CLASS__, 'on_visit' ), 30 );
+		// 1.26: ログインしただけでは経験値にしない（何か行動した日を「訪問」として SNSCS_Game が数える）。
 		add_action( 'template_redirect', array( __CLASS__, 'catch_invite' ), 1 );
 		add_action( 'user_register', array( __CLASS__, 'on_register' ) );
 		add_action( SNSCS_Inbox::CRON_HOOK, array( __CLASS__, 'remind_streaks' ), 40 );
@@ -118,16 +103,11 @@ class SNSCS_Gamify {
 		}
 		$wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (user_id, day, action, n, points) VALUES (%d, %s, %s, 1, %d) ON DUPLICATE KEY UPDATE n = n + 1, points = points + VALUES(points)", $user_id, $day, $action, $points ) );
 		// phpcs:enable
-		$before = self::level( (int) get_user_meta( $user_id, self::META_XP, true ) );
-		$xp     = (int) get_user_meta( $user_id, self::META_XP, true ) + $points;
-		update_user_meta( $user_id, self::META_XP, $xp );
+		// 1.26: 経験値は SNSCS_Game が付ける（レベル・上乗せ・イベントの倍率・訪問の記録もそこで）。
+		SNSCS_Game::action( $user_id, $points, 'invite' === $action ? 'referral' : 'action' );
 		if ( $streak ) {
 			self::touch_streak( $user_id );
 			self::credit_inviter( $user_id );
-		}
-		$after = self::level( $xp );
-		if ( $after > $before ) {
-			SNSCS_Inbox::add( $user_id, 'level_up', $after );
 		}
 		self::check_badges( $user_id );
 		return $points;
@@ -160,13 +140,7 @@ class SNSCS_Gamify {
 	}
 
 	public static function level( $xp ) {
-		$level = 1;
-		foreach ( self::LEVELS as $lv => $row ) {
-			if ( $xp >= $row[0] ) {
-				$level = $lv;
-			}
-		}
-		return $level;
+		return SNSCS_Game::level( $xp );
 	}
 
 	/* --------------------------------------------------------------------
@@ -345,8 +319,7 @@ class SNSCS_Gamify {
 		$url = SNSCS_Social::member_url( array( 'tab' => 'level' ) );
 		switch ( $row['type'] ) {
 			case 'level_up':
-				$lv = (int) $row['object_id'];
-				return isset( self::LEVELS[ $lv ] ) ? array( 'text' => 'レベル' . $lv . '「' . self::LEVELS[ $lv ][1] . '」になりました！', 'url' => $url ) : null;
+				return SNSCS_Game::describe( $row );
 			case 'badge':
 				$keys = array_keys( self::badges() );
 				$key  = $keys[ (int) $row['object_id'] - 1 ] ?? '';
@@ -354,7 +327,7 @@ class SNSCS_Gamify {
 			case 'streak':
 				return array( 'text' => (int) $row['object_id'] . '日続いている連続記録が、今日で途切れそうです。記事を1本読んで記録をのばしましょう🔥', 'url' => SNSCS_Stories::stories_url() );
 			case 'invite_ok':
-				return array( 'text' => '招待した友だちが使い始めました。50ポイントをどうぞ！', 'url' => $url );
+				return array( 'text' => '紹介した友だちが使い始めました。経験値300を手に入れました！', 'url' => $url );
 		}
 		return null;
 	}
@@ -368,18 +341,14 @@ class SNSCS_Gamify {
 	 */
 	public static function summary_html( $user_id, $compact = false ) {
 		wp_enqueue_style( 'snscs' );
-		$xp     = (int) get_user_meta( $user_id, self::META_XP, true );
-		$lv     = self::level( $xp );
-		$next   = self::LEVELS[ $lv + 1 ][0] ?? null;
-		$from   = self::LEVELS[ $lv ][0];
-		$pct    = null === $next ? 100 : (int) floor( ( $xp - $from ) / max( 1, $next - $from ) * 100 );
+		$info   = SNSCS_Game::level_info( $user_id );
 		$streak = self::streak( $user_id );
 		$badges = self::earned( $user_id );
 		$html   = '<div class="snscs-level' . ( $compact ? ' snscs-level--compact' : '' ) . '">';
-		$html  .= '<p class="snscs-level__lv"><strong>Lv.' . $lv . '</strong> ' . esc_html( self::LEVELS[ $lv ][1] ) . '</p>';
+		$html  .= '<p class="snscs-level__lv"><strong>Lv.' . $info['level'] . '</strong> ' . esc_html( $info['title'] ) . ' <span class="snscs-level__rank">' . esc_html( SNSCS_Game::rank_name( SNSCS_Game::rank_of( $user_id ) ) ) . '</span></p>';
 		if ( ! $compact ) {
-			$html .= '<div class="snscs-level__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' . $pct . '"><span style="width:' . $pct . '%"></span></div>';
-			$html .= '<p class="snscs-level__xp">' . esc_html( number_format_i18n( $xp ) . 'ポイント' . ( null === $next ? '' : '（次のレベルまで' . number_format_i18n( $next - $xp ) . '）' ) ) . '</p>';
+			$html .= '<div class="snscs-level__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' . $info['pct'] . '"><span style="width:' . $info['pct'] . '%"></span></div>';
+			$html .= '<p class="snscs-level__xp">' . esc_html( '経験値 ' . number_format_i18n( $info['xp'] ) . '（次のレベルまで' . number_format_i18n( $info['next'] - $info['xp'] ) . '）' ) . '</p>';
 			$html .= '<p class="snscs-level__streak">🔥 ' . esc_html( $streak ? $streak . '日連続' : '今日から連続記録をはじめよう' ) . '<small>（最高' . (int) get_user_meta( $user_id, self::META_BEST, true ) . '日）</small></p>';
 		}
 		if ( $badges ) {
@@ -401,11 +370,13 @@ class SNSCS_Gamify {
 		$have   = self::earned( $user_id );
 		$link   = self::invite_url( $user_id );
 		$site   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$text   = '「' . $site . '」で好きなSNS発信者を見つけています。いっしょに使ってみませんか？';
-		echo self::summary_html( $user_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+		// 紹介で経験値がもらえるので、投稿には「#PR」を付ける（ステルスマーケティングにならないように）。
+		$text   = '#PR 「' . $site . '」で好きなSNS発信者を見つけています。いっしょに使ってみませんか？';
+		SNSCS_Game::render_member( $user_id );
 		?>
-		<h3>友だちを招待する</h3>
-		<p>この招待リンクから登録した友だちが使い始めると、あなたに50ポイント、友だちに20ポイント。いま<?php echo (int) self::invited_count( $user_id ); ?>人を招待しています。</p>
+		<h3>友だちを紹介する</h3>
+		<p>この紹介リンクから登録した友だちが使い始めると、あなたに経験値300、友だちに経験値20。紹介した友だちが発信者として掲載されると、経験値1000。いま<?php echo (int) self::invited_count( $user_id ); ?>人を紹介しています。</p>
+		<p class="snscs-help">紹介の投稿には「#PR」を付けてください（紹介で経験値がもらえるため、広告であることを示す決まりがあります）。下のボタンの文には、はじめから入っています。</p>
 		<p><input class="snscs-input" type="text" readonly value="<?php echo esc_attr( $link ); ?>" onclick="this.select();"></p>
 		<div class="snscs-share">
 			<a class="snscs-share__button snscs-share__button--line" href="<?php echo esc_url( 'https://social-plugins.line.me/lineit/share?' . http_build_query( array( 'url' => $link ) ) ); ?>" target="_blank" rel="noopener">LINEで送る</a>

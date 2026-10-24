@@ -93,7 +93,7 @@ class SNSCS_Session {
 
 	/**
 	 * ログイン中の人の名前と札（ログインしていなければ null）。
-	 * 札は、発信者も読者も同じ「メンバー」。創設メンバーは「ノワール」などのランク名と、小さな徽章。
+	 * 札は、発信者も読者も同じ「セイント」（1.26。会員の呼び名）。創設メンバーは「ノワール」などのランク名と、小さな徽章。
 	 *
 	 * @return array{name:string,role:string,design:string,no:int}|null
 	 */
@@ -117,7 +117,7 @@ class SNSCS_Session {
 		}
 		return array(
 			'name'   => '' !== trim( (string) $name ) ? $name : 'ゲスト',
-			'role'   => $design ? SNSCS_Founder::name( $design ) : 'メンバー',
+			'role'   => $design ? SNSCS_Founder::name( $design ) : 'セイント',
 			'design' => $design,
 			'no'     => (int) $no,
 		);

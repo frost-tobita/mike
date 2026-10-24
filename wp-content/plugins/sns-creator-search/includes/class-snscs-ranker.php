@@ -152,6 +152,12 @@ class SNSCS_Ranker {
 				$final[ $id ] *= $boost;
 			}
 		}
+		// 1.26: カードランクと貢献度（SNSCS_Game）で、最大6%の加点。
+		foreach ( SNSCS_Game::search_boosts() as $id => $boost ) {
+			if ( isset( $final[ $id ] ) ) {
+				$final[ $id ] *= (float) $boost;
+			}
+		}
 		return $final;
 	}
 

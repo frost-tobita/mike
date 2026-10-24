@@ -885,7 +885,7 @@ class SNSCS_Social {
 			'foryou'    => 'おすすめ',
 			'timeline'  => 'フォロー中の新着',
 			'lists'     => '推しリスト',
-			'level'     => 'レベル・招待',
+			'level'     => '冒険の記録・紹介',
 			'bookmarks' => 'ブックマーク',
 			'likes'     => 'いいねした記事',
 			'reposts'   => 'リポストした記事',

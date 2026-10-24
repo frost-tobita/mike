@@ -514,6 +514,19 @@ class SNSCS_Portal_Top {
 			. '<p class="snscs-pt-founders__first"><em>FIRST 10 ★</em> ' . esc_html( $first ) . '</p></section>';
 	}
 
+	/**
+	 * 2の2. セイントの冒険（1.26）: ボーナスイベント・ボス戦・ランクのお知らせが出ているときだけ、細い帯で知らせる。
+	 */
+	private static function game_banner() {
+		$events = SNSCS_Game::events_html( true );
+		if ( '' === $events ) {
+			return '';
+		}
+		$more = SNSCS_Social::member_url( array( 'tab' => 'level' ) );
+		return '<section class="snscs-pt-game" aria-label="セイントの冒険"><p class="snscs-pt-game__tag">SAINT QUEST</p>' . $events
+			. ( $more ? '<a class="snscs-pt-game__more" href="' . esc_url( is_user_logged_in() ? $more : snscs_portal_url() ) . '">' . ( is_user_logged_in() ? '冒険の記録を見る' : 'セイントになって参加する（無料）' ) . '</a>' : '' ) . '</section>';
+	}
+
 	/** 3. SNSから探す */
 	private static function sns_cards() {
 		$counts = get_transient( 'snscs_pt_sns_counts' );
@@ -598,7 +611,7 @@ class SNSCS_Portal_Top {
 	}
 
 	private static function center_column() {
-		$out = self::hero() . self::founders_banner() . self::sns_cards();
+		$out = self::hero() . self::founders_banner() . self::game_banner() . self::sns_cards();
 
 		// 注目の発信者（総合点の上位）。
 		$top = SNSCS_Search::run( array( 'sort' => 'recommended', 'per_page' => 6 ) );
@@ -689,6 +702,7 @@ class SNSCS_Portal_Top {
 	private static function mypage_box( array $who, $creator ) {
 		$user_id = get_current_user_id();
 		$design  = $who['design'];
+		$rank    = SNSCS_Game::rank_of( $user_id );
 		$since   = mysql2date( 'Y.m', get_userdata( $user_id )->user_registered );
 		if ( $design ) {
 			$first = SNSCS_Founder::is_first( $who['no'] );
@@ -699,29 +713,29 @@ class SNSCS_Portal_Top {
 				. '<p class="snscs-mycard__since">SINCE ' . esc_html( $since ) . '</p></div>'
 				. '<span class="snscs-mycard__medal">' . SNSCS_Founder::medal_html( $who['no'], $design, '' ) . '</span></div>';
 		} else {
-			$card = '<div class="snscs-mycard snscs-mycard--member">'
-				. '<div class="snscs-mycard__text"><p class="snscs-mycard__eyebrow">FOLLOFIND</p>'
-				. '<p class="snscs-mycard__rank">メンバー</p>'
-				. '<p class="snscs-mycard__no">MEMBER</p>'
+			// 1.26: 創設メンバーでない人は、カードランクの色のカード（セイント）。
+			$card = '<div class="snscs-mycard snscs-mycard--member snscs-mycard--' . esc_attr( SNSCS_Game::rank_keys()[ $rank ] ) . '">'
+				. '<div class="snscs-mycard__text"><p class="snscs-mycard__eyebrow">FOLLOFIND SAINT</p>'
+				. '<p class="snscs-mycard__rank">' . esc_html( SNSCS_Game::rank_name( $rank ) ) . '</p>'
+				. '<p class="snscs-mycard__no">SAINT</p>'
 				. '<p class="snscs-mycard__since">SINCE ' . esc_html( $since ) . '</p></div>'
 				. '<span class="snscs-mycard__logo" aria-hidden="true"><img src="' . esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ) . '" alt="" width="56" height="56"></span></div>';
 		}
 
-		// レベル（ポイントで上がる。読者・発信者どちらも）
-		$xp    = (int) get_user_meta( $user_id, SNSCS_Gamify::META_XP, true );
-		$lv    = SNSCS_Gamify::level( $xp );
-		$next  = SNSCS_Gamify::LEVELS[ $lv + 1 ][0] ?? null;
-		$from  = SNSCS_Gamify::LEVELS[ $lv ][0];
-		$pct   = null === $next ? 100 : (int) floor( ( $xp - $from ) / max( 1, $next - $from ) * 100 );
-		$level = '<div class="snscs-mylevel"><p><strong>Lv.' . (int) $lv . '</strong> ' . esc_html( SNSCS_Gamify::LEVELS[ $lv ][1] )
-			. '<span>' . esc_html( null === $next ? number_format_i18n( $xp ) . 'pt' : 'あと' . number_format_i18n( $next - $xp ) . 'pt' ) . '</span></p>'
-			. '<div class="snscs-mylevel__bar"><span style="width:' . max( 2, $pct ) . '%"></span></div></div>';
+		// レベル（上限なし）・カードランク・貢献度ゲージ・イベント
+		$info   = SNSCS_Game::level_info( $user_id );
+		$level  = '<div class="snscs-mylevel"><p><strong>Lv.' . (int) $info['level'] . '</strong> ' . esc_html( $info['title'] )
+			. '<span class="snscs-mylevel__next">' . esc_html( 'あと' . number_format_i18n( $info['next'] - $info['xp'] ) ) . '</span></p>'
+			. '<div class="snscs-mylevel__bar"><span style="width:' . max( 2, $info['pct'] ) . '%"></span></div>'
+			. '<p class="snscs-mylevel__meta">' . ( $design ? '<span>カードランク <strong>' . esc_html( SNSCS_Game::rank_name( $rank ) ) . '</strong></span>' : '' ) . '<span>貢献度 ' . SNSCS_Game::stars_html( $user_id ) . '</span></p></div>';
+		$events = SNSCS_Game::events_html( true );
 
 		$is_creator = snscs_is_creator_user();
 		$home       = $is_creator ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() );
 		$body       = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__state">ログイン中</span></p>'
-			. $card . $level
-			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>';
+			. $card . $level . $events
+			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>'
+			. ( SNSCS_Social::member_url() ? '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'level' ) ) ) . '">冒険の記録を見る</a>' : '' );
 		if ( $creator && 'publish' === get_post_status( $creator ) ) {
 			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
 		}

@@ -8281,7 +8281,7 @@ body.snscs-portal-body .snscs-mylevel p strong {
 	color: #1B27B0;
 }
 
-body.snscs-portal-body .snscs-mylevel p span {
+body.snscs-portal-body .snscs-mylevel p span.snscs-mylevel__next {
 	margin-left: auto;
 	color: #6b7280;
 	font-size: 11px;
@@ -8304,4 +8304,274 @@ body.snscs-portal-body .snscs-mylevel p span {
 body.snscs-portal-body .snscs-mypage__up {
 	font-size: 12px;
 	line-height: 1.5;
+}
+
+/* 1.26: セイントの冒険（カードランクの色・レベル・貢献度ゲージ・イベント） */
+.snscs-mycard--white { border-color: #d9dee6; background: linear-gradient(135deg, #ffffff, #e9edf3); color: #2b3240; }
+.snscs-mycard--blue { background: radial-gradient(circle at 85% 20%, rgba(69, 227, 156, 0.35), transparent 45%), linear-gradient(135deg, #2020D2, #1B27B0 55%, #0c1270); color: #fff; }
+.snscs-mycard--bronze { border-color: #c98a55; background: linear-gradient(135deg, #8a5a33, #4a2c15 60%, #2a170a); color: #fbe7d3; }
+.snscs-mycard--silver { border-color: #d6dbe2; background: linear-gradient(135deg, #e9edf2, #9aa3ae 60%, #5d6470); color: #10151d; }
+.snscs-mycard--gold { border-color: #e7cd85; background: linear-gradient(135deg, #f6e3a3, #c99a3b 55%, #6e4e14); color: #2a1c05; }
+.snscs-mycard--diamond { border-color: #bfe9ff; background: radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.7), transparent 40%), linear-gradient(135deg, #d9f3ff, #7cc8f0 55%, #2f6f9e); color: #08243a; }
+.snscs-mycard--legend { border-color: #e7cd85; background: radial-gradient(circle at 80% 20%, rgba(231, 205, 133, 0.45), transparent 45%), linear-gradient(135deg, #2b0f3a, #120419 60%, #000); color: #f5e6c4; }
+.snscs-mycard--secret1, .snscs-mycard--secret2 { border-color: #ffffff; background: conic-gradient(from 200deg at 70% 40%, #ff9ad5, #9ad0ff, #a8ffd0, #fff3a6, #ff9ad5); color: #10151d; }
+body.snscs-portal-body .snscs-mycard--white p.snscs-mycard__eyebrow,
+body.snscs-portal-body .snscs-mycard--silver p.snscs-mycard__eyebrow,
+body.snscs-portal-body .snscs-mycard--diamond p.snscs-mycard__eyebrow { color: #4b5568; }
+body.snscs-portal-body .snscs-mycard--gold p.snscs-mycard__eyebrow { color: #5c4210; }
+body.snscs-portal-body .snscs-mycard--bronze p.snscs-mycard__eyebrow { color: #f0c79c; }
+body.snscs-portal-body .snscs-mycard--legend p.snscs-mycard__eyebrow { color: #e7cd85; }
+
+body.snscs-portal-body p.snscs-mylevel__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin: 6px 0 0;
+	color: #4b5568;
+	font-size: 12px;
+}
+
+body.snscs-portal-body p.snscs-mylevel__meta > span {
+	margin: 0;
+	color: inherit;
+	font-size: inherit;
+}
+
+.snscs-gauge {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	white-space: nowrap;
+}
+
+body.snscs-portal-body .snscs-gauge__stars,
+.snscs-gauge__stars {
+	color: #e0a72e;
+	letter-spacing: 1px;
+}
+
+body.snscs-portal-body .snscs-gauge__stars span,
+.snscs-gauge__stars span {
+	color: #d6dbe4;
+}
+
+.snscs-gauge__trend {
+	font-weight: 700;
+}
+
+.snscs-gauge__trend.is-up { color: #15a46a; }
+.snscs-gauge__trend.is-down { color: #d1495b; }
+.snscs-gauge__trend.is-flat { color: #8a93a3; }
+.snscs-gauge.is-empty { color: #9aa3ae; }
+
+body.snscs-portal-body ul.snscs-events,
+.snscs-events {
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+body.snscs-portal-body .snscs-events li.snscs-event,
+.snscs-event {
+	margin: 0 0 6px;
+	padding: 8px 10px;
+	border-left: 3px solid #2020D2;
+	border-radius: 6px;
+	background: #f4f6fb;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+body.snscs-portal-body .snscs-event strong,
+.snscs-event strong {
+	display: block;
+	font-size: 13px;
+}
+
+body.snscs-portal-body .snscs-event > span,
+.snscs-event > span {
+	display: block;
+	color: #6b7280;
+}
+
+body.snscs-portal-body .snscs-events li.snscs-event--bonus, .snscs-event--bonus { border-color: #e0a72e; background: #fff8e6; }
+body.snscs-portal-body .snscs-events li.snscs-event--boss, .snscs-event--boss { border-color: #d1495b; background: #fff1f3; }
+body.snscs-portal-body .snscs-events li.snscs-event--carry, .snscs-event--carry { border-color: #8e44ad; background: #f6effa; }
+body.snscs-portal-body .snscs-events li.snscs-event--rumor, .snscs-event--rumor { border-color: #1b1b2f; background: #f1f1f6; font-style: italic; }
+body.snscs-portal-body .snscs-events li.snscs-event--news, .snscs-event--news { border-color: #45E39C; background: #effcf6; }
+
+.snscs-event__bar {
+	display: block;
+	overflow: hidden;
+	height: 6px;
+	margin: 4px 0;
+	border-radius: 999px;
+	background: #f6d4da;
+}
+
+.snscs-event__bar span {
+	display: block;
+	height: 100%;
+	background: linear-gradient(90deg, #d1495b, #ff8a5c);
+}
+
+/* トップページの帯 */
+body.snscs-portal-body .snscs-pt-game {
+	margin: 0;
+	padding: 14px 16px 10px;
+	border-radius: 14px;
+	background: linear-gradient(135deg, #0c1270, #1B27B0);
+	color: #fff;
+}
+
+body.snscs-portal-body p.snscs-pt-game__tag {
+	margin: 0 0 8px;
+	color: #a8f0cc;
+	font-size: 11px;
+	letter-spacing: 0.24em;
+}
+
+body.snscs-portal-body .snscs-pt-game .snscs-events li.snscs-event {
+	background: rgba(255, 255, 255, 0.95);
+	color: #1d2433;
+}
+
+.snscs-portal-body .snscs-pt-game__more {
+	display: inline-block;
+	margin: 2px 0 4px;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 700;
+	text-decoration: underline;
+}
+
+/* 冒険の記録（会員ページ） */
+.snscs-quest__head {
+	margin: 0 0 16px;
+	padding: 16px;
+	border-radius: 14px;
+	background: #f4f6fb;
+}
+
+.snscs-quest__lv {
+	margin: 0 0 6px;
+	font-size: 18px;
+}
+
+.snscs-quest__lv strong {
+	color: #1B27B0;
+	font-size: 24px;
+}
+
+.snscs-quest__meta {
+	margin: 8px 0 0;
+	font-size: 13px;
+}
+
+.snscs-quest__titles span {
+	display: inline-block;
+	margin: 6px 6px 0 0;
+	padding: 2px 10px;
+	border: 1px solid #c9a24a;
+	border-radius: 999px;
+	background: linear-gradient(135deg, #2a261b, #050505);
+	color: #f0d991;
+	font-size: 12px;
+}
+
+.snscs-quest__total {
+	color: #1B27B0;
+	font-size: 1.3em;
+}
+
+.snscs-quest__table {
+	width: 100%;
+	margin: 0 0 16px;
+	border-collapse: collapse;
+}
+
+.snscs-quest__table th,
+.snscs-quest__table td {
+	padding: 8px 4px;
+	border-bottom: 1px solid #eef0f5;
+	text-align: left;
+}
+
+.snscs-quest__table td {
+	font-weight: 700;
+	text-align: right;
+}
+
+.snscs-quest__table small {
+	margin-left: 6px;
+	color: #6b7280;
+	font-weight: 400;
+}
+
+.snscs-ladder {
+	margin: 0 0 8px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-ladder__step {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 0 0 4px;
+	padding: 8px 12px;
+	border-radius: 8px;
+	background: #f4f6fb;
+	color: #4b5568;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+}
+
+.snscs-ladder__step em {
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #2020D2;
+	color: #fff;
+	font-size: 11px;
+	font-style: normal;
+}
+
+.snscs-ladder__step.is-now { outline: 2px solid #2020D2; background: #eef0ff; color: #1B27B0; }
+.snscs-ladder__step.is-done { opacity: 0.55; }
+.snscs-ladder__step--secret { background: repeating-linear-gradient(135deg, #1b1b2f, #1b1b2f 8px, #24243d 8px, #24243d 16px); color: #c9cfe0; }
+.snscs-ladder__step--white { border-left: 6px solid #d9dee6; }
+.snscs-ladder__step--blue { border-left: 6px solid #2020D2; }
+.snscs-ladder__step--bronze { border-left: 6px solid #a8693a; }
+.snscs-ladder__step--silver { border-left: 6px solid #9aa3ae; }
+.snscs-ladder__step--gold { border-left: 6px solid #c99a3b; }
+.snscs-ladder__step--diamond { border-left: 6px solid #7cc8f0; }
+.snscs-ladder__step--legend { border-left: 6px solid #4b1866; }
+
+.snscs-ladder__bar {
+	flex: 1 0 100%;
+	overflow: hidden;
+	height: 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.4);
+}
+
+.snscs-ladder__bar span {
+	display: block;
+	height: 100%;
+	background: #45E39C;
+}
+
+.snscs-quest__how {
+	margin: 16px 0;
+	font-size: 13px;
+}
+
+.snscs-level__rank {
+	margin-left: 4px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #eef0ff;
+	color: #1B27B0;
+	font-size: 11px;
 }
