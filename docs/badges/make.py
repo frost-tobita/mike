@@ -271,7 +271,7 @@ if __name__ == '__main__':
     fonts = {}
     for key, file in (('light', 'Jura-Light.ttf'), ('medium', 'Jura-Medium.ttf')):
         glyphs = {}
-        for ch in 'FOLIND·Nº 0123456789':
+        for ch in 'FOLIND·RST★Nº 0123456789':
             d, w, upm = glyph(file, ch)
             glyphs[ch] = {'d': d, 'w': w}
         fonts[key] = {'upm': upm, 'glyphs': glyphs}

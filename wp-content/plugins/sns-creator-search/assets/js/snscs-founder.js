@@ -89,6 +89,20 @@
 			ctx.font = '400 116px ' + SERIF;
 			ctx.fillText( d.serial, x - 4, 300 );
 
+			// Nº 001〜010: 番号の右上に小さく「FIRST 10 ★」の札。
+			if ( d.first ) {
+				var tx = x - 4 + ctx.measureText( d.serial ).width + 22;
+				ctx.font = '600 15px ' + SANS;
+				var tw = 0;
+				Array.prototype.forEach.call( 'FIRST 10 ★', function ( ch ) {
+					tw += ctx.measureText( ch ).width + 3;
+				} );
+				ctx.strokeStyle = d.color;
+				ctx.lineWidth = 1.5;
+				ctx.strokeRect( tx, 212, tw + 22, 32 );
+				spaced( ctx, 'FIRST 10 ★', tx + 12, 234, 3 );
+			}
+
 			ctx.fillStyle = d.color;
 			ctx.globalAlpha = 0.7;
 			ctx.fillRect( x, 334, 64, 2 );

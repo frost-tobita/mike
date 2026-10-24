@@ -143,6 +143,47 @@ class SNSCS_Founder {
 		return $paths;
 	}
 
+	public static function is_first( $no ) {
+		return (int) $no >= 1 && (int) $no <= 10;
+	}
+
+	/**
+	 * まっすぐ1行、中央そろえで文字を並べる。$base は文字の下の線。
+	 */
+	public static function line( $text, $font, $size, $tracking, $cx, $base ) {
+		$fonts = json_decode( (string) file_get_contents( SNSCS_DIR . 'assets/badges/founder-serial.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$g     = $fonts[ $font ];
+		$sc    = $size / $g['upm'];
+		$chars = preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY );
+		$total = 0;
+		foreach ( $chars as $ch ) {
+			$total += ( $g['glyphs'][ $ch ]['w'] ?? 0 ) * $sc + $tracking;
+		}
+		$x     = $cx - ( $total - $tracking ) / 2;
+		$paths = '';
+		foreach ( $chars as $ch ) {
+			$glyph = $g['glyphs'][ $ch ] ?? array( 'd' => '', 'w' => 0 );
+			if ( '' !== $glyph['d'] ) {
+				$paths .= sprintf( '<path d="%s" transform="translate(%.2f %.2f) scale(%.5f %.5f)"/>', esc_attr( $glyph['d'] ), $x, $base, $sc, -$sc );
+			}
+			$x += $glyph['w'] * $sc + $tracking;
+		}
+		return $paths;
+	}
+
+	/**
+	 * 五つの角の星。
+	 */
+	public static function star( $cx, $cy, $r ) {
+		$points = array();
+		for ( $i = 0; $i < 10; $i++ ) {
+			$a        = deg2rad( -90 + $i * 36 );
+			$rr       = $i % 2 ? $r * 0.42 : $r;
+			$points[] = round( $cx + $rr * cos( $a ), 2 ) . ',' . round( $cy + $rr * sin( $a ), 2 );
+		}
+		return '<polygon points="' . implode( ' ', $points ) . '"/>';
+	}
+
 	/**
 	 * 記念メダル（写真風の画像）の上に重ねる、下の弧の文字（SVG）。金属の浮き彫りに見えるよう、影と光を重ねる。
 	 */
@@ -157,6 +198,10 @@ class SNSCS_Founder {
 		);
 		list( $r, $size, $tracking, $metal, $engraved ) = $styles[ $design ];
 		$paths = self::arc( 'FOLLOFIND · Nº ' . self::serial( $no ), 'medium', $size, $tracking, $r, 320 );
+		if ( self::is_first( $no ) ) {
+			// Nº 001〜010: ロゴの下に「FIRST 10」と小さな星。
+			$paths .= self::line( 'FIRST 10', 'medium', 19, 6, 320, 497 ) . self::star( 320, 518, 6 );
+		}
 		$id    = 'snscs-fm-' . $design;
 		return '<svg class="snscs-founder__medal-text" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640" aria-hidden="true">'
 			. '<defs><linearGradient id="' . $id . '" gradientUnits="userSpaceOnUse" x1="0" y1="500" x2="0" y2="585">'
@@ -242,6 +287,7 @@ class SNSCS_Founder {
 			'date'   => get_the_date( 'Y.m.d', $creator_id ),
 			'site'   => (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ),
 			'file'   => 'follofind-founder-' . self::serial( $no ) . '.png',
+			'first'  => self::is_first( $no ),
 		);
 		wp_enqueue_script( 'snscs-founder', SNSCS_URL . 'assets/js/snscs-founder.js', array(), SNSCS_VERSION, true );
 		return '<div class="snscs-founder snscs-founder--' . esc_attr( $design ) . '">'
