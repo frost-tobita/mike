@@ -421,7 +421,7 @@ class SNSCS_Submissions {
 			$data['stores'][ $key ] = $handle;
 		}
 
-		// マイリンクのID（/@ID）。URLに出るので、ほかの項目と同じく審査する。
+		// FolloLinkのID（/@ID）。URLに出るので、ほかの項目と同じく審査する。
 		$linkname = isset( $raw['linkname'] ) ? strtolower( trim( sanitize_text_field( $raw['linkname'] ) ) ) : '';
 		$linkname = ltrim( $linkname, '@' );
 		if ( '' !== $linkname ) {
@@ -552,7 +552,7 @@ class SNSCS_Submissions {
 			$links[] = $link['label'] . '（' . $link['url'] . '）';
 		}
 		$rows['その他のリンク'] = $links ? implode( "\n", $links ) : '（なし）';
-		$rows['マイリンクのID']  = '' !== $data['linkname'] ? '@' . $data['linkname'] : '（なし）';
+		$rows['FolloLinkのID']  = '' !== $data['linkname'] ? '@' . $data['linkname'] : '（なし）';
 
 		return $rows;
 	}

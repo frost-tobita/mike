@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SNS Creator Search
  * Description:       SNSアカウントを登録し、ジャンル・地域・SNS・フォロワー数から発信者を検索できるようにするプラグイン。
- * Version:           1.27.3
+ * Version:           1.27.4
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SNS Creator Search Project
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SNSCS_VERSION', '1.27.3' );
-define( 'SNSCS_DB_VERSION', '30' );
+define( 'SNSCS_VERSION', '1.27.4' );
+define( 'SNSCS_DB_VERSION', '31' );
 define( 'SNSCS_FILE', __FILE__ );
 define( 'SNSCS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SNSCS_URL', plugin_dir_url( __FILE__ ) );
@@ -206,6 +206,8 @@ function snscs_install() {
 	SNSCS_QA::install();
 	SNSCS_Gamify::install();
 	SNSCS_Game::install();
+	// ページのタイトルの書き換えは、WordPress の準備が整ってから（init）。更新の直後（plugins_loaded）だと投稿の仕組みが動かない。
+	update_option( 'snscs_retitle_pages', 1, false );
 	SNSCS_Rankings::install();
 	SNSCS_Newsletter::install();
 	SNSCS_Inquiries::install();
@@ -244,6 +246,7 @@ function snscs_maybe_upgrade() {
 }
 
 add_action( 'plugins_loaded', 'snscs_maybe_upgrade' );
+add_action( 'init', array( 'SNSCS_Hub', 'maybe_retitle_pages' ), 99 );
 add_action( 'init', array( 'SNSCS_Post_Types', 'register' ) );
 
 SNSCS_Admin::init();

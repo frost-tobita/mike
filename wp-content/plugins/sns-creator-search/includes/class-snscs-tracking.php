@@ -121,7 +121,7 @@ class SNSCS_Tracking {
 	}
 
 	/**
-	 * スクリプトに渡す設定（マイリンクのページのように、テーマを使わないページでも使う）。
+	 * スクリプトに渡す設定（FolloLinkのページのように、テーマを使わないページでも使う）。
 	 */
 	public static function config( $creator_id, $kind ) {
 		$hour = (int) floor( time() / HOUR_IN_SECONDS );
@@ -178,7 +178,7 @@ class SNSCS_Tracking {
 				self::record_dwell( $creator_id, $visitor, (int) $request->get_param( 's' ) );
 			} elseif ( 'out' === $type ) {
 				self::record_out( $creator_id, $visitor );
-				// どのリンクが押されたか（マイリンクの分析用）。
+				// どのリンクが押されたか（FolloLinkの分析用）。
 				SNSCS_Biolink::record_click( $creator_id, (string) $request->get_param( 'l' ) );
 			} elseif ( 'fav' === $type ) {
 				self::record_fav( $creator_id, $visitor );

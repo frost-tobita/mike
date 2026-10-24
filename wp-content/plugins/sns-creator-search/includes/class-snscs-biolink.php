@@ -1,6 +1,6 @@
 <?php
 /**
- * マイリンク（SNSのプロフィール欄に貼る「リンクまとめ」ページ）。
+ * FolloLink（SNSのプロフィール欄に貼る「リンクまとめ」ページ）。
  *
  *   /@ID  （IDは発信者が決める。審査あり。決めるまでは紹介コードで /@紹介コード）
  *
@@ -8,14 +8,14 @@
  *   最新の記事・お仕事の相談を大きなボタンで並べる。デザインは6種類から選べる（選ぶだけなので審査なし）
  * - 開かれたら紹介リンク流入として数え（表示順位に効く）、閲覧・滞在時間・リンクのクリックも数える
  * - どのリンクが何回押されたかを、発信者のマイページに表示する
- * - ページの下に「ほかの発信者を探す」「あなたもマイリンクを作る（無料）」を出し、サイトへの入口にする
+ * - ページの下に「ほかの発信者を探す」「あなたもFolloLinkを作る（無料）」を出し、サイトへの入口にする
  *   （後者は発信者の招待リンクなので、登録されれば招待として数える）
  * - 1.16: いちばん見てほしいリンクを上に大きく出す（「新着」などの札は選ぶだけ）、ボタンの形、受賞・順位のバッジ、
  *   似ている発信者（発信者が消せる）、どのSNSから来たか（?s=ig のような印、無ければ参照元）と開かれた数・押された率、
  *   日本語以外の閲覧者には英語の表示（英訳があれば紹介文も英語。SNSCS_English）
  * - 1.17: 名刺・チラシ用のQRコード（SNSCS_QR。?s=qr で数える）、読者が「このサイトでフォロー」（未登録なら登録して戻る）、
- *   シェアボタン、ProfilePage の構造化データ、IDを決めた人のマイリンクをサイトマップへ、
- *   週に1回の成績のお知らせと、まだ使っていない人への案内、紹介ページの「今週よく見られたマイリンク」、
+ *   シェアボタン、ProfilePage の構造化データ、IDを決めた人のFolloLinkをサイトマップへ、
+ *   週に1回の成績のお知らせと、まだ使っていない人への案内、紹介ページの「今週よく見られたFolloLink」、
  *   マイページからXやThreadsにそのまま投稿できるボタン
  */
 
@@ -125,16 +125,16 @@ class SNSCS_Biolink {
 	public static function validate_name( $name, $creator_id = 0 ) {
 		global $wpdb;
 		if ( ! preg_match( '/^[a-z0-9_-]{3,' . self::MAX_NAME . '}$/', $name ) ) {
-			return 'マイリンクのIDは、半角英数字・ハイフン・アンダーバーで3〜30文字にしてください。';
+			return 'FolloLinkのIDは、半角英数字・ハイフン・アンダーバーで3〜30文字にしてください。';
 		}
 		if ( in_array( $name, self::reserved(), true ) ) {
-			return 'そのマイリンクのIDは使えません。別のIDにしてください。';
+			return 'そのFolloLinkのIDは使えません。別のIDにしてください。';
 		}
 		$taken = (int) $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s AND post_id <> %d LIMIT 1", self::META_NAME, $name, (int) $creator_id ) );
-		// 紹介コード（決める前のマイリンク）とも重ならないようにする。
+		// 紹介コード（決める前のFolloLink）とも重ならないようにする。
 		$code = SNSCS_Scores::creator_for_code( $name );
 		if ( $taken || ( $code && $code !== (int) $creator_id ) ) {
-			return 'そのマイリンクのIDは、ほかの発信者が使っています。別のIDにしてください。';
+			return 'そのFolloLinkのIDは、ほかの発信者が使っています。別のIDにしてください。';
 		}
 		return '';
 	}
@@ -155,6 +155,13 @@ class SNSCS_Biolink {
 	public static function name_for( $creator_id ) {
 		$name = (string) get_post_meta( $creator_id, self::META_NAME, true );
 		return '' !== $name ? $name : SNSCS_Scores::ref_code( $creator_id );
+	}
+
+	/**
+	 * 見せるためのアドレス（ブランドの表記）: FolloFind/@名前。実際に開くアドレスは url()。
+	 */
+	public static function display_address( $creator_id ) {
+		return 'FolloFind/@' . self::name_for( $creator_id );
 	}
 
 	public static function url( $creator_id ) {
@@ -266,7 +273,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * マイリンクが開かれたことを数える（同じ人の同じ日は1回）。どのSNSから来たかも数える。
+	 * FolloLinkが開かれたことを数える（同じ人の同じ日は1回）。どのSNSから来たかも数える。
 	 */
 	public static function record_visit( $creator_id ) {
 		global $wpdb;
@@ -336,7 +343,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * マイリンクからのフォロー（メンバーだけ。フォローしたら、マイリンクに戻る）。
+	 * FolloLinkからのフォロー（メンバーだけ。フォローしたら、FolloLinkに戻る）。
 	 */
 	public static function handle_follow() {
 		$creator_id = isset( $_POST['creator'] ) ? absint( $_POST['creator'] ) : 0;
@@ -352,7 +359,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * QRコード（?snscs_bio_qr=発信者ID&fmt=svg|png&dl=1）。中身はマイリンクのURL（?s=qr 付き）。
+	 * QRコード（?snscs_bio_qr=発信者ID&fmt=svg|png&dl=1）。中身はFolloLinkのURL（?s=qr 付き）。
 	 */
 	public static function qr_target( $creator_id ) {
 		return add_query_arg( 's', 'qr', self::url( $creator_id ) );
@@ -391,7 +398,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * 今週（直近7日）よく開かれたマイリンク。
+	 * 今週（直近7日）よく開かれたFolloLink。
 	 *
 	 * @return array<int,int> 発信者ID => 開いた人数
 	 */
@@ -415,7 +422,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * 週に1回（月曜の朝）: 先週の成績のお知らせと、まだマイリンクを使っていない人への案内。
+	 * 週に1回（月曜の朝）: 先週の成績のお知らせと、まだFolloLinkを使っていない人への案内。
 	 */
 	public static function weekly_notices() {
 		$week = current_time( 'o-W' );
@@ -453,7 +460,7 @@ class SNSCS_Biolink {
 			return null;
 		}
 		if ( 'biolink_nudge' === $row['type'] ) {
-			return array( 'text' => 'マイリンクをSNSのプロフィールに貼ってみませんか？開かれるほど、このサイトのおすすめ順でも上に出やすくなります。', 'url' => snscs_portal_url() . '#snscs-biolink' );
+			return array( 'text' => 'FolloLinkをSNSのプロフィールに貼ってみませんか？開かれるほど、このサイトのおすすめ順でも上に出やすくなります。', 'url' => snscs_portal_url() . '#snscs-biolink' );
 		}
 		$s = self::stats( $creator_id, 7 );
 		if ( ! $s['views'] ) {
@@ -461,13 +468,13 @@ class SNSCS_Biolink {
 		}
 		$top = $s['sources'] ? self::SOURCES[ array_search( max( $s['sources'] ), $s['sources'], true ) ] ?? '' : '';
 		return array(
-			'text' => sprintf( 'この1週間で、マイリンクが%d人に開かれ、リンクが%d回押されました。%s', $s['views'], $s['clicks'], '' !== $top ? 'いちばん多く来たのは「' . $top . '」からです。' : '' ),
+			'text' => sprintf( 'この1週間で、FolloLinkが%d人に開かれ、リンクが%d回押されました。%s', $s['views'], $s['clicks'], '' !== $top ? 'いちばん多く来たのは「' . $top . '」からです。' : '' ),
 			'url'  => snscs_portal_url() . '#snscs-biolink',
 		);
 	}
 
 	/**
-	 * サイトマップ（自分でIDを決めた人のマイリンク。使っている人のページだけ）。
+	 * サイトマップ（自分でIDを決めた人のFolloLink。使っている人のページだけ）。
 	 */
 	public static function sitemap_urls( $offset, $limit ) {
 		global $wpdb;
@@ -561,7 +568,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * /@ID を開いたとき: 数えて、マイリンクのページを出す。
+	 * /@ID を開いたとき: 数えて、FolloLinkのページを出す。
 	 */
 	public static function render() {
 		$name = get_query_var( self::QUERY_VAR );
@@ -623,7 +630,7 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * マイリンクのページ全体のHTML。
+	 * FolloLinkのページ全体のHTML。
 	 *
 	 * @param int        $creator_id 発信者。
 	 * @param array|null $tracking   計測の設定（本人・運営が見るときは null）。
@@ -932,7 +939,7 @@ class SNSCS_Biolink {
 			<p><a href="<?php echo esc_url( $search ); ?>"><?php echo esc_html( $l( $site . 'でほかの発信者を探す', 'Discover Japanese creators on ' . $site ) ); ?></a></p>
 		<?php endif; ?>
 		<?php if ( ! $english ) : ?>
-			<a class="bio__make" href="<?php echo esc_url( $join ); ?>">あなたもマイリンクを作る（無料）</a>
+			<a class="bio__make" href="<?php echo esc_url( $join ); ?>">あなたもFolloLinkを作る（無料）</a>
 		<?php endif; ?>
 	</footer>
 </main>
@@ -997,8 +1004,8 @@ class SNSCS_Biolink {
 
 	public static function faq() {
 		return array(
-			array( '本当に無料ですか？', 'はい。マイリンクの作成・デザインの変更・アクセスの分析まで、すべて無料です。' ),
-			array( 'lit.link や Linktree と何が違いますか？', 'マイリンクは、発信者を探せるサイトの中にあります。開かれた数がサイトのおすすめ順に反映されるので、マイリンクを貼るほど、このサイトでもあなたが見つかりやすくなります。' ),
+			array( '本当に無料ですか？', 'はい。FolloLinkの作成・デザインの変更・アクセスの分析まで、すべて無料です。' ),
+			array( 'lit.link や Linktree と何が違いますか？', 'FolloLinkは、発信者を探せるサイトの中にあります。開かれた数がサイトのおすすめ順に反映されるので、FolloLinkを貼るほど、このサイトでもあなたが見つかりやすくなります。' ),
 			array( 'どんなリンクを載せられますか？', 'X・Instagram・TikTok・YouTube・Threads などのSNS、note・Brain、ブログやお店のページなどです。いちばん見てほしいリンクを上に大きく出すこともできます。' ),
 			array( 'どのSNSから見られたか分かりますか？', 'はい。SNSごとのURLを貼ると、どのSNSから何人が来たか、どのリンクが何回押されたかを、マイページで確かめられます。毎週の成績もお知らせします。' ),
 			array( '名刺やチラシにも使えますか？', 'はい。マイページからQRコードの画像（PNG・印刷用のSVG）を保存できます。' ),
@@ -1012,7 +1019,7 @@ class SNSCS_Biolink {
 		wp_enqueue_style( 'snscs' );
 		$creator  = is_user_logged_in() ? SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) : 0;
 		$cta_url  = $creator ? snscs_portal_url() . '#snscs-biolink' : snscs_portal_url();
-		$cta      = $creator ? 'マイページでマイリンクを設定する' : '無料でマイリンクを作る';
+		$cta      = $creator ? 'マイページでFolloLinkを設定する' : '無料でFolloLinkを作る';
 		$examples = self::examples();
 		$week     = self::top_week( 10 );
 		$preview  = $examples ? add_query_arg( 'snscs_preview', 1, self::url( $examples[0] ) ) : '';
@@ -1029,7 +1036,7 @@ class SNSCS_Biolink {
 			array( '🏆', '受賞や順位のバッジ', 'アワードの受賞やジャンルでの順位が、自動でバッジになります。' ),
 			array( '🌏', '海外の人には英語で表示', '日本語以外の環境の人には、自動で英語の表示になります。' ),
 			array( '📱', 'QRコードで名刺やチラシにも', 'QRコードを保存して、名刺・チラシ・イベントのポップに。来た人数も数えます。' ),
-			array( '🔔', 'ファンがフォローできる', '読者はマイリンクからこのサイトでフォローでき、あなたの新しい記事のお知らせを受け取れます。' ),
+			array( '🔔', 'ファンがフォローできる', '読者はFolloLinkからこのサイトでフォローでき、あなたの新しい記事のお知らせを受け取れます。' ),
 		);
 		$ld = array(
 			'@context'   => 'https://schema.org',
@@ -1053,11 +1060,11 @@ class SNSCS_Biolink {
 					<p class="snscs-help">URLは「<?php echo esc_html( untrailingslashit( preg_replace( '#^https?://#', '', home_url( '/' ) ) ) ); ?>/@あなたのID」になります。</p>
 				</div>
 				<?php if ( $preview ) : ?>
-					<div class="snscs-mylink__phone" aria-hidden="true"><iframe src="<?php echo esc_url( $preview ); ?>" title="マイリンクの見本" loading="lazy" tabindex="-1"></iframe></div>
+					<div class="snscs-mylink__phone" aria-hidden="true"><iframe src="<?php echo esc_url( $preview ); ?>" title="FolloLinkの見本" loading="lazy" tabindex="-1"></iframe></div>
 				<?php endif; ?>
 			</section>
 
-			<h2>マイリンクでできること</h2>
+			<h2>FolloLink（フォロリンク）でできること</h2>
 			<ul class="snscs-mylink__features">
 				<?php foreach ( $features as $f ) : ?>
 					<li><span class="snscs-mylink__icon" aria-hidden="true"><?php echo esc_html( $f[0] ); ?></span><strong><?php echo esc_html( $f[1] ); ?></strong><span><?php echo esc_html( $f[2] ); ?></span></li>
@@ -1072,7 +1079,7 @@ class SNSCS_Biolink {
 			</ol>
 
 			<?php if ( count( $week ) >= 3 ) : ?>
-				<h2>今週よく見られたマイリンク</h2>
+				<h2>今週よく見られたFolloLink</h2>
 				<ol class="snscs-mylink__rank">
 					<?php $snscs_r = 0; ?>
 					<?php foreach ( $week as $id => $views ) : ?>
@@ -1082,7 +1089,7 @@ class SNSCS_Biolink {
 			<?php endif; ?>
 
 			<?php if ( $examples ) : ?>
-				<h2>人気の発信者のマイリンク</h2>
+				<h2>人気の発信者のFolloLink</h2>
 				<ul class="snscs-mylink__examples">
 					<?php foreach ( $examples as $id ) : ?>
 						<li><a href="<?php echo esc_url( self::url( $id ) ); ?>">
@@ -1135,15 +1142,16 @@ class SNSCS_Biolink {
 		$post_text = 'SNSやブログのリンクを1ページにまとめました。ぜひのぞいてみてください！';
 		?>
 		<section class="snscs-panel snscs-biolink" id="snscs-biolink">
-			<h2 class="snscs-panel__title">マイリンク（SNSのプロフィールに貼るリンク）</h2>
+			<h2 class="snscs-panel__title">FolloLink（フォロリンク）— SNSのプロフィールに貼るリンク</h2>
 			<p>あなたのSNS・note・Brain・ブログなどを1ページにまとめた、スマホ向けのページです。各SNSのプロフィール欄に貼ってください。開かれた数は紹介リンク流入として数え、<strong>おすすめ順で上に表示されやすくなります</strong>。日本語以外の環境の人には、自動で英語の表示になります。</p>
+			<p class="snscs-biolink__brand"><strong><?php echo esc_html( self::display_address( $creator_id ) ); ?></strong> <span class="snscs-help">（貼るときは下のアドレスをコピー）</span></p>
 			<div class="snscs-referral__link">
-				<label for="snscs-bio-link" class="screen-reader-text">マイリンク</label>
+				<label for="snscs-bio-link" class="screen-reader-text">FolloLink</label>
 				<input id="snscs-bio-link" type="text" readonly value="<?php echo esc_url( $url ); ?>" onclick="this.select();">
 				<button type="button" class="snscs-button snscs-button--primary" onclick="var i=document.getElementById('snscs-bio-link');i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);this.textContent='コピーしました';">コピー</button>
 			</div>
 			<p class="snscs-biolink__share">
-				<a class="snscs-button" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">マイリンクを見る</a>
+				<a class="snscs-button" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">FolloLinkを見る</a>
 				<a class="snscs-button snscs-biolink__x" href="<?php echo esc_url( 'https://x.com/intent/post?text=' . rawurlencode( $post_text ) . '&url=' . rawurlencode( add_query_arg( 's', 'x', $url ) ) ); ?>" target="_blank" rel="noopener">Xでお知らせ</a>
 				<a class="snscs-button snscs-biolink__threads" href="<?php echo esc_url( 'https://www.threads.net/intent/post?text=' . rawurlencode( $post_text . ' ' . add_query_arg( 's', 'th', $url ) ) ); ?>" target="_blank" rel="noopener">Threadsでお知らせ</a>
 			</p>
@@ -1151,11 +1159,11 @@ class SNSCS_Biolink {
 				<div class="snscs-biolink__qrimg"><?php echo SNSCS_QR::svg( self::qr_target( $creator_id ), 132 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 自分で作ったSVG。 ?></div>
 				<div>
 					<p><strong>QRコード</strong>（名刺・チラシ・イベントのポップに）</p>
-					<p class="snscs-help">読み取ると、あなたのマイリンクが開きます。QRコードから来た人は「どこから来たか」に別に数えます。</p>
+					<p class="snscs-help">読み取ると、あなたのFolloLinkが開きます。QRコードから来た人は「どこから来たか」に別に数えます。</p>
 					<p><a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'png', true ) ); ?>">画像（PNG）を保存</a> <a class="snscs-button" href="<?php echo esc_url( self::qr_url( $creator_id, 'svg', true ) ); ?>">印刷用（SVG）を保存</a></p>
 				</div>
 			</div>
-			<h3 class="snscs-sharekit__heading">素材（マイリンクを広める画像と文）</h3>
+			<h3 class="snscs-sharekit__heading">素材（FolloLinkを広める画像と文）</h3>
 			<p class="snscs-help">あなたのデザインの色・写真・QRコードで、自動で作ります。デザインを変えると、画像も新しくなります。</p>
 			<div class="snscs-biokit">
 				<?php foreach ( SNSCS_Biolink_Kit::types() as $kit_type => $kit ) : ?>
@@ -1181,7 +1189,7 @@ class SNSCS_Biolink {
 			</ul>
 
 			<?php if ( '' === $own ) : ?>
-				<p class="snscs-help">「@hanako」のような覚えやすいIDにしたいときは、下の掲載内容のフォームの「マイリンクのID」に入れて申請してください（審査のあとに切り替わります。今のURLもそのまま使えます）。</p>
+				<p class="snscs-help">「@hanako」のような覚えやすいIDにしたいときは、下の掲載内容のフォームの「FolloLinkのID」に入れて申請してください（審査のあとに切り替わります。今のURLもそのまま使えます）。</p>
 			<?php endif; ?>
 
 			<h3 class="snscs-sharekit__heading">直近30日の成績</h3>
@@ -1310,11 +1318,11 @@ class SNSCS_Biolink {
 							</select>
 						</label>
 					</fieldset>
-					<label class="snscs-biolink__check"><input type="checkbox" name="similar" value="1" <?php checked( self::shows_similar( $creator_id ) ); ?>> ページの下に「こちらの発信者もおすすめ」を出す（あなたも、ほかの人のマイリンクで紹介されやすくなります）</label>
-					<p class="snscs-bioed__save"><button type="submit" class="snscs-button snscs-button--primary">このデザインで保存</button> <span class="snscs-help">右の画面は見本です。保存するまで、公開中のマイリンクは変わりません。</span></p>
+					<label class="snscs-biolink__check"><input type="checkbox" name="similar" value="1" <?php checked( self::shows_similar( $creator_id ) ); ?>> ページの下に「こちらの発信者もおすすめ」を出す（あなたも、ほかの人のFolloLinkで紹介されやすくなります）</label>
+					<p class="snscs-bioed__save"><button type="submit" class="snscs-button snscs-button--primary">このデザインで保存</button> <span class="snscs-help">右の画面は見本です。保存するまで、公開中のFolloLinkは変わりません。</span></p>
 				</form>
 				<div class="snscs-bioed__preview" aria-label="プレビュー">
-					<div class="snscs-bioed__phone"><iframe src="<?php echo esc_url( $preview ); ?>" title="マイリンクのプレビュー" loading="lazy"></iframe></div>
+					<div class="snscs-bioed__phone"><iframe src="<?php echo esc_url( $preview ); ?>" title="FolloLinkのプレビュー" loading="lazy"></iframe></div>
 					<p class="snscs-help">プレビュー</p>
 				</div>
 			</div>
@@ -1334,7 +1342,7 @@ class SNSCS_Biolink {
 					<?php endforeach; ?>
 				</ul>
 			<?php else : ?>
-				<p class="snscs-help">まだありません。マイリンクを貼ると、どのリンクがよく押されたかがここに出ます。</p>
+				<p class="snscs-help">まだありません。FolloLinkを貼ると、どのリンクがよく押されたかがここに出ます。</p>
 			<?php endif; ?>
 		</section>
 		<?php

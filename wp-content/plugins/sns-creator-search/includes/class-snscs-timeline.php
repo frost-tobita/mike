@@ -2,11 +2,11 @@
 /**
  * トップページの「あなたへのおすすめ」（X・Yahoo!・note のように、下へ延々と続くタイムライン）。
  *
- * 1回分（1ページ）の並び: 記事2 → おすすめの発信者 → 記事2 → 広告 → 記事2 → マイリンク（または用語・質問）→ 記事2
+ * 1回分（1ページ）の並び: 記事2 → おすすめの発信者 → 記事2 → 広告 → 記事2 → FolloLink（または用語・質問）→ 記事2
  * - 記事は記事のおすすめ（SNSCS_Feed）の順。表示は記録して、学習に使う
  * - 最初の1回分はページに書き出し（JavaScript が無くても読める）、2回目からは下に近づいたら読み込む
  * - 出した記事・発信者は次から出さない（ブラウザから送ってもらう）。広告はランダム（広告枠「トップページ：コンテンツの間」）
- * - 記事が無くなっても、発信者・マイリンク・用語が続くかぎり続ける。最大30回分
+ * - 記事が無くなっても、発信者・FolloLink・用語が続くかぎり続ける。最大30回分
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -140,7 +140,7 @@ class SNSCS_Timeline {
 			$items .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $id ) ) . '">' . ( $photo ? '<img src="' . esc_url( $photo ) . '" alt="" width="52" height="52" loading="lazy">' : '<span class="snscs-pt-mylink__initial" aria-hidden="true">' . esc_html( mb_substr( $name, 0, 1 ) ) . '</span>' ) . '<span class="snscs-pt-mylink__name">' . esc_html( $name ) . '</span><span class="snscs-pt-mylink__id">@' . esc_html( SNSCS_Biolink::name_for( $id ) ) . '</span></a>';
 		}
 		$more = SNSCS_Hub::page_url( 'mylink' );
-		return self::block( 'mylinks', '<p class="snscs-tl__label">新着のマイリンク</p><div class="snscs-pt-mylinks">' . $items . '</div>' . ( $more ? '<p class="snscs-pt-mylinks__cta"><a href="' . esc_url( $more ) . '">あなたもマイリンクを作る（無料）</a></p>' : '' ) );
+		return self::block( 'mylinks', '<p class="snscs-tl__label">新着のFolloLink</p><div class="snscs-pt-mylinks">' . $items . '</div>' . ( $more ? '<p class="snscs-pt-mylinks__cta"><a href="' . esc_url( $more ) . '">あなたもFolloLinkを作る（無料）</a></p>' : '' ) );
 	}
 
 	/**

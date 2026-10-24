@@ -625,7 +625,7 @@ body{margin:0;background:linear-gradient(180deg,#1e3a8a,#5a2ab2);min-height:100v
 					<a class="snscs-share__button snscs-share__button--line" href="<?php echo esc_url( 'https://social-plugins.line.me/lineit/share?' . http_build_query( array( 'url' => $page ) ) ); ?>" target="_blank" rel="noopener">LINEで送る</a>
 					<a class="snscs-button" href="<?php echo esc_url( $img ); ?>" download="<?php echo esc_attr( $file ); ?>">画像を保存</a>
 					<label class="snscs-field"><span>投稿の文（コピーして使えます）</span><textarea rows="3" readonly onclick="this.select();"><?php echo esc_textarea( $text . "\n" . $page ); ?></textarea></label>
-					<p class="snscs-help">Instagram には「画像を保存」してから投稿し、プロフィールのリンク（マイリンク）で案内するのがおすすめです。</p>
+					<p class="snscs-help">Instagram には「画像を保存」してから投稿し、プロフィールのリンク（FolloLink）で案内するのがおすすめです。</p>
 				</div>
 			</div>
 		</section>

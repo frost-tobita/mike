@@ -1,6 +1,6 @@
 <?php
 /**
- * マイリンクのデザイン（テーマ・ボタン・書体・写真の枠・並べ方・自分の色・テンプレート）。
+ * FolloLinkのデザイン（テーマ・ボタン・書体・写真の枠・並べ方・自分の色・テンプレート）。
  *
  * 発信者ごとの設定は、投稿メタ _snscs_link_style に1つにまとめて保存する（前の版の _snscs_link_theme・_snscs_link_shape も読む）。
  *   theme  … テーマ（36種類＋自分の色。シンプル・かわいい・クール・ナチュラル・プロ）
@@ -236,7 +236,7 @@ class SNSCS_Biolink_Design {
 	}
 
 	/**
-	 * マイリンクのページのCSS（中の値はすべて決まった選択肢か、確かめた色）。
+	 * FolloLinkのページのCSS（中の値はすべて決まった選択肢か、確かめた色）。
 	 */
 	public static function css( array $style ) {
 		$t      = self::palette( $style );

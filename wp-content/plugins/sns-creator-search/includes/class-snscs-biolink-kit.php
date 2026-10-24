@@ -1,6 +1,6 @@
 <?php
 /**
- * マイリンクを広めるための素材（画像）。発信者のデザインの色で、名前・写真・QRコード入りで作る。
+ * FolloLinkを広めるための素材（画像）。発信者のデザインの色で、名前・写真・QRコード入りで作る。
  *
  *   ?snscs_bio_kit=発信者ID&type=story   … ストーリーズ用（1080×1920。Instagram・TikTok・LINE VOOM など）
  *   ?snscs_bio_kit=発信者ID&type=card    … シェア用カード（1200×630。X・Threads・Facebook の投稿に）
@@ -235,7 +235,7 @@ class SNSCS_Biolink_Kit {
 			$fit = SNSCS_Share::fit( $short, $font, 22, 540 );
 			imagettftext( $image, $fit[1], 0, 470, 420, $sub, $font, $fit[0] );
 			imagettftext( $image, 22, 0, 470, 470, $ink, $font, 'SNS・お仕事の相談は、QRコードから' );
-			imagettftext( $image, 18, 0, 470, 580, $sub, $font, $site . ' のマイリンク' );
+			imagettftext( $image, 18, 0, 470, 580, $sub, $font, $site . ' のFolloLink' );
 			return $image;
 		}
 

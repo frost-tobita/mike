@@ -47,7 +47,7 @@ class SNSCS_Hub {
 			'profile-check' => array( 'title' => 'SNSプロフィールAI診断', 'slug' => 'profile-check', 'shortcode' => '[sns_profile_check]', 'nav' => 'AIプロフィール診断' ),
 			'press'      => array( 'title' => 'プレス・データ', 'slug' => 'press', 'shortcode' => '[sns_press]', 'nav' => '' ),
 			'glossary'   => array( 'title' => 'SNS用語集', 'slug' => 'glossary', 'shortcode' => '[sns_glossary]', 'nav' => '用語集' ),
-			'mylink'     => array( 'title' => 'マイリンク（無料のリンクまとめ）', 'slug' => 'mylink', 'shortcode' => '[sns_mylink]', 'nav' => '' ),
+			'mylink'     => array( 'title' => 'FolloLink（フォロリンク）無料のリンクまとめ', 'slug' => 'mylink', 'shortcode' => '[sns_mylink]', 'nav' => '' ),
 			'embed'      => array( 'title' => 'ブログに貼れるランキング', 'slug' => 'blog-parts', 'shortcode' => '[sns_embed]', 'nav' => '' ),
 			'member'     => array( 'title' => 'メンバーページ', 'slug' => 'member', 'shortcode' => '[sns_member]', 'nav' => 'フォロー中' ),
 			'calendar'   => array( 'title' => 'SNS発信カレンダー', 'slug' => 'calendar', 'shortcode' => '[sns_calendar]', 'nav' => 'カレンダー' ),
@@ -59,6 +59,29 @@ class SNSCS_Hub {
 	/**
 	 * 作成済みの機能ページのID（無い・ゴミ箱のものは 0）。
 	 */
+	/**
+	 * 1.27.4: 呼び名を変えた機能ページのタイトルを、新しい名前にそろえる（運営者が自分で変えたタイトルはそのまま）。
+	 */
+	public static function maybe_retitle_pages() {
+		if ( get_option( 'snscs_retitle_pages' ) ) {
+			delete_option( 'snscs_retitle_pages' );
+			self::retitle_pages();
+		}
+	}
+
+	public static function retitle_pages() {
+		$old = array(
+			'mylink' => array( 'マイリンク（無料のリンクまとめ）' ),
+			'member' => array( '会員ページ' ),
+		);
+		foreach ( $old as $key => $titles ) {
+			$id = self::page_id( $key );
+			if ( $id && in_array( get_the_title( $id ), $titles, true ) ) {
+				wp_update_post( array( 'ID' => $id, 'post_title' => self::pages()[ $key ]['title'] ) );
+			}
+		}
+	}
+
 	public static function page_id( $key ) {
 		$ids = (array) get_option( self::PAGES, array() );
 		$id  = isset( $ids[ $key ] ) ? (int) $ids[ $key ] : 0;
@@ -412,7 +435,7 @@ class SNSCS_Hub {
 					<tr>
 						<th scope="row"><label for="founders_limit">創設メンバーの人数</label></th>
 						<td>先着 <input id="founders_limit" type="number" name="founders_limit" min="0" max="100000" value="<?php echo (int) $s['founders_limit']; ?>" class="small-text"> 人
-						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
+						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとFolloLink）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
 					</tr>
 					<tr>
 						<th scope="row">創設メンバーのランク</th>

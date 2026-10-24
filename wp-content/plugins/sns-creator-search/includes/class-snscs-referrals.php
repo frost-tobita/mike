@@ -114,7 +114,7 @@ class SNSCS_Referrals {
 	}
 
 	/**
-	 * 発信者が配ったリンク（紹介リンク・マイリンク）からの訪問を数える。
+	 * 発信者が配ったリンク（紹介リンク・FolloLink）からの訪問を数える。
 	 */
 	public static function count_visit( $creator_id, $code ) {
 		if ( self::should_count( $creator_id ) ) {

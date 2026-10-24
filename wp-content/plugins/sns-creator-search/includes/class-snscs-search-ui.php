@@ -536,7 +536,7 @@ class SNSCS_Search_UI {
 						<tr><th scope="row">記事（30日）</th><?php foreach ( $people as $p ) : ?><td><?php echo esc_html( $p['articles'] . '本' ); ?></td><?php endforeach; ?></tr>
 						<tr><th scope="row">お仕事の相談</th><?php foreach ( $people as $p ) : ?><td><?php echo $p['inquiry'] ? '<a href="' . esc_url( $p['item']['url'] . '#snscs-inquiry' ) . '">受付中</a>' : '—'; ?></td><?php endforeach; ?></tr>
 						<tr><th scope="row">フォロワー数の確認</th><?php foreach ( $people as $p ) : ?><td><?php echo $p['verified'] ? '公式に確認済み' : '自己申告'; ?></td><?php endforeach; ?></tr>
-						<tr><th scope="row">マイリンク</th><?php foreach ( $people as $p ) : ?><td><a href="<?php echo esc_url( SNSCS_Biolink::url( $p['item']['id'] ) ); ?>" target="_blank" rel="noopener">開く</a></td><?php endforeach; ?></tr>
+						<tr><th scope="row">FolloLink</th><?php foreach ( $people as $p ) : ?><td><a href="<?php echo esc_url( SNSCS_Biolink::url( $p['item']['id'] ) ); ?>" target="_blank" rel="noopener">開く</a></td><?php endforeach; ?></tr>
 					</tbody>
 				</table>
 			</div>

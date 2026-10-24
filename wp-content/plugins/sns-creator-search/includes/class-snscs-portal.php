@@ -120,8 +120,8 @@ class SNSCS_Portal {
 			'article_updated'   => array( 'success', '記事を更新しました。' ),
 			'article_deleted'   => array( 'success', '記事を削除しました。' ),
 			'inquiry_saved'     => array( 'success', 'お仕事の相談の設定を保存しました。' ),
-			'link_theme_saved'  => array( 'success', 'マイリンクのデザインと表示を保存しました。' ),
-			'link_extra_saved'  => array( 'success', 'マイリンクのボタンと機能を保存しました。' ),
+			'link_theme_saved'  => array( 'success', 'FolloLinkのデザインと表示を保存しました。' ),
+			'link_extra_saved'  => array( 'success', 'FolloLinkのボタンと機能を保存しました。' ),
 			'promo_saved'       => array( 'success', 'PR枠の申し込みを保存しました。キーワードを変えたときは、運営が確かめてから掲載します。' ),
 			'promo_invalid'     => array( 'error', 'キーワードかジャンルを1つ以上選び、1クリックの上限を最低の料金以上、1日の予算を上限以上にしてください。' ),
 			'link_extra_partly' => array( 'warning', '保存しました。ただし、使えないURL（決まったサービス以外）や、終わりが始まりより前の期間は保存していません。' ),
@@ -631,9 +631,9 @@ class SNSCS_Portal {
 				</fieldset>
 
 				<label class="snscs-field">
-					<span>マイリンクのID（任意）</span>
+					<span>FolloLinkのID（任意）</span>
 					<span class="snscs-linkname"><span class="snscs-linkname__prefix"><?php echo esc_html( untrailingslashit( preg_replace( '#^https?://#', '', home_url( '/' ) ) ) ); ?>/@</span><input type="text" name="snscs[linkname]" value="<?php echo esc_attr( isset( $data['linkname'] ) ? $data['linkname'] : '' ); ?>" maxlength="<?php echo (int) SNSCS_Biolink::MAX_NAME; ?>" pattern="[A-Za-z0-9_\-]{3,30}" placeholder="hanako"></span>
-					<span class="snscs-help">SNSのプロフィール欄に貼る「マイリンク」のURLになります。半角英数字・ハイフン・アンダーバーで3〜30文字。</span>
+					<span class="snscs-help">SNSのプロフィール欄に貼る「FolloLink」のURLになります。半角英数字・ハイフン・アンダーバーで3〜30文字。</span>
 				</label>
 
 				<p class="snscs-help">送信すると運営が審査します。<?php echo $creator_id ? '承認されるまで、掲載中の内容は変わりません。' : '承認されると検索結果に表示されます。'; ?></p>

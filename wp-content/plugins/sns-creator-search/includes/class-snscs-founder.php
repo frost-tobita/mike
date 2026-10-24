@@ -9,7 +9,7 @@
  *   Nº 001〜010 は「FIRST 10」: メダルのロゴの下と記念カードに刻印
  * - 大きな徽章（/?snscs_founder_badge=発信者ID）: 通し番号を入れた SVG。文字は輪郭（パス）にしてあるので、
  *   どの端末でも同じ見た目で、拡大してもにじまない
- * - 小さな徽章（assets/badges/founder-○○-mini.svg）: 検索結果のカード・マイリンクなど、20〜48px で使う
+ * - 小さな徽章（assets/badges/founder-○○-mini.svg）: 検索結果のカード・FolloLinkなど、20〜48px で使う
  * - 1.24: 徽章とメダルの下の弧は「FOLLOFIND · Nº 001」（通し番号は 001〜。3けたにそろえ、1000人目は 1000）。
  *   文字は輪郭（assets/badges/founder-serial.json の Jura）を弧に沿って並べる。メダルの画像には文字が無く、上に重ねる
  * - 1.24: 記念メダル（assets/badges/founder-○○-medal.webp）: 徽章を本物の金属のメダルのように仕上げた写真風の画像。

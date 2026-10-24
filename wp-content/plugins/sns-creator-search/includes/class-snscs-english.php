@@ -202,7 +202,7 @@ class SNSCS_English {
 	}
 
 	/**
-	 * マイリンクを英語で出すか（日本語以外の環境の人。検索エンジンのロボットには日本語）。
+	 * FolloLinkを英語で出すか（日本語以外の環境の人。検索エンジンのロボットには日本語）。
 	 */
 	public static function wants_english() {
 		if ( ! self::on() ) {
@@ -1244,7 +1244,7 @@ class SNSCS_English {
 				<input type="hidden" name="do" value="save">
 				<?php wp_nonce_field( 'snscs_english', 'snscs_nonce' ); ?>
 				<table class="form-table">
-					<tr><th scope="row">英語版</th><td><label><input type="checkbox" name="on" value="1" <?php checked( $s['on'] ); ?>> 英語のページを出す（マイリンクも、日本語以外の環境の人には英語で表示します）</label></td></tr>
+					<tr><th scope="row">英語版</th><td><label><input type="checkbox" name="on" value="1" <?php checked( $s['on'] ); ?>> 英語のページを出す（FolloLinkも、日本語以外の環境の人には英語で表示します）</label></td></tr>
 					<tr><th scope="row">自動の英訳</th><td><label><input type="checkbox" name="auto" value="1" <?php checked( $s['auto'] ); ?>> 1時間ごとに、まだの分を少しずつ英訳する</label></td></tr>
 					<tr><th scope="row"><label for="snscs-en-per">1回に英訳する発信者</label></th><td><input type="number" id="snscs-en-per" name="per_run" min="1" max="100" value="<?php echo (int) $s['per_run']; ?>"> 人</td></tr>
 				</table>

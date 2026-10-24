@@ -1,6 +1,6 @@
 <?php
 /**
- * マイリンクの追加機能（1.20）。
+ * FolloLinkの追加機能（1.20）。
  *
  * - 期間限定リンク: どのボタンにも「いつから・いつまで」を付けられる。期間の外は出さず、終わりが近いと「あと3日」と出す
  * - 応援ボタン: OFUSE・Ko-fi・PayPal.me などの応援のページ（決まったサービスのURLだけ。文言は選ぶだけ）
@@ -490,7 +490,7 @@ class SNSCS_Biolink_Extra {
 		}
 		$creator_id = SNSCS_Submissions::creator_id_for_user( get_current_user_id() );
 		if ( ! $creator_id ) {
-			wp_die( 'マイリンクがありません。' );
+			wp_die( 'FolloLinkがありません。' );
 		}
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT email, token, confirmed_at FROM ' . self::table() . ' WHERE creator_id = %d AND status = 1 ORDER BY confirmed_at', $creator_id ), ARRAY_A );
@@ -743,7 +743,7 @@ class SNSCS_Biolink_Extra {
 	}
 
 	/* --------------------------------------------------------------------
-	 * マイリンクのページ
+	 * FolloLinkのページ
 	 * ------------------------------------------------------------------ */
 
 	/**
@@ -898,7 +898,7 @@ class SNSCS_Biolink_Extra {
 
 				<fieldset class="snscs-bioed__group">
 					<legend>🆕 最新の投稿を自動で表示</legend>
-					<p class="snscs-help">新しい動画や記事を、3時間ごとに読み直して「最新の投稿」に並べます。更新しなくても、マイリンクがいつも新しくなります。</p>
+					<p class="snscs-help">新しい動画や記事を、3時間ごとに読み直して「最新の投稿」に並べます。更新しなくても、FolloLinkがいつも新しくなります。</p>
 					<?php if ( isset( $sources['yt'] ) ) : ?>
 						<label class="snscs-biolink__check"><input type="checkbox" name="feed_yt" value="1" <?php checked( $extra['feeds']['yt'] ); ?>> YouTube（<?php echo esc_html( $sources['yt'][1] ); ?>）</label>
 					<?php endif; ?>

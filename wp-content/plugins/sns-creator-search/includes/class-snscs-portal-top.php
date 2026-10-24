@@ -11,7 +11,7 @@
  *   [sns_portal_top]
  *       トップページの中身: 大きな検索窓（SNSのタブつき）・注目のキーワード / 左: カテゴリ・地域 /
  *       中央: 看板・創設メンバー募集・SNSから探す・注目の発信者・あなたへのおすすめ・急上昇・特集・新着・
- *       読みもの（コラム・今日の用語・質問箱・急上昇の言葉）・はじめての方へ・マイリンク / 右: ログイン・発信者の方へ・カレンダー・
+ *       読みもの（コラム・今日の用語・質問箱・急上昇の言葉）・はじめての方へ・FolloLink / 右: ログイン・発信者の方へ・カレンダー・
  *       トレンドワード・お知らせ・広告
  */
 
@@ -603,7 +603,7 @@ class SNSCS_Portal_Top {
 	private static function guide() {
 		$steps = array(
 			'reader'  => array( '読者の方', array( array( '探す', 'ジャンルやSNSから、好きな発信者を探します。' ), array( 'フォロー', '無料のメンバー登録で、気になる発信者をフォロー。' ), array( '新着が届く', '新しい記事や話題を、お知らせで受け取れます。' ) ), SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_search_url(), '無料でメンバー登録' ),
-			'creator' => array( '発信者の方', array( array( '登録', 'SNSアカウントを入れて、無料で掲載を申し込みます。' ), array( 'マイリンク', 'SNSのプロフィールに貼るリンクまとめを作ります。' ), array( '相談が届く', '企業からのお仕事の相談や、新しいファンが増えます。' ) ), snscs_portal_url(), '無料で掲載する' ),
+			'creator' => array( '発信者の方', array( array( '登録', 'SNSアカウントを入れて、無料で掲載を申し込みます。' ), array( 'FolloLink', 'SNSのプロフィールに貼るリンクまとめを作ります。' ), array( '相談が届く', '企業からのお仕事の相談や、新しいファンが増えます。' ) ), snscs_portal_url(), '無料で掲載する' ),
 		);
 		$html = '<div class="snscs-pt-guide">';
 		$i    = 0;
@@ -702,7 +702,7 @@ class SNSCS_Portal_Top {
 		$out .= self::reading_picks();
 		$out .= SNSCS_Columns::render( 'SNS運用コラム', array( 'count' => 3 ) );
 		$out .= self::guide();
-		// ここから下は、記事・発信者・マイリンク・広告が延々と続くタイムライン。
+		// ここから下は、記事・発信者・FolloLink・広告が延々と続くタイムライン。
 		$out .= SNSCS_Timeline::render();
 		return $out;
 	}
@@ -753,12 +753,12 @@ class SNSCS_Portal_Top {
 		$body       = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__state">ログイン中</span></p>'
 			. $card . $level . $events
 			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>';
-		// マイページのすぐ下に、マイリンク（掲載中なら自分のマイリンク、まだなら作り方の案内）。
+		// マイページのすぐ下に、FolloLink（掲載中なら自分のFolloLink、まだなら作り方の案内）。
 		if ( $creator && 'publish' === get_post_status( $creator ) ) {
-			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '"><strong>マイリンク</strong><span>' . esc_html( preg_replace( '#^https?://#', '', SNSCS_Biolink::url( $creator ) ) ) . '</span></a>';
+			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '"><strong>FolloLink（フォロリンク）</strong><span>' . esc_html( SNSCS_Biolink::display_address( $creator ) ) . '</span></a>';
 		} else {
 			$about = SNSCS_Hub::page_url( 'mylink' );
-			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( $about ? $about : snscs_portal_url() ) . '"><strong>マイリンク</strong><span>SNSのプロフィールに貼れる、あなただけのリンク集</span></a>';
+			$body .= '<a class="snscs-pt-mylink" href="' . esc_url( $about ? $about : snscs_portal_url() ) . '"><strong>FolloLink（フォロリンク）</strong><span>SNSのプロフィールに貼れる、あなただけのリンク集</span></a>';
 		}
 		$body .= SNSCS_Social::member_url() ? '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Social::member_url( array( 'tab' => 'level' ) ) ) . '">冒険の記録を見る</a>' : '';
 		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
@@ -825,14 +825,14 @@ class SNSCS_Portal_Top {
 			$ad   = SNSCS_Ads::render( 'side_member' );
 			$out .= '' !== $ad ? $ad : self::creator_picks();
 		} else {
-			$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
+			$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「FolloLink」', '企業からお仕事の相談が届く' );
 			$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で</p><ul class="snscs-pt-cta__points">';
 			foreach ( $points as $point ) {
 				$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
 			}
 			$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a>';
 			if ( SNSCS_Hub::page_url( 'mylink' ) ) {
-				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">マイリンクについて詳しく</a>';
+				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">FolloLinkについて詳しく</a>';
 			}
 			$out .= self::box( '発信者の方へ', $body, '', 'snscs-pt-box--cta' );
 		}
