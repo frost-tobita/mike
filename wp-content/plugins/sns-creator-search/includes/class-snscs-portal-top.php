@@ -234,7 +234,10 @@ class SNSCS_Portal_Top {
 				$links[] = array( SNSCS_Hub::page_url( $key ), $label );
 			}
 		}
-		$links[] = array( snscs_portal_url(), '発信者として掲載（無料）' );
+		// 登録済みの発信者には、掲載の案内は出さない。
+		if ( ! ( is_user_logged_in() && snscs_is_creator_user() ) ) {
+			$links[] = array( snscs_portal_url(), '発信者として掲載（無料）' );
+		}
 		return $links;
 	}
 
@@ -718,7 +721,7 @@ class SNSCS_Portal_Top {
 		$who     = SNSCS_Session::who();
 		$creator = $who && snscs_is_creator_user() ? SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) : 0;
 		if ( $who ) {
-			$body = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__role">' . esc_html( $who['role'] ) . '</span></p>'
+			$body = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん' . SNSCS_Session::tag_html( $who ) . '</p>'
 				. '<p class="snscs-pt-login__state">ログイン中</p>'
 				. '<a class="snscs-pt-btn" href="' . esc_url( snscs_is_creator_user() ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() ) ) . '">マイページ</a>';
 			if ( $creator && 'publish' === get_post_status( $creator ) ) {

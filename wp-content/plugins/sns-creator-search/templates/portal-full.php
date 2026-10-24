@@ -56,7 +56,7 @@ $snscs_user   = is_user_logged_in() && snscs_is_creator_user();
 			<?php $snscs_who = SNSCS_Session::who(); ?>
 			<?php if ( $snscs_who ) : ?>
 				<?php // 1.25: ログイン中は Yahoo! JAPAN のように、目立たない「○○さん」を出す。 ?>
-				<a class="snscs-ph__who" href="<?php echo esc_url( $snscs_user ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() ) ); ?>" title="ログイン中（マイページへ）"><span class="snscs-ph__who-name"><?php echo esc_html( $snscs_who['name'] ); ?></span>さん<span class="snscs-ph__who-role"><?php echo esc_html( $snscs_who['role'] ); ?></span></a>
+				<a class="snscs-ph__who" href="<?php echo esc_url( $snscs_user ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() ) ); ?>" title="ログイン中（マイページへ）"><span class="snscs-ph__who-name"><?php echo esc_html( $snscs_who['name'] ); ?></span>さん<?php echo SNSCS_Session::tag_html( $snscs_who ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?></a>
 			<?php else : ?>
 				<a class="snscs-ph__login" href="<?php echo esc_url( snscs_portal_url() ); ?>">ログイン</a>
 			<?php endif; ?>
