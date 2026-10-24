@@ -281,6 +281,7 @@ class SNSCS_Frontend {
 	 */
 	public static function render_cards( array $items, $infeed_after = 0, array $badges = array(), array $notes = array(), array $extras = array() ) {
 		wp_enqueue_style( 'snscs' );
+		update_meta_cache( 'post', array_map( 'intval', wp_list_pluck( $items, 'id' ) ) );
 		?>
 		<ul class="snscs-cards">
 			<?php foreach ( $items as $index => $item ) : ?>
@@ -292,7 +293,7 @@ class SNSCS_Frontend {
 						<img class="snscs-card__image" src="<?php echo esc_url( $item['thumbnail'] ); ?>" alt="" loading="lazy" width="64" height="64">
 					<?php endif; ?>
 					<div class="snscs-card__body">
-						<h3 class="snscs-card__name"><a href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['name'] ); ?></a> <?php echo SNSCS_Recommend::fav_button( $item['id'], true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?></h3>
+						<h3 class="snscs-card__name"><a href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['name'] ); ?></a> <?php echo SNSCS_Founder::mini_html( $item['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?> <?php echo SNSCS_Recommend::fav_button( $item['id'], true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済み。 ?></h3>
 						<?php if ( isset( $notes[ $item['id'] ] ) ) : ?>
 							<p class="snscs-card__note"><?php echo esc_html( $notes[ $item['id'] ] ); ?></p>
 						<?php endif; ?>

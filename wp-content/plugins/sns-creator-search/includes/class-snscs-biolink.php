@@ -673,7 +673,7 @@ class SNSCS_Biolink {
 			$badges[] = array( '🏆', $rank );
 		}
 		if ( SNSCS_Portal_Top::is_founder( $creator_id ) ) {
-			$badges[] = array( '🌱', $l( '創設メンバー', 'Founding member' ) );
+			$badges[] = array( 'founder', $l( '創設メンバー Nº ', 'Founding member Nº ' ) . SNSCS_Founder::serial( SNSCS_Founder::number( $creator_id ) ) );
 		}
 		// 期間の外のボタンを外し、有料リンクを「販売中」に分ける（SNSCS_Biolink_Extra）。
 		$arranged   = SNSCS_Biolink_Extra::arrange( $creator_id, self::buttons( $creator_id, $english ), $english );
@@ -802,7 +802,7 @@ class SNSCS_Biolink {
 	<?php if ( $badges ) : ?>
 		<ul class="bio__badges">
 			<?php foreach ( $badges as $badge ) : ?>
-				<li><span aria-hidden="true"><?php echo esc_html( $badge[0] ); ?></span> <?php echo esc_html( $badge[1] ); ?></li>
+				<li<?php echo 'founder' === $badge[0] ? ' class="bio__badge--founder"' : ''; ?>><?php if ( 'founder' === $badge[0] ) : ?><img src="<?php echo esc_url( SNSCS_Founder::mini_url() ); ?>" alt="" width="18" height="18"><?php else : ?><span aria-hidden="true"><?php echo esc_html( $badge[0] ); ?></span><?php endif; ?> <?php echo esc_html( $badge[1] ); ?></li>
 			<?php endforeach; ?>
 		</ul>
 	<?php endif; ?>

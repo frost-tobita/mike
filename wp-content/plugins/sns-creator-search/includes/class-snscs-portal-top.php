@@ -420,11 +420,12 @@ class SNSCS_Portal_Top {
 	}
 
 	public static function is_founder( $creator_id ) {
-		return isset( self::founders()[ (int) $creator_id ] );
+		// 通し番号は一度付いたら変わらない（SNSCS_Founder）。
+		return SNSCS_Founder::number( $creator_id ) > 0;
 	}
 
 	public static function founder_badge( $creator_id ) {
-		return self::is_founder( $creator_id ) ? '<p class="snscs-founder"><span class="snscs-badge snscs-badge--founder">創設メンバー</span> サイトの立ち上げから参加している発信者です</p>' : '';
+		return SNSCS_Founder::card_html( $creator_id );
 	}
 
 	public static function on_status( $new, $old, $post ) {

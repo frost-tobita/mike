@@ -297,6 +297,7 @@ class SNSCS_Biolink_Design {
 		$css .= '.bio__genres{margin:0 0 8px;color:' . $t['muted'] . ';font-size:.85em}';
 		$css .= '.bio__badges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 12px;padding:0;list-style:none}';
 		$css .= '.bio__badges li{padding:2px 10px;border:1px solid ' . $t['border'] . ';border-radius:999px;font-size:.78em;font-weight:700}';
+		$css .= '.bio__badges li.bio__badge--founder{display:inline-flex;align-items:center;gap:5px;padding:2px 12px 2px 4px;border-color:#c9a24a;background:linear-gradient(135deg,#1a1812,#050505);color:#e7cd85;letter-spacing:.04em}.bio__badge--founder img{display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}';
 		$css .= '.bio__text{margin:0 auto 20px;color:' . $t['muted'] . ';font-size:.92em;text-align:left;max-width:30em;white-space:pre-line}';
 		$css .= '.bio__icons{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:0 0 20px;padding:0;list-style:none}';
 		$css .= '.bio__icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;color:' . $t['text'] . ';text-decoration:none;transition:transform .15s;' . ( 'glass' === $style['button'] || ! empty( $t['glass'] ) ? 'background:rgba(255,255,255,.16);' : 'background:transparent;' ) . '}';
