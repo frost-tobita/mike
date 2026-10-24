@@ -8782,3 +8782,170 @@ body.snscs-portal-body .snscs-pt-box--mypage .snscs-provisional .snscs-button {
 .snscs-profile__stats > span {
 	white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------------
+ * 1.27.9: スマホの使いやすさ（総点検）
+ * ------------------------------------------------------------------- */
+
+/* フォームの列は画面の幅まで（小さいスマホでプロフィールの欄が横にはみ出していた）。 */
+.snscs-fields {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.snscs-fields > * {
+	min-width: 0;
+}
+
+/* 小さすぎて読みにくい札の文字は 11px より小さくしない。 */
+.snscs-required,
+.snscs-verified {
+	font-size: max(11px, 0.75em);
+}
+
+@media (max-width: 600px) {
+	/* 指で押しやすい大きさに（チェックの欄・お気に入り・「興味がない」）。 */
+	body.snscs-portal-body .snscs-check,
+	body.snscs-portal-body label.snscs-collab__kind,
+	body.snscs-portal-body label.snscs-biolink__shape,
+	.snscs-check {
+		align-items: center;
+		min-height: 36px;
+	}
+
+	body.snscs-portal-body .snscs-check input[type="checkbox"],
+	body.snscs-portal-body .snscs-check input[type="radio"],
+	.snscs-check input[type="checkbox"],
+	.snscs-check input[type="radio"] {
+		width: 20px;
+		height: 20px;
+		margin: 0;
+	}
+
+	body.snscs-portal-body .snscs-fav,
+	.snscs-fav {
+		min-width: 36px;
+		min-height: 32px;
+		justify-content: center;
+	}
+
+	body.snscs-portal-body .snscs-feed__hide,
+	.snscs-feed__hide {
+		min-height: 30px;
+		padding: 4px 12px;
+	}
+}
+
+/* 幅の狭いスマホ（360px 以下）: 余白を少し詰めて、入力欄を広く。 */
+@media (max-width: 360px) {
+	body.snscs-portal-body .snscs-pm__layout .snscs-pm__page {
+		padding: 16px 10px;
+	}
+
+	body.snscs-portal-body .snscs-panel,
+	.snscs-panel {
+		padding: 14px 12px;
+	}
+}
+
+/* FolloLink のプレビュー（スマホの形）は、幅の狭いスマホでは小さくして収める。 */
+@media (max-width: 360px) {
+	.snscs-bioed__phone {
+		width: 240px;
+		height: 480px;
+		border-width: 8px;
+		border-radius: 32px;
+	}
+
+	.snscs-bioed__phone iframe {
+		transform: scale(0.615);
+	}
+}
+
+/* アワードのページから投票（1.27.9） */
+.snscs-award__quick {
+	margin: 20px 0 0;
+	padding: 16px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #f8fafc;
+}
+
+body.snscs-portal-body h3.snscs-award__quickhead,
+.snscs-award__quickhead {
+	margin: 0 0 10px;
+	font-size: 1em;
+}
+
+body.snscs-portal-body ul.snscs-award__quicklist,
+.snscs-award__quicklist {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 8px;
+	padding: 0;
+	list-style: none;
+}
+
+.snscs-award__quicklist li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	min-width: 0;
+}
+
+.snscs-award__quicklist li a:first-child {
+	overflow: hidden;
+	min-width: 0;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snscs-award__quicklist .snscs-button {
+	flex: none;
+	padding: 6px 14px;
+	font-size: 0.85em;
+}
+
+/* 無料ツールの「AIプロフィール診断」の案内: 紫の背景の上の文字を白で読みやすく（テーマのリンク色に負けないように）。 */
+body.snscs-portal-body a.snscs-related__quiz,
+body.snscs-portal-body a.snscs-related__quiz strong,
+body.snscs-portal-body a.snscs-related__quiz span {
+	color: #fff;
+}
+
+body.snscs-portal-body a.snscs-related__quiz span {
+	opacity: 0.95;
+}
+
+/* メンバーページのタブ: スマホでは1列にして横に動かす（11個のタブが6段に積み重なっていた）。 */
+@media (max-width: 600px) {
+	body.snscs-portal-body .snscs-member__tabs,
+	.snscs-member__tabs {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		margin-right: -4px;
+		padding-bottom: 6px;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.snscs-member__tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.snscs-member__tabs > * {
+		flex: none;
+		white-space: nowrap;
+	}
+}
+
+.snscs-award__self {
+	flex: none;
+	padding: 4px 12px;
+	border-radius: 999px;
+	background: #eef0ff;
+	color: #1B27B0;
+	font-size: 0.85em;
+	font-weight: 700;
+}

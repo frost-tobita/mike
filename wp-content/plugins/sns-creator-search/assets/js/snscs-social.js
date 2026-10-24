@@ -413,6 +413,12 @@
 		}
 	}
 
+	// メンバーページのタブ（スマホでは横に動かす1列）: いま開いているタブが見えるところまで動かす。
+	var currentTab = document.querySelector( '.snscs-member__tabs [aria-current="page"]' );
+	if ( currentTab && currentTab.parentNode.scrollWidth > currentTab.parentNode.clientWidth ) {
+		currentTab.parentNode.scrollLeft = Math.max( 0, currentTab.offsetLeft - currentTab.parentNode.offsetLeft - 16 );
+	}
+
 	// ログインしたら、このブラウザのブックマークをアカウントへ移す。
 	if ( config.loggedIn && readLocal().length ) {
 		fetch( config.rest + '/sync', {

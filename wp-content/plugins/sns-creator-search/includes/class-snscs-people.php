@@ -68,7 +68,7 @@ class SNSCS_People {
 
 	public static function nickname( $user_id ) {
 		$name = (string) get_user_meta( $user_id, self::META_NICKNAME, true );
-		return '' !== $name ? $name : '読者' . $user_id;
+		return '' !== $name ? $name : 'メンバー' . $user_id;
 	}
 
 	public static function profile_url( $user_id ) {

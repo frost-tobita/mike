@@ -305,6 +305,9 @@ class SNSCS_Awards {
 			$url  = SNSCS_Social::member_url( array( 'redirect_to' => $back ) );
 			return $url ? '<a class="snscs-button snscs-button--primary" href="' . esc_url( $url ) . '">無料のメンバー登録をして投票する</a>' : '';
 		}
+		if ( SNSCS_Social::own_creator( get_current_user_id() ) === (int) $creator_id ) {
+			return '<span class="snscs-award__self">あなた</span>';
+		}
 		$mine = self::my_vote( get_current_user_id(), $genre_id ) === (int) $creator_id;
 		return sprintf(
 			'<button type="button" class="snscs-button snscs-button--primary snscs-award__vote%s" data-snscs-vote data-creator="%d" data-genre="%d"%s>%s</button>',
@@ -389,6 +392,18 @@ class SNSCS_Awards {
 					$notes[ $id ]  = $votes . '票';
 				}
 				SNSCS_Frontend::render_cards( SNSCS_Personalize::items( array_keys( $list ) ), 0, $badges, $notes );
+				// このページからも投票できるように（これまでは発信者のページへ行く必要があった。1.27.9）。
+				echo '<section class="snscs-award__quick" aria-labelledby="snscs-award-quick"><h3 id="snscs-award-quick" class="snscs-award__quickhead">' . esc_html( $current->name . 'アワードに投票する' ) . '</h3>';
+				if ( is_user_logged_in() ) {
+					echo '<ul class="snscs-award__quicklist">';
+					foreach ( array_keys( $list ) as $id ) {
+						echo '<li><a href="' . esc_url( get_permalink( $id ) ) . '">' . esc_html( get_the_title( $id ) ) . '</a>' . self::vote_button( $id, $current->term_id ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+					}
+					echo '</ul><p class="snscs-help">ここにいない発信者には、その人のページの「投票する」から投票できます。投票は月に1ジャンル1人で、あとから変えられます。</p>';
+				} else {
+					echo self::vote_button( (int) array_key_first( $list ), $current->term_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。
+				}
+				echo '</section>';
 			} else {
 				echo '<p class="snscs-results__empty">まだ票がありません。発信者のページの「投票する」から投票できます。</p>';
 			}

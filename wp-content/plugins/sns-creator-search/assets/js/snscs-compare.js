@@ -49,7 +49,8 @@
 			b.textContent = on ? '✓ 比べる' : '＋ 比べる';
 			b.classList.toggle( 'is-on', on );
 		} );
-		tray.hidden = list.length === 0;
+		// 比べる画面そのものでは帯を出さない（表の上に重なって読みにくいため。1.27.9）。
+		tray.hidden = list.length === 0 || new URL( window.location.href ).searchParams.has( 'snscs_compare' );
 		tray.querySelector( '.snscs-cmptray__text' ).textContent = list.length < 2 ? 'もう1人選ぶと比べられます（' + list.length + '人）' : list.length + '人を選んでいます（最大' + config.max + '人）';
 		var go = tray.querySelector( '.snscs-cmptray__go' );
 		go.href = url();

@@ -559,7 +559,8 @@ class SNSCS_Scores {
 		$from     = gmdate( 'Y-m-d', strtotime( $today . ' -60 days' ) );
 		$to       = gmdate( 'Y-m-d', strtotime( $today . ' -7 days' ) );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT h.creator_id, m.d AS day, SUM(h.followers) AS base, SUM(COALESCE(a.followers, 0)) AS now FROM {$history} h INNER JOIN (SELECT creator_id, MAX(day) AS d FROM {$history} WHERE day BETWEEN %s AND %s GROUP BY creator_id) m ON m.creator_id = h.creator_id AND m.d = h.day LEFT JOIN {$accounts} a ON a.creator_id = h.creator_id AND a.platform = h.platform GROUP BY h.creator_id, m.d", $from, $to ), ARRAY_A );
+		// いまも登録しているSNSだけで比べる（登録から外したSNSを「0人に減った」と数えないように。1.27.9）。
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT h.creator_id, m.d AS day, SUM(h.followers) AS base, SUM(a.followers) AS now FROM {$history} h INNER JOIN (SELECT creator_id, MAX(day) AS d FROM {$history} WHERE day BETWEEN %s AND %s GROUP BY creator_id) m ON m.creator_id = h.creator_id AND m.d = h.day INNER JOIN {$accounts} a ON a.creator_id = h.creator_id AND a.platform = h.platform GROUP BY h.creator_id, m.d", $from, $to ), ARRAY_A );
 		$out = array();
 		foreach ( $rows as $r ) {
 			$days = max( 7, ( strtotime( $today ) - strtotime( $r['day'] ) ) / DAY_IN_SECONDS );
