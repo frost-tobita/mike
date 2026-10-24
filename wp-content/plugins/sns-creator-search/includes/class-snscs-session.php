@@ -121,7 +121,7 @@ class SNSCS_Session {
 		}
 		return array(
 			'name'   => '' !== trim( (string) $name ) ? $name : 'ゲスト',
-			'role'   => $design ? SNSCS_Founder::name( $design ) : 'セイント',
+			'role'   => $design ? SNSCS_Founder::name( $design ) : ( snscs_is_full_member( $user ) ? 'セイント' : '仮登録' ),
 			'design' => $design,
 			'no'     => (int) $no,
 		);

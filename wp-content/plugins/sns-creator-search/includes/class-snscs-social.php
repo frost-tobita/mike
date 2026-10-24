@@ -143,6 +143,15 @@ class SNSCS_Social {
 	}
 
 	public static function handle_register() {
+		// 1.27: 登録はセイントの1つだけ（発信者マイページの登録）。古いページのフォームから来たら、そちらへ。
+		wp_safe_redirect( snscs_portal_url() );
+		exit;
+	}
+
+	/**
+	 * 1.26 までの読者会員の登録（いまは使わない。古いデータの互換のために残す）。
+	 */
+	public static function handle_register_legacy() {
 		if ( ! isset( $_POST['snscs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['snscs_nonce'] ) ), 'snscs_member_register' ) ) {
 			self::back( 'form_retry' );
 		}
@@ -850,22 +859,9 @@ class SNSCS_Social {
 		$redirect = self::return_to();
 		?>
 		<section class="snscs-panel">
-			<h2 class="snscs-panel__title">会員登録（無料）</h2>
-			<p>登録すると、気になる発信者をフォローして新しい記事をまとめて読めたり、記事にいいね・リポスト・ブックマークしたりできます。スマホとパソコンで同じ内容を使えます。</p>
-			<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>" class="snscs-form">
-				<input type="hidden" name="action" value="snscs_member_register">
-				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect ); ?>">
-				<input type="hidden" name="snscs_ft" value="<?php echo esc_attr( snscs_form_token() ); ?>">
-				<?php wp_nonce_field( 'snscs_member_register', 'snscs_nonce' ); ?>
-				<p class="snscs-hp" aria-hidden="true"><input type="text" name="snscs_website" tabindex="-1" autocomplete="off"></p>
-				<p><label>ハンドルネーム（表示名・30文字まで）<br><input type="text" name="nickname" required maxlength="30" autocomplete="nickname" placeholder="例: はなこ"></label></p>
-				<p><label>メールアドレス<br><input type="email" name="email" required autocomplete="email"></label></p>
-				<p><label>パスワード（<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>文字以上）<br><input type="password" name="password" required minlength="<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>" autocomplete="new-password"></label></p>
-				<p><?php echo SNSCS_Session::field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったHTML。 ?></p>
-				<p><label><input type="checkbox" name="agree" value="1" required> 利用規約とプライバシーポリシーに同意する</label></p>
-				<p><button type="submit" class="snscs-button snscs-button--primary">登録する</button></p>
-			</form>
-			<p class="snscs-help">発信者として掲載したい方は、<a href="<?php echo esc_url( snscs_portal_url() ); ?>">発信者マイページ</a>から登録してください（発信者のアカウントでも、フォロー・いいねなどが使えます）。</p>
+			<h2 class="snscs-panel__title">セイントに登録（無料）</h2>
+			<p>FolloFind の会員は「セイント」。登録は1つだけです。ハンドルネーム・メールアドレス・パスワードで仮登録し、プロフィールとSNSアカウント（1つ以上）を入れて申請します。運営が確認して承認すると本登録になり、検索結果に載って、フォロー・いいね・経験値などが使えます。</p>
+			<p><a class="snscs-button snscs-button--primary" href="<?php echo esc_url( snscs_portal_url() ); ?>">セイントに登録する</a></p>
 		</section>
 		<section class="snscs-panel">
 			<h2 class="snscs-panel__title">ログイン</h2>
@@ -910,7 +906,8 @@ class SNSCS_Social {
 			<?php endif; ?>
 			・<a href="<?php echo esc_url( wp_logout_url( self::member_url() ) ); ?>">ログアウト</a>
 		</p>
-		<?php echo 'level' === $tab ? '' : SNSCS_Gamify::summary_html( $user_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+		<?php echo SNSCS_Provisional::banner_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+		<?php echo 'level' === $tab || SNSCS_Provisional::is_provisional() ? '' : SNSCS_Gamify::summary_html( $user_id, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
 		<nav class="snscs-tabs snscs-member__tabs" aria-label="会員ページ">
 			<?php foreach ( $tabs as $key => $label ) : ?>
 				<a class="snscs-chip<?php echo $key === $tab ? ' is-current' : ''; ?>" href="<?php echo esc_url( self::member_url( array( 'tab' => $key ) ) ); ?>" <?php echo $key === $tab ? 'aria-current="page"' : ''; ?>><?php echo esc_html( $label ); ?></a>

@@ -84,13 +84,13 @@ class SNSCS_Portal {
 			// 読者会員: 同じアカウントのまま、発信者としても登録できる。
 			?>
 			<section class="snscs-panel">
-				<h2 class="snscs-panel__title">発信者としても掲載する</h2>
-				<p>いまは読者会員としてログインしています。同じアカウントのまま発信者として登録し、掲載の申請や記事の執筆ができます（フォロー・ブックマークなどはそのまま使えます）。</p>
+				<h2 class="snscs-panel__title">本登録の申請</h2>
+				<p>FolloFind の会員（セイント）は、SNSアカウントを登録した発信者として掲載されます。同じアカウントのまま、プロフィールとSNSアカウント（1つ以上）を入れて申請してください。運営が確認して承認すると本登録になります。</p>
 				<form method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_become_creator">
 					<?php wp_nonce_field( 'snscs_become_creator', 'snscs_nonce' ); ?>
 					<label class="snscs-check"><input type="checkbox" name="agree" value="1" required> 掲載の条件（利用規約）に同意する</label>
-					<p><button type="submit" class="snscs-button snscs-button--primary">発信者として登録する</button></p>
+					<p><button type="submit" class="snscs-button snscs-button--primary">本登録の申請に進む</button></p>
 				</form>
 			</section>
 			<?php
@@ -141,6 +141,7 @@ class SNSCS_Portal {
 			'weak_password'  => array( 'error', sprintf( 'パスワードは%d文字以上にしてください。', self::MIN_PASSWORD ) ),
 			'agree'          => array( 'error', '掲載の条件に同意してください。' ),
 			'nickname'       => array( 'error', 'ハンドルネーム（表示名）を入力してください。' ),
+			'provisional'    => array( 'error', 'いまは仮登録です。プロフィールとSNSアカウントを入れて申請し、運営の承認で本登録になると使えます。' ),
 			'register_error' => array( 'error', '登録できませんでした。時間をおいてもう一度お試しください。' ),
 			'form_retry'     => array( 'error', '確認のため、もう一度入力して送信してください（ページを開いてから時間がたっていました）。' ),
 		);
@@ -164,7 +165,7 @@ class SNSCS_Portal {
 		<div class="snscs-auth<?php echo $inviter ? ' snscs-auth--invited' : ''; ?>">
 			<section class="snscs-panel">
 				<h2 class="snscs-panel__title">ログイン</h2>
-				<p>登録済みの発信者の方はこちら。</p>
+				<p>登録済みのセイントの方はこちら。</p>
 				<?php
 				wp_login_form(
 					array(
@@ -181,11 +182,11 @@ class SNSCS_Portal {
 			</section>
 
 			<section class="snscs-panel">
-				<h2 class="snscs-panel__title">発信者として新規登録（無料）</h2>
+				<h2 class="snscs-panel__title">セイントに登録（無料）</h2>
 				<ol class="snscs-steps">
-					<li>メールアドレスとパスワードで登録</li>
-					<li>プロフィールとSNSアカウントを入力して申請</li>
-					<li>運営の審査に通ると掲載されます</li>
+					<li>ハンドルネーム・メールアドレス・パスワードで登録（仮登録）</li>
+					<li>プロフィールとSNSアカウント（1つ以上）を入力して申請</li>
+					<li>運営が確認して承認すると本登録。検索結果に載り、フォロー・いいね・経験値などが使えます</li>
 				</ol>
 				<form class="snscs-fields" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_register">
@@ -267,10 +268,10 @@ class SNSCS_Portal {
 		</div>
 
 		<section class="snscs-panel snscs-status">
-			<h2 class="snscs-panel__title">掲載状況</h2>
+			<h2 class="snscs-panel__title">登録の状況</h2>
 			<p>
 				<?php if ( $published ) : ?>
-					<span class="snscs-badge snscs-badge--live">掲載中</span>
+					<span class="snscs-badge snscs-badge--live">本登録（掲載中）</span>
 					<a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">掲載ページを見る</a>
 					<?php $snscs_no = SNSCS_Founder::number( $creator_id ); ?>
 					<?php if ( $snscs_no ) : ?>
@@ -280,14 +281,14 @@ class SNSCS_Portal {
 					<span class="snscs-badge snscs-badge--off">掲載停止中</span>
 					もう一度掲載したいときは、下のフォームから申請してください。
 				<?php else : ?>
-					<span class="snscs-badge snscs-badge--off">未掲載</span>
-					下のフォームから掲載を申請してください。
+					<span class="snscs-badge snscs-badge--off">仮登録</span>
+					下のフォームにプロフィールとSNSアカウント（1つ以上）を入れて、本登録を申請してください。
 				<?php endif; ?>
 			</p>
 
 			<?php if ( $pending ) : ?>
 				<div class="snscs-review snscs-review--pending">
-					<p><span class="snscs-badge snscs-badge--pending">審査中</span>
+					<p><span class="snscs-badge snscs-badge--pending">本登録の審査中</span>
 						<?php echo esc_html( get_date_from_gmt( $pending['created_at'], 'Y年n月j日 H:i' ) ); ?> に申請しました。
 					</p>
 					<p>

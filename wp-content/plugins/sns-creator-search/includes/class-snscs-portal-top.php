@@ -243,9 +243,9 @@ class SNSCS_Portal_Top {
 				$links[] = array( SNSCS_Hub::page_url( $key ), $label );
 			}
 		}
-		// 登録済みの発信者には、掲載の案内は出さない。
-		if ( ! ( is_user_logged_in() && snscs_is_creator_user() ) ) {
-			$links[] = array( snscs_portal_url(), '発信者として掲載（無料）' );
+		// 本登録のセイントには、登録の案内は出さない。
+		if ( ! snscs_is_full_member() ) {
+			$links[] = array( snscs_portal_url(), is_user_logged_in() ? '本登録の申請' : 'セイントに登録（無料）' );
 		}
 		return $links;
 	}
@@ -712,6 +712,13 @@ class SNSCS_Portal_Top {
 	 */
 	private static function mypage_box( array $who, $creator ) {
 		$user_id = get_current_user_id();
+		// 仮登録（承認前）: 本登録の申請へ案内するだけ。
+		if ( SNSCS_Provisional::is_provisional() ) {
+			$body = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__state">ログイン中</span></p>'
+				. SNSCS_Provisional::banner_html()
+				. '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
+			return self::box( 'マイページ', $body, '', 'snscs-pt-box--login snscs-pt-box--mypage is-in' );
+		}
 		$design  = $who['design'];
 		$rank    = SNSCS_Game::rank_of( $user_id );
 		$since   = mysql2date( 'Y.m', get_userdata( $user_id )->user_registered );

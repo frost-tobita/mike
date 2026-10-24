@@ -273,7 +273,8 @@ class SNSCS_Game {
 	public static function grant( $user_id, $kind, $amount, $boost = true, $day = '' ) {
 		$user_id = (int) $user_id;
 		$amount  = (int) round( $amount );
-		if ( ! $user_id || $amount <= 0 || user_can( $user_id, 'edit_others_posts' ) ) {
+		// 運営者と、仮登録（承認前）のセイントには付けない。
+		if ( ! $user_id || $amount <= 0 || user_can( $user_id, 'edit_others_posts' ) || ! snscs_is_full_member( $user_id ) ) {
 			return 0;
 		}
 		$rows = array( $kind => $amount );

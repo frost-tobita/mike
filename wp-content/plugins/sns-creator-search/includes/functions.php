@@ -110,6 +110,22 @@ function snscs_portal_url() {
  * @param WP_User|int|null $user ユーザー。省略時は現在のユーザー。
  * @return bool
  */
+/**
+ * 本登録のセイントか（1.27）。登録は1つにまとめ、運営が承認して発信者ページが掲載されると本登録。
+ * それまでは仮登録で、サイトを見ることと申請の確認・修正だけができる。運営者（投稿を編集できる人）は常に本登録扱い。
+ */
+function snscs_is_full_member( $user = null ) {
+	$user = $user ? ( $user instanceof WP_User ? $user : get_userdata( $user ) ) : wp_get_current_user();
+	if ( ! $user || ! $user->exists() ) {
+		return false;
+	}
+	if ( user_can( $user, 'edit_posts' ) ) {
+		return true;
+	}
+	$creator = SNSCS_Submissions::creator_id_for_user( $user->ID );
+	return $creator && 'publish' === get_post_status( $creator );
+}
+
 function snscs_is_creator_user( $user = null ) {
 	$user = $user ? ( $user instanceof WP_User ? $user : get_userdata( $user ) ) : wp_get_current_user();
 	return $user && $user->exists() && in_array( SNSCS_Portal::ROLE, (array) $user->roles, true ) && ! user_can( $user, 'edit_posts' );

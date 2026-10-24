@@ -89,7 +89,7 @@ class SNSCS_Gamify {
 	 */
 	public static function award( $user_id, $action ) {
 		$user_id = (int) $user_id;
-		if ( ! $user_id || ! isset( self::ACTIONS[ $action ] ) || user_can( $user_id, 'edit_others_posts' ) ) {
+		if ( ! $user_id || ! isset( self::ACTIONS[ $action ] ) || user_can( $user_id, 'edit_others_posts' ) || ! snscs_is_full_member( $user_id ) ) {
 			return 0;
 		}
 		global $wpdb;
