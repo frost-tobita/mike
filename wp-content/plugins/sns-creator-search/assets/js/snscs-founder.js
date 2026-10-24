@@ -4,6 +4,7 @@
  * 「記念カードを保存」を押すと、背景・メダル・通し番号・名前・参加日を 1200×630 の画像にして、
  * スマホでは共有メニュー（Xなどに直接）、パソコンでは PNG の保存にする。
  * 文字は端末のフォントで書くので、サーバーに日本語のフォントが無くても作れる。
+ * メダルの下の弧の文字（FOLLOFIND · Nº 001）は、ページのメダルに重ねてある SVG をそのまま使う。
  */
 ( function () {
 	var W = 1200;
@@ -45,8 +46,16 @@
 		return text;
 	}
 
-	function draw( d ) {
-		return Promise.all( [ load( d.bg ), load( d.medal ) ] ).then( function ( imgs ) {
+	function svgUrl( svg ) {
+		return svg ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent( svg ) : '';
+	}
+
+	function draw( d, overlay ) {
+		var srcs = [ load( d.bg ), load( d.medal ) ];
+		if ( overlay ) {
+			srcs.push( load( svgUrl( overlay ) ) );
+		}
+		return Promise.all( srcs ).then( function ( imgs ) {
 			var canvas = document.createElement( 'canvas' );
 			canvas.width = W;
 			canvas.height = H;
@@ -63,6 +72,9 @@
 			ctx.shadowOffsetY = 18;
 			ctx.drawImage( imgs[ 1 ], mx, my, size, size );
 			ctx.restore();
+			if ( imgs[ 2 ] ) {
+				ctx.drawImage( imgs[ 2 ], mx, my, size, size );
+			}
 
 			// 文字（右）
 			var x = 620;
@@ -135,7 +147,10 @@
 		var label = button.textContent;
 		button.disabled = true;
 		button.textContent = '作成中…';
-		draw( d ).then( function ( canvas ) {
+		var root = button.closest( '.snscs-founder' );
+		var text = root && root.querySelector( '.snscs-founder__medal-text' );
+		var overlay = text ? new XMLSerializer().serializeToString( text ).replace( / style="[^"]*"/, '' ) : '';
+		draw( d, overlay ).then( function ( canvas ) {
 			return save( canvas, d );
 		} ).catch( function () {
 			window.alert( '記念カードを作れませんでした。時間をおいて、もう一度お試しください。' );
@@ -145,6 +160,6 @@
 		} );
 	} );
 
-	// 試し用: window.snscsFounderCard( data ) で canvas を返す。
+	// 試し用: window.snscsFounderCard( data, 文字のSVG ) で canvas を返す。
 	window.snscsFounderCard = draw;
 } )();

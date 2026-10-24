@@ -9,6 +9,8 @@
  * - 大きな徽章（/?snscs_founder_badge=発信者ID）: 通し番号を入れた SVG。文字は輪郭（パス）にしてあるので、
  *   どの端末でも同じ見た目で、拡大してもにじまない
  * - 小さな徽章（assets/badges/founder-○○-mini.svg）: 検索結果のカード・マイリンクなど、20〜48px で使う
+ * - 1.24: 徽章とメダルの下の弧は「FOLLOFIND · Nº 001」（通し番号は 001〜。3けたにそろえ、1000人目は 1000）。
+ *   文字は輪郭（assets/badges/founder-serial.json の Jura）を弧に沿って並べる。メダルの画像には文字が無く、上に重ねる
  * - 1.24: 記念メダル（assets/badges/founder-○○-medal.webp）: 徽章を本物の金属のメダルのように仕上げた写真風の画像。
  *   発信者ページで大きく見せる。「記念カードを保存」で、メダル・通し番号・名前・参加日の入った 1200×630 の画像を
  *   その場（ブラウザ）で作って保存・共有できる（背景は founder-○○-card-bg.webp。文字は端末のフォントで書くので、
@@ -80,7 +82,99 @@ class SNSCS_Founder {
 	}
 
 	public static function serial( $no ) {
-		return str_pad( (string) (int) $no, max( 3, strlen( (string) (int) SNSCS_Hub::setting( 'founders_limit' ) ) ), '0', STR_PAD_LEFT );
+		return str_pad( (string) (int) $no, 3, '0', STR_PAD_LEFT );
+	}
+
+	/**
+	 * 更新のとき（1.24）: 創設メンバーの人数が前の初期値（100人）のままなら、1000人にする（一度だけ）。
+	 */
+	public static function install() {
+		if ( get_option( 'snscs_founders_1000' ) ) {
+			return;
+		}
+		$settings = (array) get_option( SNSCS_Hub::OPTION, array() );
+		if ( isset( $settings['founders_limit'] ) && 100 === (int) $settings['founders_limit'] ) {
+			$settings['founders_limit'] = 1000;
+			update_option( SNSCS_Hub::OPTION, $settings );
+			delete_transient( 'snscs_pt_founders' );
+		}
+		update_option( 'snscs_founders_1000', 1, false );
+	}
+
+	/**
+	 * 弧の下側に沿って文字を並べる（左から右へ読める向き）。$r は文字の下の線の半径。
+	 *
+	 * @return string path の並び。
+	 */
+	public static function arc( $text, $font, $size, $tracking, $r, $c ) {
+		static $fonts = null;
+		if ( null === $fonts ) {
+			$fonts = json_decode( (string) file_get_contents( SNSCS_DIR . 'assets/badges/founder-serial.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
+		$g     = $fonts[ $font ];
+		$sc    = $size / $g['upm'];
+		$chars = preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY );
+		$total = 0;
+		foreach ( $chars as $ch ) {
+			$total += ( $g['glyphs'][ $ch ]['w'] ?? 0 ) * $sc + $tracking;
+		}
+		$span  = rad2deg( ( $total - $tracking ) / $r );
+		$pos   = 0;
+		$paths = '';
+		foreach ( $chars as $ch ) {
+			$glyph = $g['glyphs'][ $ch ] ?? array( 'd' => '', 'w' => 0 );
+			$gw    = $glyph['w'] * $sc;
+			$theta = 180 + $span / 2 - rad2deg( ( $pos + $gw / 2 ) / $r );
+			$a     = deg2rad( $theta - 90 );
+			if ( '' !== $glyph['d'] ) {
+				$paths .= sprintf(
+					'<path d="%s" transform="translate(%.2f %.2f) rotate(%.2f) scale(%.5f %.5f) translate(%d 0)"/>',
+					esc_attr( $glyph['d'] ),
+					$c + $r * cos( $a ),
+					$c + $r * sin( $a ),
+					$theta - 180,
+					$sc,
+					-$sc,
+					(int) round( -$glyph['w'] / 2 )
+				);
+			}
+			$pos += $gw + $tracking;
+		}
+		return $paths;
+	}
+
+	/**
+	 * 記念メダル（写真風の画像）の上に重ねる、下の弧の文字（SVG）。金属の浮き彫りに見えるよう、影と光を重ねる。
+	 */
+	public static function medal_text( $no, $design = '' ) {
+		$design = array_key_exists( $design, self::designs() ) ? $design : self::design();
+		// デザイン => [文字の下の線の半径, 大きさ, 字の間, 金属の色（上→下）, 彫り込み（プラチナ）]
+		$styles = array(
+			'noir'     => array( 256, 22.5, 5.2, array( '#fbedc0', '#e3c374', '#a87b26' ), false ),
+			'midnight' => array( 256, 22.5, 5.2, array( '#ffffff', '#dfe4ea', '#9aa3ae' ), false ),
+			'emerald'  => array( 257, 23, 5.2, array( '#fbedc0', '#e3c374', '#a87b26' ), false ),
+			'platinum' => array( 257, 23, 5.2, array( '#6b7380', '#4a515c', '#353b45' ), true ),
+		);
+		list( $r, $size, $tracking, $metal, $engraved ) = $styles[ $design ];
+		$paths = self::arc( 'FOLLOFIND · Nº ' . self::serial( $no ), 'medium', $size, $tracking, $r, 320 );
+		$id    = 'snscs-fm-' . $design;
+		return '<svg class="snscs-founder__medal-text" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640" aria-hidden="true">'
+			. '<defs><linearGradient id="' . $id . '" gradientUnits="userSpaceOnUse" x1="0" y1="500" x2="0" y2="585">'
+			. '<stop offset="0" stop-color="' . $metal[0] . '"/><stop offset="0.5" stop-color="' . $metal[1] . '"/><stop offset="1" stop-color="' . $metal[2] . '"/></linearGradient></defs>'
+			. ( $engraved
+				? '<g fill="#ffffff" opacity="0.9" transform="translate(0 0.9)">' . $paths . '</g>'
+				: '<g fill="#000000" opacity="0.55" transform="translate(0.3 1.1)">' . $paths . '</g><g fill="#ffffff" opacity="0.35" transform="translate(0 -0.5)">' . $paths . '</g>' )
+			. '<g fill="url(#' . $id . ')" stroke="url(#' . $id . ')" stroke-width="0.45">' . $paths . '</g></svg>';
+	}
+
+	/**
+	 * 記念メダル（画像と、その上の文字）。
+	 */
+	public static function medal_html( $no, $design = '', $alt = '' ) {
+		// 重ね方は style にも書く（管理画面や、テーマの CSS が強いページでもずれないように）。
+		return '<span class="snscs-founder__medal" style="position:relative;display:block">'
+			. '<img class="snscs-founder__emblem" src="' . esc_url( self::medal_url( $design ) ) . '" alt="' . esc_attr( $alt ) . '" width="128" height="128" loading="lazy" style="display:block;width:100%;height:100%;max-width:none;margin:0">'
+			. str_replace( '<svg ', '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" ', self::medal_text( $no, $design ) ) . '</span>';
 	}
 
 	public static function url( $creator_id ) {
@@ -102,26 +196,8 @@ class SNSCS_Founder {
 	public static function svg( $no, $design = '' ) {
 		$design = array_key_exists( $design, self::designs() ) ? $design : self::design();
 		$svg    = (string) file_get_contents( SNSCS_DIR . 'assets/badges/founder-' . $design . '.svg' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$g      = json_decode( (string) file_get_contents( SNSCS_DIR . 'assets/badges/founder-serial.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$text   = 'Nº ' . self::serial( $no );
-		$sc     = $g['size'] / $g['upm'];
-		$total  = 0;
-		foreach ( preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY ) as $ch ) {
-			$total += ( $g['glyphs'][ $ch ]['w'] ?? 0 ) * $sc + $g['tracking'];
-		}
-		$x     = 500 - ( $total - $g['tracking'] ) / 2;
-		$paths = '';
-		foreach ( preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY ) as $ch ) {
-			$glyph = $g['glyphs'][ $ch ] ?? null;
-			if ( ! $glyph ) {
-				continue;
-			}
-			if ( '' !== $glyph['d'] ) {
-				$paths .= sprintf( '<path d="%s" transform="translate(%.2f %.2f) scale(%.5f %.5f)"/>', esc_attr( $glyph['d'] ), $x, $g['baseline'], $sc, -$sc );
-			}
-			$x += $glyph['w'] * $sc + $g['tracking'];
-		}
-		return str_replace( '<!--SERIAL-->', '<g fill="' . esc_attr( self::designs()[ $design ][2] ) . '">' . $paths . '</g>', $svg );
+		$arc    = self::arc( 'FOLLOFIND · Nº ' . self::serial( $no ), 'light', 30, 11, 396, 500 );
+		return str_replace( '<!--SERIAL-->', '<g fill="' . esc_attr( self::designs()[ $design ][2] ) . '" opacity="0.92">' . $arc . '</g>', $svg );
 	}
 
 	public static function serve() {
@@ -169,7 +245,7 @@ class SNSCS_Founder {
 		);
 		wp_enqueue_script( 'snscs-founder', SNSCS_URL . 'assets/js/snscs-founder.js', array(), SNSCS_VERSION, true );
 		return '<div class="snscs-founder snscs-founder--' . esc_attr( $design ) . '">'
-			. '<img class="snscs-founder__emblem" src="' . esc_url( $card['medal'] ) . '" alt="' . esc_attr( $label ) . '" width="128" height="128" loading="lazy">'
+			. self::medal_html( $no, $design, $label )
 			. '<div class="snscs-founder__text"><span class="snscs-founder__eyebrow">FOUNDING MEMBER</span><strong>' . esc_html( $label ) . '</strong>'
 			. '<span>' . esc_html( sprintf( 'サイトの立ち上げから参加している、先着%s人だけの発信者です。', number_format_i18n( (int) SNSCS_Hub::setting( 'founders_limit' ) ) ) ) . '</span>'
 			. '<button type="button" class="snscs-founder__save" data-snscs-founder-card="' . esc_attr( wp_json_encode( $card ) ) . '">記念カードを保存</button></div></div>';

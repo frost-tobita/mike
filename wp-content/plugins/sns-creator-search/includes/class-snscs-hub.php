@@ -104,7 +104,7 @@ class SNSCS_Hub {
 			'share_font'         => '',
 			'trend_min_visitors' => 3,
 			'search_trend_count' => 8,
-			'founders_limit'     => 100,
+			'founders_limit'     => 1000,
 			'founder_badge'      => 'noir',
 			'portal_scope'       => 'plugin',
 			'brand_on'           => 1,
@@ -232,7 +232,7 @@ class SNSCS_Hub {
 		$settings['feature_min']        = min( 50, max( 1, (int) ( $in['feature_min'] ?? 3 ) ) );
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
 		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
-		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 100 ) ) );
+		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 1000 ) ) );
 		$settings['founder_badge']      = array_key_exists( $in['founder_badge'] ?? '', SNSCS_Founder::designs() ) ? $in['founder_badge'] : 'noir';
 		$settings['brand_tagline']      = mb_substr( sanitize_text_field( (string) ( $in['brand_tagline'] ?? '' ) ), 0, 40 );
 		$settings['portal_scope']       = in_array( $in['portal_scope'] ?? '', array( 'top', 'plugin', 'site' ), true ) ? $in['portal_scope'] : 'plugin';
@@ -398,19 +398,19 @@ class SNSCS_Hub {
 					<tr>
 						<th scope="row"><label for="founders_limit">創設メンバーの人数</label></th>
 						<td>先着 <input id="founders_limit" type="number" name="founders_limit" min="0" max="100000" value="<?php echo (int) $s['founders_limit']; ?>" class="small-text"> 人
-						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 100人。</p></td>
+						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
 					</tr>
 					<tr>
 						<th scope="row">創設メンバーの徽章</th>
 						<td>
 							<?php foreach ( SNSCS_Founder::designs() as $snscs_k => $snscs_d ) : ?>
 								<label style="display: inline-flex; flex-direction: column; align-items: center; width: 150px; margin: 0 12px 12px 0; text-align: center; vertical-align: top">
-									<img src="<?php echo esc_url( SNSCS_Founder::medal_url( $snscs_k ) ); ?>" alt="" width="110" height="110">
+									<span style="display: block; width: 110px; height: 110px"><?php echo SNSCS_Founder::medal_html( 1, $snscs_k ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まった画像と、エスケープした文字の形。 ?></span>
 									<span><input type="radio" name="founder_badge" value="<?php echo esc_attr( $snscs_k ); ?>" <?php checked( $s['founder_badge'], $snscs_k ); ?>> <?php echo esc_html( $snscs_d[0] ); ?></span>
 									<span class="description" style="font-size: 12px"><?php echo esc_html( $snscs_d[1] ); ?></span>
 								</label>
 							<?php endforeach; ?>
-							<p class="description">通し番号（Nº 001〜）は、掲載された順に一度だけ付き、あとから変わりません。</p>
+							<p class="description">通し番号（Nº 001〜）は、掲載された順に一度だけ付き、あとから変わりません。メダルの下に「FOLLOFIND · Nº 001」のように入ります（見本は 001）。</p>
 						</td>
 					</tr>
 					<tr>

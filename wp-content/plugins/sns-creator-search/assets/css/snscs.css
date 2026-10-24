@@ -3863,12 +3863,15 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	color: #1f2733;
 }
 
-.snscs-founder__emblem {
+.snscs-founder__medal {
 	flex: 0 0 128px;
 	width: 128px;
 	height: 128px;
-	border-radius: 50%;
 	filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
+}
+
+.snscs-founder__emblem {
+	border-radius: 50%;
 }
 
 /* 1.24: 記念カードを保存 */
@@ -3937,7 +3940,7 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 }
 
 @media (max-width: 480px) {
-	.snscs-founder__emblem {
+	.snscs-founder__medal {
 		flex-basis: 92px;
 		width: 92px;
 		height: 92px;

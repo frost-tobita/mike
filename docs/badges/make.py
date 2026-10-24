@@ -3,7 +3,7 @@ import base64
 import math
 import os
 
-OUT = os.path.dirname(os.path.abspath(__file__))
+OUT = os.environ.get('BADGE_OUT', os.path.dirname(os.path.abspath(__file__)))
 FONTS = '/root/.claude/skills/synced/e4dfc23c-6473-46e6-a92b-56390bdf3762_9f3746e8-d2dd-4b63-b2b0-f4bc8be1b228/canvas-design/canvas-fonts/'
 C = 500.0
 
@@ -225,7 +225,8 @@ def badge(key, full=True, serial='001'):
     if full:
         body.append(f'<circle cx="{C}" cy="{C}" r="418" fill="none" stroke="{metal}" stroke-width="2.5"/>')
         body.append(arc_text('FOUNDING MEMBER', 'Italiana-Regular.ttf', 50, 15, 372, d['text']))
-        body.append(arc_text('FOLLOFIND · MMXXVI', 'Jura-Light.ttf', 30, 11, 396, d['text'], top=False, opacity=0.92))
+        # 下の弧: 1.24 から「FOLLOFIND · Nº 001」（通し番号はサイトが発信者ごとに入れる <!--SERIAL-->。見本では 001）。
+        body.append(arc_text('FOLLOFIND · Nº ' + serial, 'Jura-Light.ttf', 30, 11, 396, d['text'], top=False, opacity=0.92) if serial else '<!--SERIAL-->')
         for deg in (90, 270):
             x, y = pol(372, deg)
             body.append(f'<g transform="translate({x:.2f} {y:.2f}) rotate({deg})"><path d="M0 -10 L4 0 L0 10 L-4 0Z" fill="{metal}"/></g>')
@@ -254,8 +255,6 @@ def badge(key, full=True, serial='001'):
     if full:
         body.append(f'<circle cx="{C}" cy="{C - 8}" r="168" fill="none" stroke="{metal}" stroke-width="1.6" opacity="0.8"/>')
         body.append(mark(u, mfill, 3.0, C - 18))
-        # 通し番号は、サイトが発信者ごとに入れる（<!--SERIAL-->）。見本では 001。
-        body.append(f'<g data-serial-fill="{d["text"]}">' + (line_text('Nº ' + serial, 'Jura-Light.ttf', 28, 6, C, C + 122, d['text']) if serial else '<!--SERIAL-->') + '</g>')
     else:
         body.append(mark(u, mfill, 6.2, C - 10))
     style = ''
@@ -268,10 +267,13 @@ if __name__ == '__main__':
         open(os.path.join(OUT, f'{key}-full.svg'), 'w').write(badge(key, True))
         open(os.path.join(OUT, f'{key}-template.svg'), 'w').write(badge(key, True, serial=''))
         open(os.path.join(OUT, f'{key}-mini.svg'), 'w').write(badge(key, False))
-    # 通し番号用の文字（サイトの PHP が並べる）。
-    glyphs = {}
-    for ch in 'Nº 0123456789':
-        d, w, upm = glyph('Jura-Light.ttf', ch)
-        glyphs[ch] = {'d': d, 'w': w}
-    json.dump({'upm': upm, 'size': 28, 'tracking': 6, 'baseline': C + 122, 'glyphs': glyphs}, open(os.path.join(OUT, 'serial-glyphs.json'), 'w'))
+    # 下の弧の文字（サイトの PHP が並べる）。light = 徽章（SVG）、medium = 記念メダル（写真風）の上に重ねる。
+    fonts = {}
+    for key, file in (('light', 'Jura-Light.ttf'), ('medium', 'Jura-Medium.ttf')):
+        glyphs = {}
+        for ch in 'FOLIND·Nº 0123456789':
+            d, w, upm = glyph(file, ch)
+            glyphs[ch] = {'d': d, 'w': w}
+        fonts[key] = {'upm': upm, 'glyphs': glyphs}
+    json.dump(fonts, open(os.path.join(OUT, 'serial-glyphs.json'), 'w'))
     print('ok')
