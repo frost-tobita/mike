@@ -4,8 +4,9 @@
  *
  * - 先着（設定した人数まで）で掲載された発信者に、通し番号（Nº 001〜）を付ける。番号は一度付けたら変わらない
  *   （あとでほかの人が掲載をやめても、詰めたり付け直したりしない）。投稿メタ _snscs_founder_no
- * - 徽章は4つのデザインから運営が選ぶ（サイトのページの設定「創設メンバーの徽章」）:
- *     noir（黒と金）・midnight（ブランドの青とプラチナ・月桂樹）・emerald（深い緑と金・月桂樹）・platinum（白とプラチナ）
+ * - 1.24.2: 徽章の色は番号で決まる（ランク。上ほど貴重）。境目はサイトのページの設定で変えられる（初期値 50 / 200 / 500）:
+ *     noir（黒と金）Nº 001〜050 ・ midnight（青とプラチナ）〜200 ・ emerald（緑と金）〜500 ・ platinum（白とプラチナ）〜人数まで
+ *   Nº 001〜010 は「FIRST 10」: メダルのロゴの下と記念カードに刻印
  * - 大きな徽章（/?snscs_founder_badge=発信者ID）: 通し番号を入れた SVG。文字は輪郭（パス）にしてあるので、
  *   どの端末でも同じ見た目で、拡大してもにじまない
  * - 小さな徽章（assets/badges/founder-○○-mini.svg）: 検索結果のカード・マイリンクなど、20〜48px で使う
@@ -44,9 +45,46 @@ class SNSCS_Founder {
 		);
 	}
 
-	public static function design() {
-		$d = (string) SNSCS_Hub::setting( 'founder_badge' );
-		return array_key_exists( $d, self::designs() ) ? $d : 'noir';
+	/**
+	 * ランクの境目（ノワール・ミッドナイト・エメラルドの最後の番号）。
+	 *
+	 * @return int[]
+	 */
+	public static function bounds() {
+		$b = array_map( 'intval', (array) SNSCS_Hub::setting( 'founder_tiers' ) );
+		return 3 === count( $b ) && $b[0] > 0 && $b[0] < $b[1] && $b[1] < $b[2] ? $b : array( 50, 200, 500 );
+	}
+
+	/**
+	 * ランクごとの番号の範囲。
+	 *
+	 * @return array<string,int[]> デザイン => [最初, 最後]
+	 */
+	public static function tiers() {
+		$b     = self::bounds();
+		$limit = max( $b[2] + 1, (int) SNSCS_Hub::setting( 'founders_limit' ) );
+		return array(
+			'noir'     => array( 1, $b[0] ),
+			'midnight' => array( $b[0] + 1, $b[1] ),
+			'emerald'  => array( $b[1] + 1, $b[2] ),
+			'platinum' => array( $b[2] + 1, $limit ),
+		);
+	}
+
+	/**
+	 * 番号のランク（デザイン）。
+	 */
+	public static function design( $no = 0 ) {
+		foreach ( self::tiers() as $design => $range ) {
+			if ( (int) $no <= $range[1] ) {
+				return $design;
+			}
+		}
+		return 'platinum';
+	}
+
+	public static function name( $design ) {
+		return array( 'noir' => 'ノワール', 'midnight' => 'ミッドナイト', 'emerald' => 'エメラルド', 'platinum' => 'プラチナ' )[ $design ] ?? '';
 	}
 
 	/**
@@ -188,7 +226,7 @@ class SNSCS_Founder {
 	 * 記念メダル（写真風の画像）の上に重ねる、下の弧の文字（SVG）。金属の浮き彫りに見えるよう、影と光を重ねる。
 	 */
 	public static function medal_text( $no, $design = '' ) {
-		$design = array_key_exists( $design, self::designs() ) ? $design : self::design();
+		$design = array_key_exists( $design, self::designs() ) ? $design : self::design( $no );
 		// デザイン => [文字の下の線の半径, 大きさ, 字の間, 金属の色（上→下）, 彫り込み（プラチナ）]
 		$styles = array(
 			'noir'     => array( 256, 22.5, 5.2, array( '#fbedc0', '#e3c374', '#a87b26' ), false ),
@@ -216,6 +254,7 @@ class SNSCS_Founder {
 	 * 記念メダル（画像と、その上の文字）。
 	 */
 	public static function medal_html( $no, $design = '', $alt = '' ) {
+		$design = array_key_exists( $design, self::designs() ) ? $design : self::design( $no );
 		// 重ね方は style にも書く（管理画面や、テーマの CSS が強いページでもずれないように）。
 		return '<span class="snscs-founder__medal" style="position:relative;display:block">'
 			. '<img class="snscs-founder__emblem" src="' . esc_url( self::medal_url( $design ) ) . '" alt="' . esc_attr( $alt ) . '" width="128" height="128" loading="lazy" style="display:block;width:100%;height:100%;max-width:none;margin:0">'
@@ -223,23 +262,23 @@ class SNSCS_Founder {
 	}
 
 	public static function url( $creator_id ) {
-		return add_query_arg( array( self::QUERY_VAR => (int) $creator_id, 'v' => self::design() . self::number( $creator_id ) ), home_url( '/' ) );
+		return add_query_arg( array( self::QUERY_VAR => (int) $creator_id, 'v' => self::number( $creator_id ) . '-' . implode( '-', self::bounds() ) ), home_url( '/' ) );
 	}
 
-	public static function medal_url( $design = '' ) {
-		$design = array_key_exists( $design, self::designs() ) ? $design : self::design();
+	public static function medal_url( $design = 'noir' ) {
+		$design = array_key_exists( $design, self::designs() ) ? $design : 'noir';
 		return SNSCS_URL . 'assets/badges/founder-' . $design . '-medal.webp?ver=' . SNSCS_VERSION;
 	}
 
-	public static function mini_url() {
-		return SNSCS_URL . 'assets/badges/founder-' . self::design() . '-mini.svg?ver=' . SNSCS_VERSION;
+	public static function mini_url( $no = 0 ) {
+		return SNSCS_URL . 'assets/badges/founder-' . self::design( $no ) . '-mini.svg?ver=' . SNSCS_VERSION;
 	}
 
 	/**
 	 * 通し番号の入った徽章（SVG の文字列）。
 	 */
 	public static function svg( $no, $design = '' ) {
-		$design = array_key_exists( $design, self::designs() ) ? $design : self::design();
+		$design = array_key_exists( $design, self::designs() ) ? $design : self::design( $no );
 		$svg    = (string) file_get_contents( SNSCS_DIR . 'assets/badges/founder-' . $design . '.svg' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$arc    = self::arc( 'FOLLOFIND · Nº ' . self::serial( $no ), 'light', 30, 11, 396, 500 );
 		return str_replace( '<!--SERIAL-->', '<g fill="' . esc_attr( self::designs()[ $design ][2] ) . '" opacity="0.92">' . $arc . '</g>', $svg );
@@ -275,7 +314,7 @@ class SNSCS_Founder {
 		if ( ! $no ) {
 			return '';
 		}
-		$design = self::design();
+		$design = self::design( $no );
 		$label  = '創設メンバー Nº ' . self::serial( $no );
 		$card   = array(
 			'medal'  => self::medal_url( $design ),
@@ -288,11 +327,12 @@ class SNSCS_Founder {
 			'site'   => (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ),
 			'file'   => 'follofind-founder-' . self::serial( $no ) . '.png',
 			'first'  => self::is_first( $no ),
+			'rank'   => self::name( $design ),
 		);
 		wp_enqueue_script( 'snscs-founder', SNSCS_URL . 'assets/js/snscs-founder.js', array(), SNSCS_VERSION, true );
 		return '<div class="snscs-founder snscs-founder--' . esc_attr( $design ) . '">'
 			. self::medal_html( $no, $design, $label )
-			. '<div class="snscs-founder__text"><span class="snscs-founder__eyebrow">FOUNDING MEMBER</span><strong>' . esc_html( $label ) . '</strong>'
+			. '<div class="snscs-founder__text"><span class="snscs-founder__eyebrow">FOUNDING MEMBER · ' . esc_html( strtoupper( $design ) ) . ( self::is_first( $no ) ? ' · FIRST 10 ★' : '' ) . '</span><strong>' . esc_html( $label ) . '</strong>'
 			. '<span>' . esc_html( sprintf( 'サイトの立ち上げから参加している、先着%s人だけの発信者です。', number_format_i18n( (int) SNSCS_Hub::setting( 'founders_limit' ) ) ) ) . '</span>'
 			. '<button type="button" class="snscs-founder__save" data-snscs-founder-card="' . esc_attr( wp_json_encode( $card ) ) . '">記念カードを保存</button></div></div>';
 	}
@@ -306,6 +346,6 @@ class SNSCS_Founder {
 			return '';
 		}
 		$label = '創設メンバー Nº ' . self::serial( $no );
-		return '<img class="snscs-founder-mini" src="' . esc_url( self::mini_url() ) . '" alt="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '" width="' . (int) $size . '" height="' . (int) $size . '">';
+		return '<img class="snscs-founder-mini" src="' . esc_url( self::mini_url( $no ) ) . '" alt="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '" width="' . (int) $size . '" height="' . (int) $size . '">';
 	}
 }

@@ -3453,84 +3453,251 @@ body.snscs-portal-body .snscs-pt-hero--compact p.snscs-pt-hero__title {
 	font-size: 21px;
 }
 
-/* 創設メンバー募集 */
+/* 創設メンバー募集（1.24.2: ランクと残りの枠） */
 body.snscs-portal-body .snscs-pt-founders {
-	display: flex;
-	align-items: center;
-	gap: 20px;
+	--fd-accent: #e7cd85;
+	container-type: inline-size;
+	overflow: hidden;
 	margin: 0;
-	padding: 20px 22px;
-	border: 2px dashed #f59e0b;
-	border-radius: 14px;
-	background: linear-gradient(135deg, #fffbeb, #fef3c7);
+	border-radius: 20px;
+	background: linear-gradient(135deg, #15140f, #050505);
+	box-shadow: 0 14px 34px rgba(10, 10, 30, 0.18);
+	color: #f5f1e6;
+}
+
+body.snscs-portal-body .snscs-pt-founders--midnight {
+	--fd-accent: #dfe4ea;
+	background: linear-gradient(135deg, #1b2690, #070b33);
+}
+
+body.snscs-portal-body .snscs-pt-founders--emerald {
+	--fd-accent: #e9cf86;
+	background: linear-gradient(135deg, #0f4a35, #021a13);
+}
+
+body.snscs-portal-body .snscs-pt-founders--platinum {
+	--fd-accent: #c9d0d8;
+	background: linear-gradient(135deg, #2b3240, #11151c);
+}
+
+/* 置き場所の幅に合わせて折り返す（ページの横いっぱいでも、細い列でも崩れない）。 */
+.snscs-pt-founders__head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 22px;
+	align-items: center;
+	padding: 24px 26px 20px;
+}
+
+body.snscs-portal-body img.snscs-pt-founders__medal {
+	display: block;
+	flex: 0 0 120px;
+	width: 120px;
+	height: 120px;
+	max-width: none;
+	margin: 0;
+	filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.5));
 }
 
 .snscs-pt-founders__body {
-	flex: 1 1 auto;
+	flex: 1 1 240px;
 	min-width: 0;
 }
 
 body.snscs-portal-body p.snscs-pt-founders__tag {
 	display: inline-block;
-	margin: 0 0 6px;
-	padding: 0 10px;
+	margin: 0 0 8px;
+	padding: 3px 10px;
+	border: 1px solid var(--fd-accent);
 	border-radius: 999px;
-	background: #f59e0b;
-	color: #fff;
+	color: var(--fd-accent);
 	font-size: 12px;
-	font-weight: 800;
-	line-height: 22px;
+	letter-spacing: 0.12em;
+	line-height: 1.5;
 }
 
 body.snscs-portal-body p.snscs-pt-founders__title {
-	margin: 0 0 4px;
-	color: #78350f;
-	font-size: 18px;
-	font-weight: 800;
+	margin: 0 0 6px;
+	color: #f5f1e6;
+	font-size: 24px;
+	font-weight: 700;
+	line-height: 1.45;
 }
 
-body.snscs-portal-body p.snscs-pt-founders__text {
-	margin: 0 0 10px;
-	color: #92400e;
-	font-size: 13px;
-}
-
-.snscs-pt-founders__meter {
-	overflow: hidden;
-	height: 10px;
-	border-radius: 999px;
-	background: #fde68a;
-}
-
-.snscs-pt-founders__meter span {
-	display: block;
-	height: 100%;
-	border-radius: 999px;
-	background: linear-gradient(90deg, #f59e0b, #ea580c);
+body.snscs-portal-body p.snscs-pt-founders__title b {
+	color: var(--fd-accent);
+	white-space: nowrap;
 }
 
 body.snscs-portal-body p.snscs-pt-founders__left {
-	margin: 6px 0 0;
-	color: #92400e;
-	font-size: 13px;
-	font-weight: 700;
+	margin: 0;
+	color: rgba(245, 241, 230, 0.85);
+	font-size: 15px;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__left strong {
+	margin: 0 4px;
+	color: var(--fd-accent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 30px;
+	font-weight: 400;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__left span {
+	opacity: 0.7;
 }
 
 .snscs-portal-body .snscs-pt-founders__btn {
-	flex: 0 0 auto;
-	padding: 12px 22px;
+	flex: 1 0 auto;
+	max-width: 100%;
+	padding: 14px 26px;
+	text-align: center;
 	border-radius: 999px;
-	background: #ea580c;
-	box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
-	color: #fff;
-	font-weight: 800;
+	background: linear-gradient(180deg, #f3dc93, #c99a3b);
+	color: #1a1405;
+	font-weight: 700;
 	white-space: nowrap;
 }
 
 .snscs-portal-body .snscs-pt-founders__btn:hover {
-	background: #c2410c;
-	color: #fff;
+	color: #1a1405;
 	text-decoration: none;
+	filter: brightness(1.06);
+}
+
+.snscs-pt-founders__tiers {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+@container (min-width: 760px) {
+	.snscs-pt-founders__tiers {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+.snscs-pt-founders__tier {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	padding: 14px 16px;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+body.snscs-portal-body .snscs-pt-founders__tier img {
+	flex: 0 0 46px;
+	width: 46px;
+	height: 46px;
+	max-width: none;
+	margin: 0;
+}
+
+.snscs-pt-founders__tierbody {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+body.snscs-portal-body .snscs-pt-founders__tier p {
+	margin: 0;
+	color: #f5f1e6;
+	line-height: 1.45;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__tiername {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__range {
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	opacity: 0.65;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__status {
+	margin-top: 2px;
+	font-size: 12px;
+}
+
+.snscs-pt-founders__tier.is-now {
+	background: rgba(255, 255, 255, 0.06);
+	box-shadow: inset 0 -3px 0 var(--fd-accent);
+}
+
+body.snscs-portal-body .snscs-pt-founders__tier.is-now p.snscs-pt-founders__status {
+	color: var(--fd-accent);
+	font-weight: 700;
+}
+
+.snscs-pt-founders__tier.is-done {
+	opacity: 0.45;
+}
+
+.snscs-pt-founders__bar {
+	overflow: hidden;
+	height: 4px;
+	margin-top: 5px;
+	border-radius: 2px;
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.snscs-pt-founders__bar span {
+	display: block;
+	height: 100%;
+	background: var(--fd-accent);
+}
+
+body.snscs-portal-body p.snscs-pt-founders__first {
+	margin: 0;
+	padding: 10px 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	background: rgba(0, 0, 0, 0.35);
+	color: var(--fd-accent);
+	font-size: 12px;
+	letter-spacing: 0.04em;
+	text-align: center;
+}
+
+body.snscs-portal-body p.snscs-pt-founders__first em {
+	margin-right: 6px;
+	padding: 1px 8px;
+	border: 1px solid var(--fd-accent);
+	font-style: normal;
+	white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+	.snscs-pt-founders__head {
+		gap: 14px;
+		padding: 20px 18px 16px;
+	}
+
+	body.snscs-portal-body img.snscs-pt-founders__medal {
+		flex-basis: 84px;
+		width: 84px;
+		height: 84px;
+	}
+
+	body.snscs-portal-body p.snscs-pt-founders__title {
+		font-size: 18px;
+	}
+
+	body.snscs-portal-body p.snscs-pt-founders__left strong {
+		font-size: 24px;
+	}
+
+	.snscs-pt-founders__tier {
+		padding: 12px;
+	}
+
+	body.snscs-portal-body .snscs-pt-founders__tier img {
+		flex-basis: 38px;
+		width: 38px;
+		height: 38px;
+	}
 }
 
 /* SNSから探す */
@@ -3954,16 +4121,6 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 
 	body.snscs-portal-body p.snscs-pt-hero__title {
 		font-size: 21px;
-	}
-
-	body.snscs-portal-body .snscs-pt-founders {
-		flex-direction: column;
-		align-items: stretch;
-		padding: 18px 16px;
-	}
-
-	.snscs-portal-body .snscs-pt-founders__btn {
-		text-align: center;
 	}
 
 	body.snscs-portal-body .snscs-pt-snscards {

@@ -113,7 +113,7 @@
 
 			ctx.globalAlpha = 0.78;
 			ctx.font = '400 22px ' + SANS;
-			ctx.fillText( 'FolloFind 創設メンバー', x, 448 );
+			ctx.fillText( 'FolloFind 創設メンバー' + ( d.rank ? '・' + d.rank : '' ), x, 448 );
 			ctx.fillText( d.date + ' 参加', x, 482 );
 
 			ctx.globalAlpha = 0.55;

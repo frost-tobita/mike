@@ -105,7 +105,7 @@ class SNSCS_Hub {
 			'trend_min_visitors' => 3,
 			'search_trend_count' => 8,
 			'founders_limit'     => 1000,
-			'founder_badge'      => 'noir',
+			'founder_tiers'      => array( 50, 200, 500 ),
 			'portal_scope'       => 'plugin',
 			'brand_on'           => 1,
 			'brand_tagline'      => 'SNS特化型サーチエンジン',
@@ -233,7 +233,8 @@ class SNSCS_Hub {
 		$settings['trend_min_visitors'] = min( 100, max( 1, (int) ( $in['trend_min_visitors'] ?? 3 ) ) );
 		$settings['search_trend_count'] = min( 20, max( 0, (int) ( $in['search_trend_count'] ?? 8 ) ) );
 		$settings['founders_limit']     = min( 100000, max( 0, (int) ( $in['founders_limit'] ?? 1000 ) ) );
-		$settings['founder_badge']      = array_key_exists( $in['founder_badge'] ?? '', SNSCS_Founder::designs() ) ? $in['founder_badge'] : 'noir';
+		$tiers                          = array_map( 'absint', array_slice( array_values( (array) ( $in['founder_tiers'] ?? array() ) ), 0, 3 ) );
+		$settings['founder_tiers']      = 3 === count( $tiers ) && $tiers[0] > 0 && $tiers[0] < $tiers[1] && $tiers[1] < $tiers[2] ? $tiers : array( 50, 200, 500 );
 		$settings['brand_tagline']      = mb_substr( sanitize_text_field( (string) ( $in['brand_tagline'] ?? '' ) ), 0, 40 );
 		$settings['portal_scope']       = in_array( $in['portal_scope'] ?? '', array( 'top', 'plugin', 'site' ), true ) ? $in['portal_scope'] : 'plugin';
 		$settings['hero_title']         = mb_substr( sanitize_text_field( (string) ( $in['hero_title'] ?? '' ) ), 0, 60 );
@@ -401,16 +402,24 @@ class SNSCS_Hub {
 						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
 					</tr>
 					<tr>
-						<th scope="row">創設メンバーの徽章</th>
+						<th scope="row">創設メンバーのランク</th>
 						<td>
-							<?php foreach ( SNSCS_Founder::designs() as $snscs_k => $snscs_d ) : ?>
-								<label style="display: inline-flex; flex-direction: column; align-items: center; width: 150px; margin: 0 12px 12px 0; text-align: center; vertical-align: top">
-									<span style="display: block; width: 110px; height: 110px"><?php echo SNSCS_Founder::medal_html( 1, $snscs_k ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まった画像と、エスケープした文字の形。 ?></span>
-									<span><input type="radio" name="founder_badge" value="<?php echo esc_attr( $snscs_k ); ?>" <?php checked( $s['founder_badge'], $snscs_k ); ?>> <?php echo esc_html( $snscs_d[0] ); ?></span>
-									<span class="description" style="font-size: 12px"><?php echo esc_html( $snscs_d[1] ); ?></span>
-								</label>
+							<?php $snscs_b = SNSCS_Founder::bounds(); $snscs_i = 0; ?>
+							<?php foreach ( SNSCS_Founder::tiers() as $snscs_k => $snscs_r ) : ?>
+								<div style="display: inline-flex; flex-direction: column; align-items: center; width: 150px; margin: 0 12px 12px 0; text-align: center; vertical-align: top">
+									<span style="display: block; width: 110px; height: 110px"><?php echo SNSCS_Founder::medal_html( $snscs_r[0], $snscs_k ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まった画像と、エスケープした文字の形。 ?></span>
+									<strong><?php echo esc_html( SNSCS_Founder::name( $snscs_k ) ); ?></strong>
+									<span>Nº <?php echo esc_html( SNSCS_Founder::serial( $snscs_r[0] ) ); ?> 〜
+										<?php if ( $snscs_i < 3 ) : ?>
+											<input type="number" name="founder_tiers[]" min="1" max="100000" value="<?php echo (int) $snscs_b[ $snscs_i ]; ?>" style="width: 76px" aria-label="<?php echo esc_attr( SNSCS_Founder::name( $snscs_k ) . 'の最後の番号' ); ?>">
+										<?php else : ?>
+											<?php echo esc_html( SNSCS_Founder::serial( $snscs_r[1] ) ); ?>
+										<?php endif; ?>
+									</span>
+								</div>
+								<?php $snscs_i++; ?>
 							<?php endforeach; ?>
-							<p class="description">通し番号（Nº 001〜）は、掲載された順に一度だけ付き、あとから変わりません。メダルの下に「FOLLOFIND · Nº 001」のように入ります（見本は 001）。</p>
+							<p class="description">メダルの色は番号で決まります（上ほど貴重。初期値 ノワール 〜50・ミッドナイト 〜200・エメラルド 〜500・プラチナ 〜最後まで）。Nº 001〜010 は「FIRST 10」の刻印付き。番号（Nº 001〜）は掲載された順に一度だけ付き、あとから変わりません。メダルの下に「FOLLOFIND · Nº 001」のように入ります。</p>
 						</td>
 					</tr>
 					<tr>

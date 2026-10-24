@@ -457,21 +457,58 @@ class SNSCS_Portal_Top {
 			. $stats . '</section>';
 	}
 
-	/** 2. 創設メンバー募集（掲載が決めた人数に届いたら消える） */
+	/**
+	 * 2. 創設メンバー募集（掲載が決めた人数に届いたら消える）。
+	 * 1.24.2: いま受付中のランク（ノワール→ミッドナイト→エメラルド→プラチナ）と残りの枠、4つのランクの一覧、FIRST 10。
+	 */
 	private static function founders_banner() {
 		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
-		$total = self::creator_total();
+		$total = min( $limit, self::creator_total() );
 		if ( $limit <= 0 || $total >= $limit ) {
 			return '';
 		}
-		$left = $limit - $total;
-		$rate = (int) round( $total / $limit * 100 );
-		return '<section class="snscs-pt-founders"><div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">創設メンバー募集中</p>'
-			. '<p class="snscs-pt-founders__title">' . esc_html( sprintf( '先着%d人に「創設メンバー」のバッジ', $limit ) ) . '</p>'
-			. '<p class="snscs-pt-founders__text">いま掲載すると、プロフィールとマイリンクにずっと「創設メンバー」のバッジが付きます。掲載・マイリンクの作成は無料です。</p>'
-			. '<div class="snscs-pt-founders__meter" role="img" aria-label="' . esc_attr( sprintf( '%d人中%d人が参加', $limit, $total ) ) . '"><span style="width:' . max( 2, $rate ) . '%"></span></div>'
-			. '<p class="snscs-pt-founders__left">' . esc_html( sprintf( '残り %s 人', number_format_i18n( $left ) ) ) . '</p></div>'
-			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a></section>';
+		$next  = $total + 1;
+		$now   = SNSCS_Founder::design( $next );
+		$tiers = SNSCS_Founder::tiers();
+		$tiers['platinum'][1] = $limit;
+		$range = $tiers[ $now ];
+		$left  = $range[1] - $total;
+		$top   = 'noir' === $now ? '最上位の' : '';
+
+		$rows = '';
+		foreach ( $tiers as $design => $r ) {
+			if ( $r[0] > $limit ) {
+				continue;
+			}
+			$size  = $r[1] - $r[0] + 1;
+			$state = $total >= $r[1] ? 'done' : ( $design === $now ? 'now' : 'next' );
+			if ( 'done' === $state ) {
+				$status = '受付終了';
+			} elseif ( 'now' === $state ) {
+				$status = sprintf( '受付中 残り%s枠', number_format_i18n( $left ) );
+			} else {
+				$status = sprintf( '残り%s枠', number_format_i18n( $size ) );
+			}
+			$rows .= '<div class="snscs-pt-founders__tier is-' . $state . '"><img src="' . esc_url( SNSCS_Founder::medal_url( $design ) ) . '" alt="" width="46" height="46" loading="lazy">'
+				. '<div class="snscs-pt-founders__tierbody"><p class="snscs-pt-founders__tiername">' . esc_html( SNSCS_Founder::name( $design ) ) . '</p>'
+				. '<p class="snscs-pt-founders__range">Nº ' . esc_html( SNSCS_Founder::serial( $r[0] ) . '〜' . SNSCS_Founder::serial( $r[1] ) ) . '</p>'
+				. '<p class="snscs-pt-founders__status">' . esc_html( $status ) . '</p>'
+				. ( 'now' === $state ? '<div class="snscs-pt-founders__bar"><span style="width:' . max( 3, (int) round( ( $total - $r[0] + 1 ) / $size * 100 ) ) . '%"></span></div>' : '' )
+				. '</div></div>';
+		}
+
+		$first = $total < 10
+			? sprintf( 'Nº 001〜010 は残り%d枠。メダルとカードに「FIRST 10」の特別な刻印が入ります', 10 - $total )
+			: 'Nº 001〜010 は受付終了しました（メダルとカードに「FIRST 10」の刻印）';
+
+		return '<section class="snscs-pt-founders snscs-pt-founders--' . esc_attr( $now ) . '">'
+			. '<div class="snscs-pt-founders__head"><img class="snscs-pt-founders__medal" src="' . esc_url( SNSCS_Founder::medal_url( $now ) ) . '" alt="" width="150" height="150">'
+			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
+			. '<p class="snscs-pt-founders__title">いま掲載すると、' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</p>'
+			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
+			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載して受け取る</a></div>'
+			. '<div class="snscs-pt-founders__tiers">' . $rows . '</div>'
+			. '<p class="snscs-pt-founders__first"><em>FIRST 10 ★</em> ' . esc_html( $first ) . '</p></section>';
 	}
 
 	/** 3. SNSから探す */
