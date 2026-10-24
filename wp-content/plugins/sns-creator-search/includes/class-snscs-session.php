@@ -93,7 +93,7 @@ class SNSCS_Session {
 
 	/**
 	 * ログイン中の人の名前と札（ログインしていなければ null）。
-	 * 札は、発信者も読者も同じ「セイント」（1.26。会員の呼び名）。創設メンバーは「ノワール」などのランク名と、小さな徽章。
+	 * 札は、発信者も読者も同じ「セイント」（1.26。会員の呼び名）。創設セイントは「ノワール」などのランク名と、小さな徽章。
 	 *
 	 * @return array{name:string,role:string,design:string,no:int}|null
 	 */
@@ -128,13 +128,13 @@ class SNSCS_Session {
 	}
 
 	/**
-	 * 名前の横の札（創設メンバーは小さな徽章＋ランクの色の札）。
+	 * 名前の横の札（創設セイントは小さな徽章＋ランクの色の札）。
 	 */
 	public static function tag_html( array $who ) {
 		if ( '' === $who['design'] ) {
 			return '<span class="snscs-who-tag">' . esc_html( $who['role'] ) . '</span>';
 		}
-		$label = '創設メンバー Nº ' . SNSCS_Founder::serial( $who['no'] ) . '（' . $who['role'] . '）';
+		$label = '創設セイント Nº ' . SNSCS_Founder::serial( $who['no'] ) . '（' . $who['role'] . '）';
 		return '<span class="snscs-who-tag snscs-who-tag--' . esc_attr( $who['design'] ) . '" title="' . esc_attr( $label ) . '">'
 			. '<img src="' . esc_url( SNSCS_Founder::mini_url( $who['no'] ) ) . '" alt="" width="18" height="18">' . esc_html( $who['role'] ) . '</span>';
 	}

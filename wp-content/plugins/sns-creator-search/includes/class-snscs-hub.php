@@ -410,12 +410,12 @@ class SNSCS_Hub {
 						<p class="description">トップページの中央のいちばん上に出す、サイトの紹介です。掲載が10人を超えると、人数・ジャンル数も出します。</p></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="founders_limit">創設メンバーの人数</label></th>
+						<th scope="row"><label for="founders_limit">創設セイントの人数</label></th>
 						<td>先着 <input id="founders_limit" type="number" name="founders_limit" min="0" max="100000" value="<?php echo (int) $s['founders_limit']; ?>" class="small-text"> 人
-						<p class="description">最初に掲載された発信者から、この人数までに「創設メンバー」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
+						<p class="description">最初に掲載された発信者から、この人数までに「創設セイント」のバッジを付けます（プロフィールとマイリンク）。掲載がこの人数に届くまで、トップページに募集の案内を出します。0 にすると、募集の案内もバッジも出しません。初期値 1000人。</p></td>
 					</tr>
 					<tr>
-						<th scope="row">創設メンバーのランク</th>
+						<th scope="row">創設セイントのランク</th>
 						<td>
 							<?php $snscs_b = SNSCS_Founder::bounds(); $snscs_i = 0; ?>
 							<?php foreach ( SNSCS_Founder::tiers() as $snscs_k => $snscs_r ) : ?>

@@ -275,7 +275,7 @@ class SNSCS_Portal {
 					<a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">掲載ページを見る</a>
 					<?php $snscs_no = SNSCS_Founder::number( $creator_id ); ?>
 					<?php if ( $snscs_no ) : ?>
-						<br><?php echo SNSCS_Founder::mini_html( $creator_id, 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?> <strong><?php echo esc_html( '創設メンバー Nº ' . SNSCS_Founder::serial( $snscs_no ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_no ) ) . '）' ); ?></strong> — <a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">記念メダルと記念カード</a>
+						<br><?php echo SNSCS_Founder::mini_html( $creator_id, 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?> <strong><?php echo esc_html( '創設セイント Nº ' . SNSCS_Founder::serial( $snscs_no ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_no ) ) . '）' ); ?></strong> — <a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">記念メダルと記念カード</a>
 					<?php endif; ?>
 				<?php elseif ( $creator_id ) : ?>
 					<span class="snscs-badge snscs-badge--off">掲載停止中</span>
@@ -301,7 +301,7 @@ class SNSCS_Portal {
 							$snscs_taken = count( SNSCS_Portal_Top::founders() );
 							?>
 							<?php if ( $snscs_limit > $snscs_taken ) : ?>
-								<br><strong><?php echo esc_html( '審査に通って掲載されると、創設メンバーのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_taken + 1 ) ) . '」）が付きます。' ); ?></strong>
+								<br><strong><?php echo esc_html( '審査に通って掲載されると、創設セイントのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_taken + 1 ) ) . '」）が付きます。' ); ?></strong>
 							<?php endif; ?>
 						<?php endif; ?>
 					</p>

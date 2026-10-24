@@ -674,7 +674,7 @@ class SNSCS_Biolink {
 		}
 		if ( SNSCS_Portal_Top::is_founder( $creator_id ) ) {
 			$founder_no = SNSCS_Founder::number( $creator_id );
-			$badges[]   = array( 'founder', $l( '創設メンバー Nº ', 'Founding member Nº ' ) . SNSCS_Founder::serial( $founder_no ), SNSCS_Founder::mini_url( $founder_no ) );
+			$badges[]   = array( 'founder', $l( '創設セイント Nº ', 'Founding Saint Nº ' ) . SNSCS_Founder::serial( $founder_no ), SNSCS_Founder::mini_url( $founder_no ) );
 		}
 		// 期間の外のボタンを外し、有料リンクを「販売中」に分ける（SNSCS_Biolink_Extra）。
 		$arranged   = SNSCS_Biolink_Extra::arrange( $creator_id, self::buttons( $creator_id, $english ), $english );

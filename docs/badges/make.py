@@ -1,4 +1,4 @@
-"""Quiet Insignia — 創設メンバーの徽章（4案）を SVG で作る。"""
+"""Quiet Insignia — 創設セイントの徽章（4案）を SVG で作る。"""
 import base64
 import math
 import os

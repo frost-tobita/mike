@@ -28,7 +28,7 @@ python3 -I $F edit "指示文" -i 元の画像.png -o out.png      # 元の画�
 4. できた画像は Pillow で切り抜き・縮小し、WebP（品質 80〜88）にしてから `assets/` に入れる。1枚 150KB 以内を目安にする。
 5. 作ったものは並べた一覧画像にして、ユーザーに見せてから組み込む。
 
-## 例: 創設メンバーの記念メダル（1.24）
+## 例: 創設セイントの記念メダル（1.24）
 - 元: `assets/badges/founder-<design>.svg` を 1024px の PNG にする
 - `edit` で「本物の金属の記念メダルの写真に。文字と配置はそのまま」→ 白い背景を円で切り抜き → `founder-<design>-medal.webp`（640px）
 - 背景: `gen --size 1536x1024`「no text, no objects」の布や紙 → 1200×630 に切って `founder-<design>-card-bg.webp`

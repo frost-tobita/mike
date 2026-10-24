@@ -3478,7 +3478,7 @@ body.snscs-portal-body .snscs-pt-hero--compact p.snscs-pt-hero__title {
 	font-size: 21px;
 }
 
-/* 創設メンバー募集（1.24.2: ランクと残りの枠） */
+/* 創設セイント募集（1.24.2: ランクと残りの枠） */
 body.snscs-portal-body .snscs-pt-founders {
 	--fd-accent: #e7cd85;
 	container-type: inline-size;
@@ -4029,7 +4029,7 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 	font-weight: 700;
 }
 
-/* 創設メンバーのバッジ（発信者ページ） */
+/* 創設セイントのバッジ（発信者ページ） */
 .snscs-badge--founder {
 	background: linear-gradient(135deg, #f59e0b, #ea580c);
 	color: #fff;
@@ -8042,7 +8042,7 @@ body.snscs-portal-body ul.snscs-pt-picks span {
 	font-weight: 400;
 }
 
-/* 1.25.1: 名前の横の札。メンバーは控えめに、創設メンバーはランクの色と小さな徽章で */
+/* 1.25.1: 名前の横の札。メンバーは控えめに、創設セイントはランクの色と小さな徽章で */
 .snscs-who-tag {
 	display: inline-flex;
 	gap: 4px;

@@ -10,7 +10,7 @@
  *       wp_head・wp_footer の処理の出力から <style> と CSSの <link> だけを取り除く（<script> などはそのまま）。
  *   [sns_portal_top]
  *       トップページの中身: 大きな検索窓（SNSのタブつき）・注目のキーワード / 左: カテゴリ・地域 /
- *       中央: 看板・創設メンバー募集・SNSから探す・注目の発信者・あなたへのおすすめ・急上昇・特集・新着・
+ *       中央: 看板・創設セイント募集・SNSから探す・注目の発信者・あなたへのおすすめ・急上昇・特集・新着・
  *       読みもの（コラム・今日の用語・質問箱・急上昇の言葉）・はじめての方へ・マイリンク / 右: ログイン・発信者の方へ・カレンダー・
  *       トレンドワード・お知らせ・広告
  */
@@ -412,7 +412,7 @@ class SNSCS_Portal_Top {
 	}
 
 	/**
-	 * 創設メンバー（最初に掲載された人から、決めた人数まで）。
+	 * 創設セイント（最初に掲載された人から、決めた人数まで）。
 	 * 1.26.3: 本人のアカウントで登録した発信者だけ（運営者が管理画面から足した発信者ページは数えない。
 	 * 数えると、あとから登録した本人の枠が埋まってしまう）。
 	 *
@@ -472,7 +472,7 @@ class SNSCS_Portal_Top {
 	}
 
 	/**
-	 * 2. 創設メンバー募集（掲載が決めた人数に届いたら消える）。
+	 * 2. 創設セイント募集（掲載が決めた人数に届いたら消える）。
 	 * 1.24.2: いま受付中のランク（ノワール→ミッドナイト→エメラルド→プラチナ）と残りの枠、4つのランクの一覧、FIRST 10。
 	 */
 	private static function founders_banner() {
@@ -517,7 +517,7 @@ class SNSCS_Portal_Top {
 
 		return '<section class="snscs-pt-founders snscs-pt-founders--' . esc_attr( $now ) . '">'
 			. '<div class="snscs-pt-founders__head"><img class="snscs-pt-founders__medal" src="' . esc_url( SNSCS_Founder::medal_url( $now ) ) . '" alt="" width="150" height="150">'
-			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
+			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設セイント募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
 			. '<p class="snscs-pt-founders__title">いま登録して掲載されると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
 			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
 			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載して受け取る</a></div>'
@@ -708,7 +708,7 @@ class SNSCS_Portal_Top {
 	}
 
 	/**
-	 * ログイン中の「マイページ」の枠: 会員ランクのカード（創設メンバーはランクの色とメダル）、レベル、マイページへのリンク。
+	 * ログイン中の「マイページ」の枠: 会員ランクのカード（創設セイントはランクの色とメダル）、レベル、マイページへのリンク。
 	 */
 	private static function mypage_box( array $who, $creator ) {
 		$user_id = get_current_user_id();
@@ -731,7 +731,7 @@ class SNSCS_Portal_Top {
 				. '<p class="snscs-mycard__since">SINCE ' . esc_html( $since ) . '</p></div>'
 				. '<span class="snscs-mycard__medal">' . SNSCS_Founder::medal_html( $who['no'], $design, '' ) . '</span></div>';
 		} else {
-			// 1.26: 創設メンバーでない人は、カードランクの色のカード（セイント）。
+			// 1.26: 創設セイントでない人は、カードランクの色のカード（セイント）。
 			$card = '<div class="snscs-mycard snscs-mycard--member snscs-mycard--' . esc_attr( SNSCS_Game::rank_keys()[ $rank ] ) . '">'
 				. '<div class="snscs-mycard__text"><p class="snscs-mycard__eyebrow">FOLLOFIND SAINT</p>'
 				. '<p class="snscs-mycard__rank">' . esc_html( SNSCS_Game::rank_name( $rank ) ) . '</p>'
@@ -757,15 +757,15 @@ class SNSCS_Portal_Top {
 		if ( $creator && 'publish' === get_post_status( $creator ) ) {
 			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
 		}
-		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
+		// 読者には、創設セイントの募集中だけ、発信者になる案内をひとこと。
 		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
 		$taken = count( self::founders() );
 		if ( ! $is_creator && $limit > $taken ) {
-			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載すると「創設メンバー」のメダル（残り' . esc_html( number_format_i18n( $limit - $taken ) ) . '枠）</a>';
+			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載すると「創設セイント」のメダル（残り' . esc_html( number_format_i18n( $limit - $taken ) ) . '枠）</a>';
 		} elseif ( $is_creator && ! ( $creator && 'publish' === get_post_status( $creator ) ) && $limit > $taken ) {
 			// 審査待ち・申請前の発信者: 承認されるとメダルが付くことを伝える。
 			$pending = SNSCS_Submissions::pending_for_user( $user_id );
-			$body   .= '<p class="snscs-mypage__note">' . esc_html( ( $pending ? '審査中です。' : '掲載の申請をしましょう。' ) . '審査に通って掲載されると、創設メンバーのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $taken + 1 ) ) . '」）が付きます。' ) . '</p>';
+			$body   .= '<p class="snscs-mypage__note">' . esc_html( ( $pending ? '審査中です。' : '掲載の申請をしましょう。' ) . '審査に通って掲載されると、創設セイントのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $taken + 1 ) ) . '」）が付きます。' ) . '</p>';
 		}
 		$body .= '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
 		return self::box( 'マイページ', $body, '', 'snscs-pt-box--login snscs-pt-box--mypage is-in' );
