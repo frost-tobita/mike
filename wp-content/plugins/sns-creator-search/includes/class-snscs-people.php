@@ -230,6 +230,13 @@ class SNSCS_People {
 	/**
 	 * 会員ページ「アカウント」のプロフィール設定（読者だけ）。
 	 */
+	/**
+	 * ハンドルネーム（表示名）をそろえる: 前後の空白・改行・タグを除き、30文字まで。
+	 */
+	public static function clean_nickname( $raw ) {
+		return mb_substr( trim( preg_replace( '/\s+/u', ' ', sanitize_text_field( (string) $raw ) ) ), 0, 30 );
+	}
+
 	public static function render_settings( $user_id ) {
 		if ( SNSCS_Social::own_creator( $user_id ) ) {
 			return;
@@ -247,7 +254,7 @@ class SNSCS_People {
 				<input type="hidden" name="action" value="snscs_profile_save">
 				<?php wp_nonce_field( 'snscs_profile_save', 'snscs_nonce' ); ?>
 				<p><label><input type="checkbox" name="public" value="1" <?php checked( $public ); ?>> プロフィールを公開する</label></p>
-				<p><label>ニックネーム（30文字まで）<br><input type="text" name="nickname" maxlength="30" value="<?php echo esc_attr( (string) get_user_meta( $user_id, self::META_NICKNAME, true ) ); ?>"></label></p>
+				<p><label>ハンドルネーム（表示名・30文字まで）<br><input type="text" name="nickname" maxlength="30" value="<?php echo esc_attr( (string) get_user_meta( $user_id, self::META_NICKNAME, true ) ); ?>"></label></p>
 				<p><label>ひとこと紹介（160文字まで）<br><textarea name="bio" maxlength="160" rows="3"><?php echo esc_textarea( (string) get_user_meta( $user_id, self::META_BIO, true ) ); ?></textarea></label></p>
 				<p><button type="submit" class="snscs-button">保存</button>
 					<?php if ( $public && ! $banned ) : ?>
@@ -273,6 +280,9 @@ class SNSCS_People {
 			exit;
 		}
 		update_user_meta( $user_id, self::META_NICKNAME, $nickname );
+		if ( '' !== $nickname ) {
+			wp_update_user( array( 'ID' => $user_id, 'display_name' => $nickname ) );
+		}
 		update_user_meta( $user_id, self::META_BIO, $bio );
 		update_user_meta( $user_id, self::META_PUBLIC, $public ? 1 : 0 );
 		wp_safe_redirect( SNSCS_Social::member_url( array( 'tab' => 'account', 'snscs_notice' => 'profile_saved' ) ) );

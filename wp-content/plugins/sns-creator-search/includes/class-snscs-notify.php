@@ -160,6 +160,8 @@ class SNSCS_Notify {
 				'',
 				'審査が完了し、登録内容が掲載されました。',
 				'',
+				SNSCS_Founder::number( (int) $row['creator_id'] ) ? '創設メンバーになりました！ Nº ' . SNSCS_Founder::serial( SNSCS_Founder::number( (int) $row['creator_id'] ) ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( SNSCS_Founder::number( (int) $row['creator_id'] ) ) ) . '）の記念メダルが、掲載ページに付いています。' : '',
+				'',
 				'掲載ページ:',
 				get_permalink( $row['creator_id'] ),
 				'',

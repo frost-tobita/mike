@@ -106,7 +106,7 @@ class SNSCS_Portal_Top {
 	}
 
 	/**
-	 * テーマのCSSを外す（ヘッダーなどはこのプラグインが出すため。テーマとの見た目の衝突を防ぐ）。
+	 * テーマのCSSとスクリプトを外す（ヘッダーなどはこのプラグインが出すため。テーマとの見た目の衝突やエラーを防ぐ）。
 	 */
 	public static function drop_theme_styles() {
 		if ( ! self::is_active() ) {
@@ -126,6 +126,15 @@ class SNSCS_Portal_Top {
 		}
 		// ブロックテーマの全体の文字サイズや色の設定も外す。
 		wp_dequeue_style( 'global-styles' );
+		// 1.26.3: テーマのスクリプトも外す（テーマのヘッダーやメニューが無いページで動いて、エラーになるため。AFFINGER の base.js など）。
+		foreach ( wp_scripts()->queue as $handle ) {
+			$src = (string) ( wp_scripts()->registered[ $handle ]->src ?? '' );
+			foreach ( $theme_urls as $url ) {
+				if ( '' !== $src && 0 === strpos( $src, $url ) ) {
+					wp_dequeue_script( $handle );
+				}
+			}
+		}
 	}
 
 	/**
@@ -404,6 +413,8 @@ class SNSCS_Portal_Top {
 
 	/**
 	 * 創設メンバー（最初に掲載された人から、決めた人数まで）。
+	 * 1.26.3: 本人のアカウントで登録した発信者だけ（運営者が管理画面から足した発信者ページは数えない。
+	 * 数えると、あとから登録した本人の枠が埋まってしまう）。
 	 *
 	 * @return array<int,true> 発信者ID
 	 */
@@ -415,7 +426,7 @@ class SNSCS_Portal_Top {
 		$cached = get_transient( 'snscs_pt_founders' );
 		if ( ! is_array( $cached ) ) {
 			global $wpdb;
-			$ids    = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date ASC, ID ASC LIMIT %d", SNSCS_Post_Types::POST_TYPE, $limit ) );
+			$ids    = $wpdb->get_col( $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type = %s AND p.post_status = 'publish' AND EXISTS (SELECT 1 FROM {$wpdb->usermeta} m WHERE m.meta_key = 'snscs_creator_id' AND m.meta_value = p.ID) ORDER BY p.post_date ASC, p.ID ASC LIMIT %d", SNSCS_Post_Types::POST_TYPE, $limit ) );
 			$cached = array_fill_keys( array_map( 'intval', $ids ), true );
 			set_transient( 'snscs_pt_founders', $cached, HOUR_IN_SECONDS );
 		}
@@ -466,7 +477,7 @@ class SNSCS_Portal_Top {
 	 */
 	private static function founders_banner() {
 		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
-		$total = min( $limit, self::creator_total() );
+		$total = min( $limit, count( self::founders() ) );
 		if ( $limit <= 0 || $total >= $limit ) {
 			return '';
 		}
@@ -507,7 +518,7 @@ class SNSCS_Portal_Top {
 		return '<section class="snscs-pt-founders snscs-pt-founders--' . esc_attr( $now ) . '">'
 			. '<div class="snscs-pt-founders__head"><img class="snscs-pt-founders__medal" src="' . esc_url( SNSCS_Founder::medal_url( $now ) ) . '" alt="" width="150" height="150">'
 			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
-			. '<p class="snscs-pt-founders__title">いま掲載すると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
+			. '<p class="snscs-pt-founders__title">いま登録して掲載されると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
 			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
 			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載して受け取る</a></div>'
 			. '<div class="snscs-pt-founders__tiers">' . $rows . '</div>'
@@ -741,8 +752,13 @@ class SNSCS_Portal_Top {
 		}
 		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
 		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
-		if ( ! $is_creator && $limit > self::creator_total() ) {
-			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載すると「創設メンバー」のメダル（残り' . esc_html( number_format_i18n( $limit - self::creator_total() ) ) . '枠）</a>';
+		$taken = count( self::founders() );
+		if ( ! $is_creator && $limit > $taken ) {
+			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載すると「創設メンバー」のメダル（残り' . esc_html( number_format_i18n( $limit - $taken ) ) . '枠）</a>';
+		} elseif ( $is_creator && ! ( $creator && 'publish' === get_post_status( $creator ) ) && $limit > $taken ) {
+			// 審査待ち・申請前の発信者: 承認されるとメダルが付くことを伝える。
+			$pending = SNSCS_Submissions::pending_for_user( $user_id );
+			$body   .= '<p class="snscs-mypage__note">' . esc_html( ( $pending ? '審査中です。' : '掲載の申請をしましょう。' ) . '審査に通って掲載されると、創設メンバーのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $taken + 1 ) ) . '」）が付きます。' ) . '</p>';
 		}
 		$body .= '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
 		return self::box( 'マイページ', $body, '', 'snscs-pt-box--login snscs-pt-box--mypage is-in' );

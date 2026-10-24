@@ -102,7 +102,11 @@ class SNSCS_Session {
 			return null;
 		}
 		$user   = wp_get_current_user();
-		$name   = $user->display_name;
+		// ハンドルネーム → 表示名。メールアドレスの「@」の前と同じ表示名（1.26.2 までの登録）は出さない。
+		$name   = (string) get_user_meta( $user->ID, SNSCS_People::META_NICKNAME, true );
+		if ( '' === $name && $user->display_name !== strstr( (string) $user->user_email, '@', true ) ) {
+			$name = $user->display_name;
+		}
 		$design = '';
 		$no     = 0;
 		if ( snscs_is_creator_user( $user ) ) {

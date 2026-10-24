@@ -175,18 +175,24 @@ class SNSCS_Social {
 		if ( empty( $_POST['agree'] ) ) {
 			self::back( 'agree' );
 		}
+		$nickname = SNSCS_People::clean_nickname( wp_unslash( $_POST['nickname'] ?? '' ) );
+		if ( '' === $nickname ) {
+			self::back( 'nickname' );
+		}
 		$user_id = wp_insert_user(
 			array(
 				'user_login'   => 'r' . strtolower( wp_generate_password( 11, false ) ),
 				'user_email'   => $email,
 				'user_pass'    => $password,
-				'display_name' => strstr( $email, '@', true ),
+				'display_name' => $nickname,
+				'nickname'     => $nickname,
 				'role'         => self::ROLE,
 			)
 		);
 		if ( is_wp_error( $user_id ) ) {
 			self::back( 'register_error' );
 		}
+		update_user_meta( $user_id, SNSCS_People::META_NICKNAME, $nickname );
 		wp_set_current_user( $user_id );
 		wp_set_auth_cookie( $user_id, SNSCS_Session::wants_keep() );
 		self::back( 'registered', $redirect );
@@ -807,6 +813,7 @@ class SNSCS_Social {
 			'email_exists'   => array( 'error', 'このメールアドレスはすでに登録されています。ログインしてください。' ),
 			'weak_password'  => array( 'error', sprintf( 'パスワードは%d文字以上にしてください。', SNSCS_Portal::MIN_PASSWORD ) ),
 			'agree'          => array( 'error', '利用規約とプライバシーポリシーに同意してください。' ),
+			'nickname'       => array( 'error', 'ハンドルネーム（表示名）を入力してください。' ),
 			'register_error' => array( 'error', '登録できませんでした。時間をおいてもう一度お試しください。' ),
 			'form_retry'     => array( 'error', '確認のため、もう一度入力して送信してください（ページを開いてから時間がたっていたか、送信が早すぎました）。' ),
 			'too_many'       => array( 'error', '短い時間に何度も送信されたため、いったん受け付けを止めています。1時間ほどたってからお試しください。' ),
@@ -851,6 +858,7 @@ class SNSCS_Social {
 				<input type="hidden" name="snscs_ft" value="<?php echo esc_attr( snscs_form_token() ); ?>">
 				<?php wp_nonce_field( 'snscs_member_register', 'snscs_nonce' ); ?>
 				<p class="snscs-hp" aria-hidden="true"><input type="text" name="snscs_website" tabindex="-1" autocomplete="off"></p>
+				<p><label>ハンドルネーム（表示名・30文字まで）<br><input type="text" name="nickname" required maxlength="30" autocomplete="nickname" placeholder="例: はなこ"></label></p>
 				<p><label>メールアドレス<br><input type="email" name="email" required autocomplete="email"></label></p>
 				<p><label>パスワード（<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>文字以上）<br><input type="password" name="password" required minlength="<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>" autocomplete="new-password"></label></p>
 				<p><?php echo SNSCS_Session::field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったHTML。 ?></p>

@@ -140,6 +140,7 @@ class SNSCS_Portal {
 			'email_exists'   => array( 'error', 'このメールアドレスはすでに登録されています。ログインしてください。' ),
 			'weak_password'  => array( 'error', sprintf( 'パスワードは%d文字以上にしてください。', self::MIN_PASSWORD ) ),
 			'agree'          => array( 'error', '掲載の条件に同意してください。' ),
+			'nickname'       => array( 'error', 'ハンドルネーム（表示名）を入力してください。' ),
 			'register_error' => array( 'error', '登録できませんでした。時間をおいてもう一度お試しください。' ),
 			'form_retry'     => array( 'error', '確認のため、もう一度入力して送信してください（ページを開いてから時間がたっていました）。' ),
 		);
@@ -189,6 +190,11 @@ class SNSCS_Portal {
 				<form class="snscs-fields" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
 					<input type="hidden" name="action" value="snscs_register">
 					<?php wp_nonce_field( 'snscs_register', 'snscs_nonce' ); ?>
+					<label class="snscs-field">
+						<span>ハンドルネーム（表示名・30文字まで）</span>
+						<input type="text" name="nickname" required maxlength="30" autocomplete="nickname" placeholder="例: はなこ">
+						<span class="snscs-help">サイトの上の「○○さん」などに出ます。掲載する名前は、次の画面で入力します（あとで変えられます）。</span>
+					</label>
 					<label class="snscs-field">
 						<span>メールアドレス</span>
 						<input type="email" name="email" required autocomplete="email">
@@ -247,6 +253,9 @@ class SNSCS_Portal {
 		} else {
 			$data   = $creator_id ? SNSCS_Submissions::creator_data( $creator_id ) : SNSCS_Submissions::empty_data();
 			$errors = array();
+			if ( ! $creator_id && '' === (string) ( $data['name'] ?? '' ) ) {
+				$data['name'] = (string) get_user_meta( $user->ID, SNSCS_People::META_NICKNAME, true );
+			}
 		}
 		?>
 		<div class="snscs-account-bar">
@@ -263,6 +272,10 @@ class SNSCS_Portal {
 				<?php if ( $published ) : ?>
 					<span class="snscs-badge snscs-badge--live">掲載中</span>
 					<a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">掲載ページを見る</a>
+					<?php $snscs_no = SNSCS_Founder::number( $creator_id ); ?>
+					<?php if ( $snscs_no ) : ?>
+						<br><?php echo SNSCS_Founder::mini_html( $creator_id, 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?> <strong><?php echo esc_html( '創設メンバー Nº ' . SNSCS_Founder::serial( $snscs_no ) . '（' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_no ) ) . '）' ); ?></strong> — <a href="<?php echo esc_url( get_permalink( $creator_id ) ); ?>">記念メダルと記念カード</a>
+					<?php endif; ?>
 				<?php elseif ( $creator_id ) : ?>
 					<span class="snscs-badge snscs-badge--off">掲載停止中</span>
 					もう一度掲載したいときは、下のフォームから申請してください。
@@ -282,6 +295,13 @@ class SNSCS_Portal {
 							審査が終わるまで、掲載中の内容は変わりません。申請内容を直したいときは、下のフォームから送り直せます。
 						<?php else : ?>
 							運営が内容を確認しています。結果はメールでお知らせします。
+							<?php
+							$snscs_limit = (int) SNSCS_Hub::setting( 'founders_limit' );
+							$snscs_taken = count( SNSCS_Portal_Top::founders() );
+							?>
+							<?php if ( $snscs_limit > $snscs_taken ) : ?>
+								<br><strong><?php echo esc_html( '審査に通って掲載されると、創設メンバーのメダル（いまなら「' . SNSCS_Founder::name( SNSCS_Founder::design( $snscs_taken + 1 ) ) . '」）が付きます。' ); ?></strong>
+							<?php endif; ?>
 						<?php endif; ?>
 					</p>
 				</div>
@@ -653,13 +673,18 @@ class SNSCS_Portal {
 		if ( empty( $_POST['agree'] ) ) {
 			self::back( 'agree' );
 		}
+		$nickname = SNSCS_People::clean_nickname( wp_unslash( $_POST['nickname'] ?? '' ) );
+		if ( '' === $nickname ) {
+			self::back( 'nickname' );
+		}
 
 		$user_id = wp_insert_user(
 			array(
 				'user_login'   => self::unique_login(),
 				'user_email'   => $email,
 				'user_pass'    => $password,
-				'display_name' => strstr( $email, '@', true ),
+				'display_name' => $nickname,
+				'nickname'     => $nickname,
 				'role'         => self::ROLE,
 			)
 		);
@@ -667,6 +692,7 @@ class SNSCS_Portal {
 			self::back( 'register_error' );
 		}
 
+		update_user_meta( $user_id, SNSCS_People::META_NICKNAME, $nickname );
 		$invite_code = isset( $_POST['invite_code'] ) && '' !== $_POST['invite_code'] ? sanitize_text_field( wp_unslash( $_POST['invite_code'] ) ) : SNSCS_Invites::remembered_code();
 		SNSCS_Invites::record_signup( $user_id, $invite_code );
 

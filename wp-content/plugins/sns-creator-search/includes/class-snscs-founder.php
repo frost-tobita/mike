@@ -31,6 +31,32 @@ class SNSCS_Founder {
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'serve' ), 1 );
+		// 承認されて掲載されたら、その場で番号を付けてお知らせ（承認のメールより前に）。
+		add_action( 'snscs_submission_approved', array( __CLASS__, 'on_approved' ), 6 );
+	}
+
+	public static function on_approved( $submission_id ) {
+		$row = SNSCS_Submissions::get( $submission_id );
+		if ( ! $row || ! $row['creator_id'] ) {
+			return;
+		}
+		SNSCS_Portal_Top::forget_counts();
+		$no = self::number( (int) $row['creator_id'] );
+		if ( $no && ! get_post_meta( (int) $row['creator_id'], '_snscs_founder_told', true ) ) {
+			update_post_meta( (int) $row['creator_id'], '_snscs_founder_told', 1 );
+			SNSCS_Inbox::add( (int) $row['user_id'], 'founder', (int) $row['creator_id'] );
+		}
+	}
+
+	public static function describe( array $row ) {
+		$no = self::number( (int) $row['object_id'] );
+		if ( ! $no ) {
+			return null;
+		}
+		return array(
+			'text' => '創設メンバーになりました！ Nº ' . self::serial( $no ) . '（' . self::name( self::design( $no ) ) . '）' . ( self::is_first( $no ) ? '・FIRST 10' : '' ) . '。発信者ページで記念メダルと記念カードを受け取れます。',
+			'url'  => get_permalink( (int) $row['object_id'] ),
+		);
 	}
 
 	/**

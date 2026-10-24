@@ -23,7 +23,7 @@ class SNSCS_Push {
 
 	const OPTION    = 'snscs_vapid';
 	const SEND_HOOK = 'snscs_push_send';
-	const TYPES     = array( 'monthly_report', 'new_article', 'repost', 'user_repost', 'bookmark_updated', 'new_follower', 'new_user_follower', 'trend', 'award', 'collab', 'collab_ok', 'listed', 'qa_answer', 'qa_best', 'level_up', 'rank_up', 'game_week', 'game_boss', 'game_rare', 'badge', 'streak', 'invite_ok', 'biolink_week', 'biolink_nudge', 'saved_search' );
+	const TYPES     = array( 'monthly_report', 'new_article', 'repost', 'user_repost', 'bookmark_updated', 'new_follower', 'new_user_follower', 'trend', 'award', 'collab', 'collab_ok', 'listed', 'qa_answer', 'qa_best', 'founder', 'level_up', 'rank_up', 'game_week', 'game_boss', 'game_rare', 'badge', 'streak', 'invite_ok', 'biolink_week', 'biolink_nudge', 'saved_search' );
 
 	public static function init() {
 		// マニフェスト・サービスワーカー・ホーム画面のための head は SNSCS_App が出す（1.22）。
