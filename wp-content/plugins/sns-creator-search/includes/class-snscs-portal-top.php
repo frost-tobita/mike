@@ -680,6 +680,25 @@ class SNSCS_Portal_Top {
 		return $out;
 	}
 
+	/**
+	 * ログイン中の発信者向けのおすすめ（「発信者の方へ」の場所に広告が入っていないとき）。
+	 */
+	private static function creator_picks() {
+		$items = array(
+			array( snscs_portal_url() . '#snscs-promo', '検索のいちばん上に出す「PR枠」', 'ジャンルとキーワードを選んで、見つけてもらう機会を増やす' ),
+		);
+		foreach ( array( 'collab' => array( 'コラボ相手を探す', '同じジャンルの発信者と、いっしょに企画' ), 'tools' => array( 'SNS運用の無料ツール', '投稿の時間・ハッシュタグなど' ), 'qa' => array( '質問箱に答える', '答えると、プロフィールに実績が残ります' ) ) as $key => $item ) {
+			if ( SNSCS_Hub::page_url( $key ) ) {
+				$items[] = array( SNSCS_Hub::page_url( $key ), $item[0], $item[1] );
+			}
+		}
+		$rows = '';
+		foreach ( $items as $item ) {
+			$rows .= '<li><a href="' . esc_url( $item[0] ) . '"><strong>' . esc_html( $item[1] ) . '</strong><span>' . esc_html( $item[2] ) . '</span></a></li>';
+		}
+		return self::box( '発信者のおすすめ', '<ul class="snscs-pt-picks">' . $rows . '</ul>', '', 'snscs-pt-box--picks' );
+	}
+
 	private static function rank_row( $rank, array $item, $note ) {
 		$main = $item['accounts'] ? $item['accounts'][0]['platform_label'] : '';
 		return '<li><span class="snscs-pt-rank">' . (int) $rank . '</span><a href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['name'] ) . '</a><span class="snscs-pt-meta">' . esc_html( $main ) . '</span>' . ( '' !== $note ? '<span class="snscs-pt-growth">' . esc_html( $note ) . '</span>' : '' ) . '</li>';
@@ -695,28 +714,38 @@ class SNSCS_Portal_Top {
 	private static function right_column() {
 		$out = SNSCS_Ads::render( 'top_side' );
 
-		// ログイン
-		if ( is_user_logged_in() && snscs_is_creator_user() ) {
-			$creator = SNSCS_Submissions::creator_id_for_user( get_current_user_id() );
-			$body    = '<p>ログイン中です。</p><a class="snscs-pt-btn" href="' . esc_url( snscs_portal_url() ) . '">マイページ</a>';
+		// ログイン（1.25: ログイン中は「○○さん ログイン中」。保持を選んだ人はログアウトするまでこのまま）
+		$who     = SNSCS_Session::who();
+		$creator = $who && snscs_is_creator_user() ? SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) : 0;
+		if ( $who ) {
+			$body = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__role">' . esc_html( $who['role'] ) . '</span></p>'
+				. '<p class="snscs-pt-login__state">ログイン中</p>'
+				. '<a class="snscs-pt-btn" href="' . esc_url( snscs_is_creator_user() ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() ) ) . '">マイページ</a>';
 			if ( $creator && 'publish' === get_post_status( $creator ) ) {
 				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
 			}
+			$body .= '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
 		} else {
 			$body = '<p>ログインすると、掲載内容の編集や、カレンダーの予定をどの端末からも使えます。</p><a class="snscs-pt-btn" href="' . esc_url( snscs_portal_url() ) . '">ログイン</a><a class="snscs-pt-sublink" href="' . esc_url( snscs_portal_url() ) . '">新規登録（無料）</a>';
 		}
-		$out .= self::box( '', $body, '', 'snscs-pt-box--login' );
+		$out .= self::box( '', $body, '', 'snscs-pt-box--login' . ( $who ? ' is-in' : '' ) );
 
-		$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
-		$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で</p><ul class="snscs-pt-cta__points">';
-		foreach ( $points as $point ) {
-			$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
+		if ( $who && snscs_is_creator_user() ) {
+			// 登録済みの発信者には「発信者の方へ」（登録の案内）は出さず、広告枠にする。広告が無いときは発信者向けのおすすめ。
+			$ad   = SNSCS_Ads::render( 'side_member' );
+			$out .= '' !== $ad ? $ad : self::creator_picks();
+		} else {
+			$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「マイリンク」', '企業からお仕事の相談が届く' );
+			$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で</p><ul class="snscs-pt-cta__points">';
+			foreach ( $points as $point ) {
+				$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
+			}
+			$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a>';
+			if ( SNSCS_Hub::page_url( 'mylink' ) ) {
+				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">マイリンクについて詳しく</a>';
+			}
+			$out .= self::box( '発信者の方へ', $body, '', 'snscs-pt-box--cta' );
 		}
-		$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a>';
-		if ( SNSCS_Hub::page_url( 'mylink' ) ) {
-			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">マイリンクについて詳しく</a>';
-		}
-		$out .= self::box( '発信者の方へ', $body, '', 'snscs-pt-box--cta' );
 
 		$out .= SNSCS_Calendar::shortcode_link( array( 'title' => 'SNS発信カレンダー', 'count' => 3 ) );
 

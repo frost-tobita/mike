@@ -2564,6 +2564,42 @@ body.snscs-portal-body .snscs-ph__login:hover {
 	text-decoration: none;
 }
 
+/* 1.25: ログイン中の「○○さん」（Yahoo! JAPAN のように、目立たせない） */
+body.snscs-portal-body .snscs-ph__who {
+	display: inline-flex;
+	flex: 0 1 auto;
+	gap: 2px;
+	align-items: center;
+	min-width: 0;
+	color: #1d2433;
+	font-size: 14px;
+	white-space: nowrap;
+}
+
+body.snscs-portal-body .snscs-ph__who:hover {
+	color: #1B27B0;
+	text-decoration: none;
+}
+
+body.snscs-portal-body .snscs-ph__who-name {
+	overflow: hidden;
+	max-width: 12em;
+	color: #1B27B0;
+	font-weight: 700;
+	text-overflow: ellipsis;
+}
+
+body.snscs-portal-body .snscs-ph__who-role {
+	margin-left: 6px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #2020D2;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.6;
+}
+
 /* 本文（トップ以外のページ） */
 body.snscs-portal-body .snscs-pm__page {
 	box-sizing: border-box;
@@ -4250,6 +4286,15 @@ body.snscs-portal-body p.snscs-pt-mylinks__cta {
 		order: 1;
 		padding: 7px 14px;
 		font-size: 13px;
+	}
+
+	body.snscs-portal-body .snscs-ph__who {
+		order: 1;
+		font-size: 12px;
+	}
+
+	body.snscs-portal-body .snscs-ph__who-name {
+		max-width: 7em;
 	}
 
 	body.snscs-portal-body .snscs-ph__menu {
@@ -7917,4 +7962,98 @@ html.snscs-app body {
 
 html.snscs-app .snscs-cmptray {
 	bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 1.25: 右の列のログイン中の表示 */
+body.snscs-portal-body p.snscs-pt-login__who {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	align-items: center;
+	margin: 0;
+	font-size: 15px;
+}
+
+body.snscs-portal-body p.snscs-pt-login__who strong {
+	color: #1B27B0;
+	word-break: break-all;
+}
+
+.snscs-pt-login__dot {
+	width: 8px;
+	height: 8px;
+	margin-right: 2px;
+	border-radius: 50%;
+	background: #45E39C;
+	box-shadow: 0 0 0 3px rgba(69, 227, 156, 0.25);
+}
+
+.snscs-pt-login__role {
+	margin-left: 4px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #2020D2;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.6;
+}
+
+body.snscs-portal-body p.snscs-pt-login__state {
+	margin: 2px 0 12px;
+	color: #6b7280;
+	font-size: 12px;
+}
+
+body.snscs-portal-body .snscs-pt-login__out {
+	color: #6b7280;
+	font-size: 12px;
+}
+
+/* 1.25: ログイン中の発信者向けのおすすめ（広告が入っていないとき） */
+body.snscs-portal-body ul.snscs-pt-picks {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks li {
+	margin: 0;
+	padding: 0;
+	border-top: 1px solid #eef0f5;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks li:first-child {
+	border-top: 0;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks a {
+	display: block;
+	padding: 10px 0;
+	color: #1d2433;
+	text-decoration: none;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks a:hover strong {
+	color: #1B27B0;
+	text-decoration: underline;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks strong {
+	display: block;
+	font-size: 14px;
+}
+
+body.snscs-portal-body ul.snscs-pt-picks span {
+	display: block;
+	color: #6b7280;
+	font-size: 12px;
+}
+
+/* 1.25: 「ログイン状態を保持する」 */
+.snscs-keep-login small {
+	display: block;
+	color: #6b7280;
+	font-size: 12px;
+	font-weight: 400;
 }

@@ -170,7 +170,8 @@ class SNSCS_Portal {
 						'redirect'       => snscs_portal_url(),
 						'label_username' => 'メールアドレス',
 						'label_password' => 'パスワード',
-						'label_remember' => 'ログイン状態を保存する',
+						'label_remember' => 'ログイン状態を保持する',
+						'value_remember' => true,
 						'label_log_in'   => 'ログイン',
 					)
 				);
@@ -205,6 +206,7 @@ class SNSCS_Portal {
 						<span>Website</span>
 						<input type="text" name="snscs_website" tabindex="-1" autocomplete="off">
 					</label>
+					<?php echo SNSCS_Session::field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったHTML。 ?>
 					<label class="snscs-check">
 						<input type="checkbox" name="agree" value="1" required>
 						<span>
@@ -669,7 +671,7 @@ class SNSCS_Portal {
 		SNSCS_Invites::record_signup( $user_id, $invite_code );
 
 		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id );
+		wp_set_auth_cookie( $user_id, SNSCS_Session::wants_keep() );
 		self::back( 'registered' );
 	}
 

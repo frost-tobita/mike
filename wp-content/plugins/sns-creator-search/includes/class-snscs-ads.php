@@ -55,6 +55,7 @@ class SNSCS_Ads {
 			'snscs_ad_slots',
 			array(
 				'top_side'      => array( 'label' => 'トップページ：右上（四角）', 'size' => '300×250 推奨', 'default' => true ),
+				'side_member'   => array( 'label' => '右の列：ログイン中の発信者向け（「発信者の方へ」の場所）', 'size' => '300×250 推奨（発信者向けのサービス・ツールがおすすめ）', 'default' => true ),
 				'top_infeed'    => array( 'label' => 'トップページ：コンテンツの間（横長）', 'size' => '728×90 または横幅いっぱい', 'default' => true ),
 				'search_top'    => array( 'label' => '検索結果：一覧の上', 'size' => '728×90 または横幅いっぱい', 'default' => true ),
 				'search_infeed' => array( 'label' => '検索結果：一覧の途中', 'size' => '発信者カードと同じ横幅', 'default' => true ),

@@ -188,7 +188,7 @@ class SNSCS_Social {
 			self::back( 'register_error' );
 		}
 		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id, true );
+		wp_set_auth_cookie( $user_id, SNSCS_Session::wants_keep() );
 		self::back( 'registered', $redirect );
 	}
 
@@ -205,7 +205,7 @@ class SNSCS_Social {
 		$creds = array(
 			'user_login'    => $user ? $user->user_login : '',
 			'user_password' => isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			'remember'      => true,
+			'remember'      => SNSCS_Session::wants_keep(),
 		);
 		$signed = $user ? wp_signon( $creds, is_ssl() ) : null;
 		if ( ! $signed || is_wp_error( $signed ) ) {
@@ -853,6 +853,7 @@ class SNSCS_Social {
 				<p class="snscs-hp" aria-hidden="true"><input type="text" name="snscs_website" tabindex="-1" autocomplete="off"></p>
 				<p><label>メールアドレス<br><input type="email" name="email" required autocomplete="email"></label></p>
 				<p><label>パスワード（<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>文字以上）<br><input type="password" name="password" required minlength="<?php echo (int) SNSCS_Portal::MIN_PASSWORD; ?>" autocomplete="new-password"></label></p>
+				<p><?php echo SNSCS_Session::field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったHTML。 ?></p>
 				<p><label><input type="checkbox" name="agree" value="1" required> 利用規約とプライバシーポリシーに同意する</label></p>
 				<p><button type="submit" class="snscs-button snscs-button--primary">登録する</button></p>
 			</form>
@@ -866,6 +867,7 @@ class SNSCS_Social {
 				<?php wp_nonce_field( 'snscs_member_login', 'snscs_nonce' ); ?>
 				<p><label>メールアドレス<br><input type="email" name="email" required autocomplete="email"></label></p>
 				<p><label>パスワード<br><input type="password" name="password" required autocomplete="current-password"></label></p>
+				<p><?php echo SNSCS_Session::field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 決まったHTML。 ?></p>
 				<p><button type="submit" class="snscs-button">ログイン</button> <a href="<?php echo esc_url( wp_lostpassword_url() ); ?>">パスワードを忘れた方</a></p>
 			</form>
 		</section>
