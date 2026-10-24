@@ -156,7 +156,13 @@ class SNSCS_Inquiries {
 			wp_safe_redirect( home_url( '/' ) );
 			exit;
 		}
-		$back = function ( $code ) use ( $creator_id ) {
+		// 英語版の発信者ページ（/en/creators/…）のフォームから来たら、英語のページへ戻す（1.28.0）。
+		$en   = isset( $_POST['lang'] ) && 'en' === $_POST['lang'] && SNSCS_English::on();
+		$back = function ( $code ) use ( $creator_id, $en ) {
+			if ( $en ) {
+				wp_safe_redirect( add_query_arg( 'inquiry', $code, SNSCS_English::creator_page_url( $creator_id ) ) . '#contact' );
+				exit;
+			}
 			wp_safe_redirect( add_query_arg( 'snscs_inquiry', $code, get_permalink( $creator_id ) ) . '#snscs-inquiry' );
 			exit;
 		};
@@ -199,7 +205,7 @@ class SNSCS_Inquiries {
 				'created_at' => current_time( 'mysql', true ),
 			)
 		);
-		self::notify( $creator_id, compact( 'company', 'name', 'email', 'budget', 'message' ) + array( 'category' => $cats[ $category ] ) );
+		self::notify( $creator_id, compact( 'company', 'name', 'email', 'budget', 'message', 'en' ) + array( 'category' => $cats[ $category ] ) );
 		$back( 'sent' );
 	}
 
@@ -215,6 +221,11 @@ class SNSCS_Inquiries {
 			'',
 			$row['message'],
 		);
+		$en = ! empty( $row['en'] );
+		if ( $en ) {
+			// 海外（英語版のページ）からの相談: 発信者に、英語で返すとよいことを伝える。
+			array_unshift( $details, '※ 英語版のページ（海外）から届いた相談です。返信は英語でお願いします（翻訳ツールを使って大丈夫です）。', '' );
+		}
 		$user = get_userdata( (int) get_post_field( 'post_author', $creator_id ) );
 		$to   = ( $user && snscs_is_creator_user( $user ) ) ? $user->user_email : get_option( 'admin_email' );
 		wp_mail(
@@ -223,11 +234,21 @@ class SNSCS_Inquiries {
 			implode( "\n", array_merge( array( $creator . ' さん', '', $site . ' のあなたのページから、お仕事の相談が届きました。', 'このメールに返信すると、相談した方に直接届きます。', '', '---' ), $details, array( '---', '', '※ 心当たりのない営業や迷惑な内容は、運営までお知らせください。', '相談の受け付けは、マイページでいつでも止められます: ' . snscs_portal_url() ) ) ),
 			array( 'Reply-To: ' . $row['email'] )
 		);
+		if ( $en ) {
+			$en_name = SNSCS_English::creator_text( $creator_id );
+			$en_name = $en_name ? $en_name['name'] : $creator;
+			wp_mail(
+				$row['email'],
+				'[' . $site . '] Your inquiry to ' . $en_name . ' has been sent',
+				implode( "\n", array( 'Dear ' . $row['name'] . ',', '', 'Thank you. Your inquiry has been sent to ' . $en_name . ' (' . $creator . ').', 'The creator will reply to you directly by email. Please note that a reply is not guaranteed.', '', '---', 'Category: ' . $row['category'], 'Budget: ' . $row['budget'], '', $row['message'], '---', $site, SNSCS_English::home_url() ) )
+			);
+		} else {
 		wp_mail(
 			$row['email'],
 			'[' . $site . '] ' . $creator . 'さんへの相談を受け付けました',
 			implode( "\n", array_merge( array( $row['name'] . ' 様', '', $creator . 'さんへのご相談を受け付けました。返信は' . $creator . 'さんから直接届きます。', '（お返事をお約束するものではありません）', '', '---' ), $details, array( '---', $site, home_url( '/' ) ) ) )
 		);
+		}
 		if ( SNSCS_Hub::setting( 'inquiry_copy_admin' ) ) {
 			wp_mail( get_option( 'admin_email' ), '[' . $site . '] お仕事の相談（' . $creator . ' さんあて）', implode( "\n", $details ) );
 		}

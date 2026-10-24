@@ -36,6 +36,7 @@ class SNSCS_English {
 		add_filter( 'query_vars', array( __CLASS__, 'query_vars' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'render' ), 1 );
 		add_action( 'wp_head', array( __CLASS__, 'hreflang' ), 3 );
+		add_action( 'wp_footer', array( __CLASS__, 'lang_hint' ), 50 );
 		add_action( 'save_post_' . SNSCS_Post_Types::POST_TYPE, array( __CLASS__, 'mark_stale' ), 30, 2 );
 		add_action( 'save_post_' . SNSCS_Glossary::POST_TYPE, array( __CLASS__, 'mark_stale' ), 30, 2 );
 		add_action( 'edited_' . SNSCS_Post_Types::TAX_GENRE, array( __CLASS__, 'mark_genre_stale' ) );
@@ -82,6 +83,7 @@ class SNSCS_English {
 			'^en/creators/([0-9]+)(?:-[a-z0-9-]*)?/?$' => 'index.php?' . self::QUERY_VAR . '=creator/$matches[1]',
 			'^en/genres/([0-9]+)(?:-[a-z0-9-]*)?/?$'   => 'index.php?' . self::QUERY_VAR . '=genre/$matches[1]',
 			'^en/glossary/?$'                       => 'index.php?' . self::QUERY_VAR . '=glossary',
+			'^en/contact/?$'                        => 'index.php?' . self::QUERY_VAR . '=contact',
 			'^en/glossary/([a-z0-9-]+)/?$'          => 'index.php?' . self::QUERY_VAR . '=glossary/$matches[1]',
 		);
 		$have = get_option( 'rewrite_rules' );
@@ -113,6 +115,13 @@ class SNSCS_English {
 	}
 
 	/**
+	 * 企業向けのお問い合わせ（英語）。
+	 */
+	public static function contact_url() {
+		return self::path_url( 'contact' );
+	}
+
+	/**
 	 * URLに入れる英語の名前（英字・数字・ハイフン）。
 	 */
 	public static function slugify( $text ) {
@@ -133,6 +142,17 @@ class SNSCS_English {
 			return self::path_url( 'creator/' . (int) $creator_id );
 		}
 		return self::path_url( 'creators/' . (int) $creator_id . ( '' !== $slug ? '-' . $slug : '' ) );
+	}
+
+	/**
+	 * 発信者の英語のページ（英訳がまだでも開けるアドレス。英訳があれば名前入りのアドレス）。
+	 */
+	public static function creator_page_url( $creator_id ) {
+		$url = self::creator_url( $creator_id );
+		if ( '' !== $url || ! self::on() ) {
+			return $url;
+		}
+		return self::path_url( ( get_option( 'permalink_structure' ) ? 'creators/' : 'creator/' ) . (int) $creator_id );
 	}
 
 	public static function genre_url( WP_Term $term ) {
@@ -503,7 +523,7 @@ class SNSCS_English {
 	 *
 	 * @return array{ids:int[],total:int}
 	 */
-	public static function find( $genre_tt = 0, $q = '', $offset = 0, $limit = self::PER_PAGE, $exclude = 0 ) {
+	public static function find( $genre_tt = 0, $q = '', $offset = 0, $limit = self::PER_PAGE, $exclude = 0, $platform = '', $min = 0 ) {
 		global $wpdb;
 		$join  = '';
 		$where = '';
@@ -517,6 +537,15 @@ class SNSCS_English {
 			$where .= ' AND (m.meta_value LIKE %s OR p.post_title LIKE %s)';
 			$args[] = $like;
 			$args[] = $like;
+		}
+		$acc = SNSCS_Accounts::table();
+		if ( '' !== $platform ) {
+			$where .= " AND EXISTS (SELECT 1 FROM {$acc} pa WHERE pa.creator_id = p.ID AND pa.platform = %s)";
+			$args[] = $platform;
+		}
+		if ( $min > 0 ) {
+			$where .= " AND (SELECT COALESCE(SUM(fa.followers), 0) FROM {$acc} fa WHERE fa.creator_id = p.ID) >= %d";
+			$args[] = (int) $min;
 		}
 		if ( $exclude ) {
 			$where .= ' AND p.ID <> %d';
@@ -632,6 +661,8 @@ class SNSCS_English {
 			$page = self::page_creator( (int) $parts[1] );
 		} elseif ( 'genre' === $parts[0] && isset( $parts[1] ) && ctype_digit( $parts[1] ) ) {
 			$page = self::page_genre( (int) $parts[1] );
+		} elseif ( 'contact' === $parts[0] ) {
+			$page = self::page_contact();
 		} elseif ( 'glossary' === $parts[0] ) {
 			$page = isset( $parts[1] ) ? self::page_term( sanitize_title( $parts[1] ) ) : self::page_glossary();
 		}
@@ -718,6 +749,7 @@ class SNSCS_English {
 			<?php if ( SNSCS_Hub::page_id( 'glossary' ) ) : ?>
 				<a href="<?php echo esc_url( self::path_url( 'glossary' ) ); ?>">Glossary</a>
 			<?php endif; ?>
+			<a href="<?php echo esc_url( self::contact_url() ); ?>">For brands</a>
 			<a href="<?php echo esc_url( $page['ja'] ); ?>" hreflang="ja" lang="ja">日本語</a>
 		</nav>
 	</div>
@@ -749,8 +781,14 @@ class SNSCS_English {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$q    = isset( $_GET['q'] ) ? mb_substr( trim( sanitize_text_field( wp_unslash( $_GET['q'] ) ) ), 0, 60 ) : '';
 		$num  = isset( $_GET['pg'] ) ? max( 1, absint( $_GET['pg'] ) ) : 1;
+		$sns  = isset( $_GET['sns'] ) ? sanitize_key( wp_unslash( $_GET['sns'] ) ) : '';
+		$min  = isset( $_GET['min'] ) ? absint( $_GET['min'] ) : 0;
 		// phpcs:enable
-		$found  = self::find( 0, $q, ( $num - 1 ) * self::PER_PAGE );
+		$sns    = isset( snscs_platforms()[ $sns ] ) ? $sns : '';
+		$mins   = array( 0 => 'Any followers', 1000 => '1K+', 10000 => '10K+', 50000 => '50K+', 100000 => '100K+', 500000 => '500K+', 1000000 => '1M+' );
+		$min    = isset( $mins[ $min ] ) ? $min : 0;
+		$filter = '' !== $sns || $min > 0;
+		$found  = self::find( 0, $q, ( $num - 1 ) * self::PER_PAGE, self::PER_PAGE, 0, $sns, $min );
 		$genres = self::genres( 1 );
 		$home   = self::home_url();
 		$site   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
@@ -766,6 +804,21 @@ class SNSCS_English {
 				<label for="en-q" class="en-sr">Search creators</label>
 				<input type="search" id="en-q" name="q" value="<?php echo esc_attr( $q ); ?>" placeholder="e.g. cooking, travel, Tokyo">
 				<button type="submit">Search</button>
+				<span class="en-filters">
+					<label class="en-sr" for="en-sns">Platform</label>
+					<select id="en-sns" name="sns">
+						<option value="">All platforms</option>
+						<?php foreach ( snscs_platforms() as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $sns, $key ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label class="en-sr" for="en-min">Followers</label>
+					<select id="en-min" name="min">
+						<?php foreach ( $mins as $value => $label ) : ?>
+							<option value="<?php echo (int) $value; ?>" <?php selected( $min, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</span>
 			</form>
 		</section>
 		<?php if ( $genres ) : ?>
@@ -776,27 +829,28 @@ class SNSCS_English {
 				<?php endforeach; ?>
 			</ul>
 		<?php endif; ?>
-		<h2><?php echo '' !== $q ? esc_html( sprintf( 'Results for "%s" (%d)', $q, $found['total'] ) ) : 'Popular creators'; ?></h2>
+		<h2><?php echo '' !== $q || $filter ? esc_html( sprintf( '' !== $q ? 'Results for "%1$s" (%2$d)' : 'Results (%2$d)', $q, $found['total'] ) ) : 'Popular creators'; ?></h2>
 		<?php echo self::cards_html( $found['ids'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-		<?php echo self::pager( $found['total'], $num, $q ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo self::pager( $found['total'], $num, $q, '', array_filter( array( 'sns' => $sns, 'min' => $min ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		<section class="en-about">
 			<h2>For brands and agencies</h2>
-			<p>Looking for Japanese creators for a campaign in Japan? Each profile lists the creator's accounts and follower counts. Many creators accept business inquiries through their profile on <?php echo esc_html( $site ); ?>.</p>
+			<p>Looking for Japanese creators for a campaign in Japan? Each profile lists the creator's accounts and follower counts. Many creators accept business inquiries in English through their profile on <?php echo esc_html( $site ); ?>.</p>
+			<p><a class="en-btn en-btn--primary" href="<?php echo esc_url( self::contact_url() ); ?>">Contact us</a></p>
 		</section>
 		<?php
 		$body = ob_get_clean();
 		return array(
 			'title'     => '' !== $q ? sprintf( 'Japanese creators: %s', $q ) : 'Find Japanese influencers and social media creators',
 			'desc'      => 'A directory of Japanese influencers and social media creators on X, Instagram, TikTok and YouTube, by genre, with follower counts and English profiles.',
-			'canonical' => '' === $q && 1 === $num ? $home : add_query_arg( array_filter( array( 'q' => $q, 'pg' => $num > 1 ? $num : 0 ) ), $home ),
+			'canonical' => '' === $q && ! $filter && 1 === $num ? $home : add_query_arg( array_filter( array( 'q' => $q, 'sns' => $sns, 'min' => $min, 'pg' => $num > 1 ? $num : 0 ) ), $home ),
 			'ja'        => home_url( '/' ),
-			'indexable' => '' === $q && $found['total'] > 0,
+			'indexable' => '' === $q && ! $filter && $found['total'] > 0,
 			'jsonld'    => array( array( '@type' => 'WebSite', 'name' => $site, 'url' => $home, 'inLanguage' => 'en' ) ),
 			'body'      => $body,
 		);
 	}
 
-	private static function pager( $total, $num, $q = '', $base = '' ) {
+	private static function pager( $total, $num, $q = '', $base = '', array $extra = array() ) {
 		$pages = (int) ceil( $total / self::PER_PAGE );
 		if ( $pages <= 1 ) {
 			return '';
@@ -804,11 +858,11 @@ class SNSCS_English {
 		$base = '' !== $base ? $base : self::home_url();
 		$html = '<nav class="en-pager" aria-label="Pages">';
 		if ( $num > 1 ) {
-			$html .= '<a href="' . esc_url( add_query_arg( array_filter( array( 'q' => $q, 'pg' => $num - 1 > 1 ? $num - 1 : 0 ) ), $base ) ) . '" rel="prev">← Previous</a>';
+			$html .= '<a href="' . esc_url( add_query_arg( array_filter( array( 'q' => $q, 'pg' => $num - 1 > 1 ? $num - 1 : 0 ) + $extra ), $base ) ) . '" rel="prev">← Previous</a>';
 		}
 		$html .= '<span>Page ' . (int) $num . ' of ' . (int) $pages . '</span>';
 		if ( $num < $pages ) {
-			$html .= '<a href="' . esc_url( add_query_arg( array_filter( array( 'q' => $q, 'pg' => $num + 1 ) ), $base ) ) . '" rel="next">Next →</a>';
+			$html .= '<a href="' . esc_url( add_query_arg( array_filter( array( 'q' => $q, 'pg' => $num + 1 ) + $extra ), $base ) ) . '" rel="next">Next →</a>';
 		}
 		return $html . '</nav>';
 	}
@@ -879,7 +933,7 @@ class SNSCS_English {
 		$name     = $t ? $t['name'] : $ja_name;
 		$bio      = $t ? $t['bio'] : SNSCS_Search::excerpt( $post );
 		$ja_url   = get_permalink( $post );
-		$url      = $t ? self::creator_url( $creator_id ) : self::path_url( 'creator/' . $creator_id );
+		$url      = self::creator_page_url( $creator_id );
 		$accounts = SNSCS_Search::format_accounts( SNSCS_Accounts::get_for_creator( $creator_id ) );
 		$terms    = get_the_terms( $creator_id, SNSCS_Post_Types::TAX_GENRE );
 		$terms    = ( $terms && ! is_wp_error( $terms ) ) ? $terms : array();
@@ -946,11 +1000,14 @@ class SNSCS_English {
 			<p class="en-actions">
 				<a class="en-btn en-btn--primary" href="<?php echo esc_url( add_query_arg( 'lang', 'en', SNSCS_Biolink::url( $creator_id ) ) ); ?>">All links</a>
 				<?php if ( $inquiry ) : ?>
-					<a class="en-btn" href="<?php echo esc_url( $ja_url . '#snscs-inquiry' ); ?>">Business inquiry (form in Japanese)</a>
+					<a class="en-btn" href="#contact">Business inquiry</a>
 				<?php endif; ?>
 				<a class="en-btn" href="<?php echo esc_url( $ja_url ); ?>" hreflang="ja">Japanese profile</a>
 			</p>
 		</article>
+		<?php if ( $inquiry ) : ?>
+			<?php echo self::inquiry_form( $creator_id, $name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>
+		<?php endif; ?>
 		<?php if ( $similar ) : ?>
 			<h2>Similar creators</h2>
 			<?php echo self::cards_html( array_slice( $similar, 0, 6 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -989,6 +1046,130 @@ class SNSCS_English {
 			'indexable' => (bool) $t,
 			'image'     => SNSCS_Share::share_url( $creator_id ),
 			'jsonld'    => array( array( '@type' => 'ProfilePage', '@id' => $url, 'url' => $url, 'inLanguage' => 'en', 'mainEntity' => array( '@id' => $person['@id'] ) ), $person, self::crumb_ld( $crumbs ) ),
+			'body'      => $body,
+		);
+	}
+
+	/**
+	 * 英語のお仕事の相談フォーム（送り先は日本語版と同じ SNSCS_Inquiries。発信者には「英語の相談」と伝える）。
+	 */
+	private static function inquiry_form( $creator_id, $name ) {
+		$cats_en = array(
+			'pr'      => 'Sponsored post / brand collaboration',
+			'review'  => 'Product or service review',
+			'event'   => 'Event or live stream appearance',
+			'writing' => 'Article or column writing',
+			'talk'    => 'Talk or seminar',
+			'consult' => 'Social media consulting / lecture',
+			'other'   => 'Other',
+		);
+		$budget_en = array( 'Not decided / open to discussion', 'Up to ¥30,000', '¥30,000–¥100,000', '¥100,000–¥300,000', '¥300,000 or more' );
+		$settings  = SNSCS_Inquiries::settings_for( $creator_id );
+		$cats      = array_intersect_key( $cats_en, $settings['cats'] ? array_flip( $settings['cats'] ) : SNSCS_Inquiries::categories() );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$sent     = isset( $_GET['inquiry'] ) ? sanitize_key( $_GET['inquiry'] ) : '';
+		$messages = array(
+			'sent'    => array( 'ok', 'Your inquiry has been sent. ' . $name . ' will reply to you directly by email. We have also sent you a confirmation email.' ),
+			'limit'   => array( 'error', 'Too many messages were sent in a short time. Please try again later.' ),
+			'expired' => array( 'error', 'We could not confirm your submission. Please reload the page, fill in the form and wait a few seconds before sending.' ),
+			'invalid' => array( 'error', 'Please check the form and try again (name, email, a message of at least 10 characters, and the privacy policy are required).' ),
+		);
+		$privacy = SNSCS_Legal::page_id( 'privacy' ) ? get_permalink( SNSCS_Legal::page_id( 'privacy' ) ) : '';
+		ob_start();
+		?>
+		<section class="en-contact" id="contact" aria-labelledby="en-contact-title">
+			<h2 id="en-contact-title">Business inquiry</h2>
+			<?php if ( isset( $messages[ $sent ] ) ) : ?>
+				<p class="en-msg en-msg--<?php echo esc_attr( $messages[ $sent ][0] ); ?>" role="<?php echo 'ok' === $messages[ $sent ][0] ? 'status' : 'alert'; ?>"><?php echo esc_html( $messages[ $sent ][1] ); ?></p>
+			<?php endif; ?>
+			<p><?php echo esc_html( $name ); ?> accepts business inquiries. You can write in English — the creator is told that the inquiry came from the English site.</p>
+			<form class="en-form" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
+				<input type="hidden" name="action" value="snscs_inquiry">
+				<input type="hidden" name="lang" value="en">
+				<input type="hidden" name="creator" value="<?php echo (int) $creator_id; ?>">
+				<input type="hidden" name="snscs_form" value="<?php echo esc_attr( snscs_form_token() ); ?>">
+				<p class="en-hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></p>
+				<label>Company (optional)<input type="text" name="company" maxlength="100" autocomplete="organization"></label>
+				<label>Your name <em>required</em><input type="text" name="name" maxlength="60" required autocomplete="name"></label>
+				<label>Email <em>required</em><input type="email" name="email" required autocomplete="email"></label>
+				<label>Type of work
+					<select name="category">
+						<?php foreach ( $cats as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<label>Budget
+					<select name="budget">
+						<?php foreach ( SNSCS_Inquiries::budgets() as $i => $value ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>"><?php echo esc_html( $budget_en[ $i ] ?? $value ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<label>Message <em>required</em><textarea name="message" rows="6" minlength="10" maxlength="2000" required placeholder="What you would like to ask, schedule, and your company's website."></textarea></label>
+				<label class="en-check"><input type="checkbox" name="agree" value="1" required> <span>I agree to the <?php echo $privacy ? '<a href="' . esc_url( $privacy ) . '" hreflang="ja">privacy policy</a> (in Japanese)' : 'privacy policy'; ?>.</span></label>
+				<button type="submit" class="en-btn en-btn--primary">Send inquiry</button>
+			</form>
+		</section>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * 企業向けのお問い合わせ（英語）: /en/contact/。送り先は運営（SNSCS_Business）。
+	 */
+	private static function page_contact() {
+		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$sent     = isset( $_GET['sent'] ) ? sanitize_key( $_GET['sent'] ) : '';
+		$messages = array(
+			'sent'    => array( 'ok', 'Thank you. We have received your message and will reply by email.' ),
+			'limit'   => array( 'error', 'Too many messages were sent in a short time. Please try again later.' ),
+			'expired' => array( 'error', 'We could not confirm your submission. Please reload the page and wait a few seconds before sending.' ),
+			'invalid' => array( 'error', 'Please fill in your company, name and email, and agree to the privacy policy.' ),
+		);
+		$privacy = SNSCS_Legal::page_id( 'privacy' ) ? get_permalink( SNSCS_Legal::page_id( 'privacy' ) ) : '';
+		$url     = self::contact_url();
+		$crumbs  = array( array( self::home_url(), 'Home' ), array( $url, 'For brands' ) );
+		ob_start();
+		echo self::crumbs_html( $crumbs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		?>
+		<h1>For brands and agencies</h1>
+		<p><?php echo esc_html( $site ); ?> is a directory of Japanese social media creators. Brands and agencies outside Japan can use it to find creators for campaigns in Japan.</p>
+		<ul class="en-steps">
+			<li><strong>Find</strong> — search by keyword, genre, platform and follower count. Profiles are translated into English.</li>
+			<li><strong>Contact</strong> — creators who accept business inquiries have an English inquiry form on their profile. Your message goes directly to the creator.</li>
+			<li><strong>Free</strong> — there are no listing or matching fees.</li>
+		</ul>
+		<p><a class="en-btn en-btn--primary" href="<?php echo esc_url( self::home_url() ); ?>">Find creators</a></p>
+		<section class="en-contact" id="contact" aria-labelledby="en-contact-title">
+			<h2 id="en-contact-title">Contact us</h2>
+			<?php if ( isset( $messages[ $sent ] ) ) : ?>
+				<p class="en-msg en-msg--<?php echo esc_attr( $messages[ $sent ][0] ); ?>" role="<?php echo 'ok' === $messages[ $sent ][0] ? 'status' : 'alert'; ?>"><?php echo esc_html( $messages[ $sent ][1] ); ?></p>
+			<?php endif; ?>
+			<p>Questions about finding creators, campaigns, or our plans for businesses? Send us a message in English.</p>
+			<form class="en-form" method="post" action="<?php echo esc_url( snscs_post_url() ); ?>">
+				<input type="hidden" name="action" value="snscs_biz_apply">
+				<input type="hidden" name="lang" value="en">
+				<input type="hidden" name="snscs_form" value="<?php echo esc_attr( snscs_form_token() ); ?>">
+				<p class="en-hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></p>
+				<label>Company <em>required</em><input type="text" name="company" maxlength="100" required autocomplete="organization"></label>
+				<label>Your name <em>required</em><input type="text" name="name" maxlength="60" required autocomplete="name"></label>
+				<label>Email <em>required</em><input type="email" name="email" required autocomplete="email"></label>
+				<label>Message<textarea name="message" rows="6" maxlength="1000" placeholder="Your goals, target audience, timing and budget."></textarea></label>
+				<label class="en-check"><input type="checkbox" name="agree" value="1" required> <span>I agree to the <?php echo $privacy ? '<a href="' . esc_url( $privacy ) . '" hreflang="ja">privacy policy</a> (in Japanese)' : 'privacy policy'; ?>.</span></label>
+				<button type="submit" class="en-btn en-btn--primary">Send</button>
+			</form>
+		</section>
+		<?php
+		$body = ob_get_clean();
+		return array(
+			'title'     => 'For brands and agencies — work with Japanese creators',
+			'desc'      => 'Find Japanese influencers and social media creators for campaigns in Japan, and contact them in English.',
+			'canonical' => $url,
+			'ja'        => SNSCS_Hub::page_url( 'business' ) ? SNSCS_Hub::page_url( 'business' ) : home_url( '/' ),
+			'indexable' => true,
+			'jsonld'    => array( self::crumb_ld( $crumbs ) ),
 			'body'      => $body,
 		);
 	}
@@ -1106,6 +1287,45 @@ class SNSCS_English {
 		if ( '' !== $ja && '' !== $en ) {
 			printf( '<link rel="alternate" hreflang="ja" href="%1$s">' . "\n" . '<link rel="alternate" hreflang="en" href="%2$s">' . "\n" . '<link rel="alternate" hreflang="x-default" href="%1$s">' . "\n", esc_url( $ja ), esc_url( $en ) );
 		}
+	}
+
+	/**
+	 * 日本語のページを日本語以外のブラウザで開いた人に、上に「英語版があります」の帯を出す（1.28.0）。
+	 * ページのキャッシュで日本の人にも出てしまわないよう、判断はブラウザ側（navigator.languages）で行う。
+	 * 行き先は、そのページの英語版（hreflang）→ 企業の方へなら英語のお問い合わせ → 英語版のトップ。
+	 */
+	public static function lang_hint() {
+		if ( ! self::on() || is_admin() || is_feed() ) {
+			return;
+		}
+		$fallback = ( SNSCS_Hub::page_id( 'business' ) && is_page( SNSCS_Hub::page_id( 'business' ) ) ) ? self::contact_url() : self::home_url();
+		?>
+<script>
+( function () {
+	try {
+		var langs = navigator.languages && navigator.languages.length ? navigator.languages : [ navigator.language || '' ];
+		if ( ! langs[ 0 ] || /^ja\b/i.test( langs[ 0 ] ) || /bot|crawl|spider/i.test( navigator.userAgent ) || window.localStorage.getItem( 'snscs_en_hint' ) ) {
+			return;
+		}
+	} catch ( e ) {
+		return;
+	}
+	var alt = document.querySelector( 'link[rel="alternate"][hreflang="en"]' );
+	var bar = document.createElement( 'div' );
+	bar.className = 'snscs-enhint';
+	bar.setAttribute( 'lang', 'en' );
+	bar.innerHTML = '<span>This site is in Japanese.</span> <a></a> <button type="button" aria-label="Close">×</button>';
+	var a = bar.querySelector( 'a' );
+	a.href = alt ? alt.href : <?php echo wp_json_encode( $fallback ); ?>;
+	a.textContent = 'View in English →';
+	bar.querySelector( 'button' ).addEventListener( 'click', function () {
+		bar.remove();
+		try { window.localStorage.setItem( 'snscs_en_hint', '1' ); } catch ( e ) {}
+	} );
+	document.body.insertBefore( bar, document.body.firstChild );
+} )();
+</script>
+		<?php
 	}
 
 	/* --------------------------------------------------------------------

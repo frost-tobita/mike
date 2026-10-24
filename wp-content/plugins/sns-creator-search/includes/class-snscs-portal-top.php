@@ -263,6 +263,10 @@ class SNSCS_Portal_Top {
 				$links[] = array( SNSCS_Hub::page_url( $key ), $label );
 			}
 		}
+		// 英語版（/en/）への入口（1.28.0）。
+		if ( SNSCS_English::home_url() ) {
+			$links[] = array( SNSCS_English::home_url(), 'English' );
+		}
 		return $links;
 	}
 

@@ -8949,3 +8949,41 @@ body.snscs-portal-body a.snscs-related__quiz span {
 	font-size: 0.85em;
 	font-weight: 700;
 }
+
+/* 日本語以外のブラウザの人への「英語版があります」の帯（1.28.0） */
+.snscs-enhint {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 4px 12px;
+	padding: 8px 40px 8px 12px;
+	position: relative;
+	background: #111827;
+	color: #f9fafb;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+body.snscs-portal-body .snscs-enhint a,
+.snscs-enhint a {
+	color: #facc15;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.snscs-enhint button {
+	position: absolute;
+	top: 50%;
+	right: 6px;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #f9fafb;
+	font-size: 20px;
+	line-height: 1;
+	transform: translateY(-50%);
+	cursor: pointer;
+}

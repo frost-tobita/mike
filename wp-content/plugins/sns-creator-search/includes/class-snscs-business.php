@@ -293,7 +293,12 @@ class SNSCS_Business {
 
 	public static function handle_apply() {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- 合言葉（snscs_form_token）で確認する。
-		$back = function ( $code ) {
+		$en   = isset( $_POST['lang'] ) && 'en' === $_POST['lang'] && SNSCS_English::on();
+		$back = function ( $code ) use ( $en ) {
+			if ( $en ) {
+				wp_safe_redirect( add_query_arg( 'sent', $code, SNSCS_English::contact_url() ) . '#contact' );
+				exit;
+			}
 			$url = SNSCS_Hub::page_url( 'business' );
 			wp_safe_redirect( add_query_arg( 'snscs_biz', $code, $url ? $url : home_url( '/' ) ) . '#snscs-biz-plan' );
 			exit;
@@ -318,8 +323,8 @@ class SNSCS_Business {
 		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		wp_mail(
 			snscs_operator_info()['email'],
-			'[' . $site . '] 企業向けプランのお問い合わせ（' . $company . '）',
-			implode( "\n", array( '会社名: ' . $company, 'お名前: ' . $name, 'メールアドレス: ' . $email, '', $message, '', '有効にするときは、管理画面の「ユーザー」でこの方のアカウントを開き、「企業向けプランの期限」を入れてください（アカウントが無いときは、メンバー登録をお願いしてください）。' ) ),
+			'[' . $site . '] ' . ( $en ? '英語版（海外）からの' : '企業向けプランの' ) . 'お問い合わせ（' . $company . '）',
+			implode( "\n", array( $en ? '※ 英語版のページ（/en/contact/）から届いたお問い合わせです。返信は英語でお願いします。' : '', '会社名: ' . $company, 'お名前: ' . $name, 'メールアドレス: ' . $email, '', $message, '', '有効にするときは、管理画面の「ユーザー」でこの方のアカウントを開き、「企業向けプランの期限」を入れてください（アカウントが無いときは、メンバー登録をお願いしてください）。' ) ),
 			array( 'Reply-To: ' . $email )
 		);
 		$back( 'sent' );
