@@ -684,6 +684,57 @@ class SNSCS_Portal_Top {
 	}
 
 	/**
+	 * ログイン中の「マイページ」の枠: 会員ランクのカード（創設メンバーはランクの色とメダル）、レベル、マイページへのリンク。
+	 */
+	private static function mypage_box( array $who, $creator ) {
+		$user_id = get_current_user_id();
+		$design  = $who['design'];
+		$since   = mysql2date( 'Y.m', get_userdata( $user_id )->user_registered );
+		if ( $design ) {
+			$first = SNSCS_Founder::is_first( $who['no'] );
+			$card  = '<div class="snscs-mycard snscs-mycard--' . esc_attr( $design ) . '" style="background-image:url(' . esc_url( SNSCS_URL . 'assets/badges/founder-' . $design . '-card-bg.webp?ver=' . SNSCS_VERSION ) . ')">'
+				. '<div class="snscs-mycard__text"><p class="snscs-mycard__eyebrow">FOUNDING MEMBER</p>'
+				. '<p class="snscs-mycard__rank">' . esc_html( $who['role'] ) . '</p>'
+				. '<p class="snscs-mycard__no">Nº ' . esc_html( SNSCS_Founder::serial( $who['no'] ) ) . ( $first ? ' <span>FIRST 10 ★</span>' : '' ) . '</p>'
+				. '<p class="snscs-mycard__since">SINCE ' . esc_html( $since ) . '</p></div>'
+				. '<span class="snscs-mycard__medal">' . SNSCS_Founder::medal_html( $who['no'], $design, '' ) . '</span></div>';
+		} else {
+			$card = '<div class="snscs-mycard snscs-mycard--member">'
+				. '<div class="snscs-mycard__text"><p class="snscs-mycard__eyebrow">FOLLOFIND</p>'
+				. '<p class="snscs-mycard__rank">メンバー</p>'
+				. '<p class="snscs-mycard__no">MEMBER</p>'
+				. '<p class="snscs-mycard__since">SINCE ' . esc_html( $since ) . '</p></div>'
+				. '<span class="snscs-mycard__logo" aria-hidden="true"><img src="' . esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ) . '" alt="" width="56" height="56"></span></div>';
+		}
+
+		// レベル（ポイントで上がる。読者・発信者どちらも）
+		$xp    = (int) get_user_meta( $user_id, SNSCS_Gamify::META_XP, true );
+		$lv    = SNSCS_Gamify::level( $xp );
+		$next  = SNSCS_Gamify::LEVELS[ $lv + 1 ][0] ?? null;
+		$from  = SNSCS_Gamify::LEVELS[ $lv ][0];
+		$pct   = null === $next ? 100 : (int) floor( ( $xp - $from ) / max( 1, $next - $from ) * 100 );
+		$level = '<div class="snscs-mylevel"><p><strong>Lv.' . (int) $lv . '</strong> ' . esc_html( SNSCS_Gamify::LEVELS[ $lv ][1] )
+			. '<span>' . esc_html( null === $next ? number_format_i18n( $xp ) . 'pt' : 'あと' . number_format_i18n( $next - $xp ) . 'pt' ) . '</span></p>'
+			. '<div class="snscs-mylevel__bar"><span style="width:' . max( 2, $pct ) . '%"></span></div></div>';
+
+		$is_creator = snscs_is_creator_user();
+		$home       = $is_creator ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() );
+		$body       = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん<span class="snscs-pt-login__state">ログイン中</span></p>'
+			. $card . $level
+			. '<a class="snscs-pt-btn" href="' . esc_url( $home ) . '">マイページを開く</a>';
+		if ( $creator && 'publish' === get_post_status( $creator ) ) {
+			$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
+		}
+		// 読者には、創設メンバーの募集中だけ、発信者になる案内をひとこと。
+		$limit = (int) SNSCS_Hub::setting( 'founders_limit' );
+		if ( ! $is_creator && $limit > self::creator_total() ) {
+			$body .= '<a class="snscs-pt-sublink snscs-mypage__up" href="' . esc_url( snscs_portal_url() ) . '">発信者として掲載すると「創設メンバー」のメダル（残り' . esc_html( number_format_i18n( $limit - self::creator_total() ) ) . '枠）</a>';
+		}
+		$body .= '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
+		return self::box( 'マイページ', $body, '', 'snscs-pt-box--login snscs-pt-box--mypage is-in' );
+	}
+
+	/**
 	 * ログイン中の発信者向けのおすすめ（「発信者の方へ」の場所に広告が入っていないとき）。
 	 */
 	private static function creator_picks() {
@@ -721,17 +772,12 @@ class SNSCS_Portal_Top {
 		$who     = SNSCS_Session::who();
 		$creator = $who && snscs_is_creator_user() ? SNSCS_Submissions::creator_id_for_user( get_current_user_id() ) : 0;
 		if ( $who ) {
-			$body = '<p class="snscs-pt-login__who"><span class="snscs-pt-login__dot" aria-hidden="true"></span><strong>' . esc_html( $who['name'] ) . '</strong>さん' . SNSCS_Session::tag_html( $who ) . '</p>'
-				. '<p class="snscs-pt-login__state">ログイン中</p>'
-				. '<a class="snscs-pt-btn" href="' . esc_url( snscs_is_creator_user() ? snscs_portal_url() : ( SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_portal_url() ) ) . '">マイページ</a>';
-			if ( $creator && 'publish' === get_post_status( $creator ) ) {
-				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Biolink::url( $creator ) ) . '">マイリンクを見る</a>';
-			}
-			$body .= '<a class="snscs-pt-sublink snscs-pt-login__out" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">ログアウト</a>';
+			// 1.25.2: ログイン中は「マイページ」の枠（会員カード）。
+			$out .= self::mypage_box( $who, $creator );
 		} else {
 			$body = '<p>ログインすると、掲載内容の編集や、カレンダーの予定をどの端末からも使えます。</p><a class="snscs-pt-btn" href="' . esc_url( snscs_portal_url() ) . '">ログイン</a><a class="snscs-pt-sublink" href="' . esc_url( snscs_portal_url() ) . '">新規登録（無料）</a>';
+			$out .= self::box( '', $body, '', 'snscs-pt-box--login' );
 		}
-		$out .= self::box( '', $body, '', 'snscs-pt-box--login' . ( $who ? ' is-in' : '' ) );
 
 		if ( $who && snscs_is_creator_user() ) {
 			// 登録済みの発信者には「発信者の方へ」（登録の案内）は出さず、広告枠にする。広告が無いときは発信者向けのおすすめ。

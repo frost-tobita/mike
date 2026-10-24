@@ -8097,3 +8097,211 @@ body.snscs-portal-body .snscs-who-tag img {
 	color: #2b3240;
 	letter-spacing: 0.04em;
 }
+
+/* 1.25.2: マイページの枠（会員カード） */
+body.snscs-portal-body .snscs-pt-box--mypage p.snscs-pt-login__who {
+	margin-bottom: 10px;
+}
+
+body.snscs-portal-body .snscs-pt-box--mypage .snscs-pt-login__state {
+	margin-left: auto;
+	color: #6b7280;
+	font-size: 11px;
+}
+
+.snscs-mycard {
+	position: relative;
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	overflow: hidden;
+	min-height: 118px;
+	margin: 0 0 12px;
+	padding: 14px 14px 14px 16px;
+	border: 1px solid rgba(231, 205, 133, 0.55);
+	border-radius: 14px;
+	background-color: #0b0b0b;
+	background-position: center;
+	background-size: cover;
+	box-shadow: 0 10px 22px rgba(10, 10, 30, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	color: #f5f1e6;
+}
+
+/* カードの上をゆっくり光が流れる（動きを減らす設定の人には出さない） */
+.snscs-mycard::after {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.16) 50%, transparent 65%);
+	background-size: 250% 100%;
+	content: "";
+	pointer-events: none;
+	animation: snscs-mycard-shine 6s ease-in-out infinite;
+}
+
+@keyframes snscs-mycard-shine {
+	0%, 60% { background-position: 120% 0; }
+	100% { background-position: -120% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.snscs-mycard::after {
+		animation: none;
+		opacity: 0;
+	}
+}
+
+.snscs-mycard--midnight {
+	border-color: rgba(223, 228, 234, 0.6);
+	background-color: #0a1048;
+}
+
+.snscs-mycard--emerald {
+	background-color: #03231a;
+}
+
+.snscs-mycard--platinum {
+	border-color: #c9d0d8;
+	background-color: #f4f6f9;
+	color: #2b3240;
+}
+
+.snscs-mycard--member {
+	border-color: rgba(255, 255, 255, 0.3);
+	background: radial-gradient(circle at 85% 20%, rgba(69, 227, 156, 0.35), transparent 45%), linear-gradient(135deg, #2020D2, #1B27B0 55%, #0c1270);
+	color: #fff;
+}
+
+.snscs-mycard__text {
+	position: relative;
+	z-index: 1;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+body.snscs-portal-body .snscs-mycard p {
+	margin: 0;
+	color: inherit;
+	line-height: 1.35;
+}
+
+body.snscs-portal-body p.snscs-mycard__eyebrow {
+	color: #e7cd85;
+	font-size: 10px;
+	letter-spacing: 0.22em;
+}
+
+body.snscs-portal-body .snscs-mycard--midnight p.snscs-mycard__eyebrow {
+	color: #dfe4ea;
+}
+
+body.snscs-portal-body .snscs-mycard--platinum p.snscs-mycard__eyebrow {
+	color: #6b7380;
+}
+
+body.snscs-portal-body .snscs-mycard--member p.snscs-mycard__eyebrow {
+	color: #a8f0cc;
+}
+
+body.snscs-portal-body p.snscs-mycard__rank {
+	margin: 2px 0;
+	font-size: 21px;
+	white-space: nowrap;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+}
+
+body.snscs-portal-body p.snscs-mycard__no {
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 15px;
+	letter-spacing: 0.08em;
+	white-space: nowrap;
+}
+
+body.snscs-portal-body p.snscs-mycard__no span {
+	margin-left: 4px;
+	padding: 0 5px;
+	border: 1px solid currentColor;
+	font-family: inherit;
+	font-size: 9px;
+	letter-spacing: 0.1em;
+	vertical-align: 2px;
+}
+
+body.snscs-portal-body p.snscs-mycard__since {
+	margin-top: 6px;
+	font-size: 9px;
+	letter-spacing: 0.2em;
+	opacity: 0.65;
+}
+
+.snscs-mycard__medal {
+	position: relative;
+	z-index: 1;
+	flex: 0 0 84px;
+	width: 84px;
+	height: 84px;
+	filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+
+.snscs-mycard__medal .snscs-founder__medal {
+	width: 100%;
+	height: 100%;
+	filter: none;
+}
+
+.snscs-mycard__logo {
+	position: relative;
+	z-index: 1;
+	flex: 0 0 56px;
+}
+
+body.snscs-portal-body .snscs-mycard__logo img {
+	display: block;
+	width: 56px;
+	height: 56px;
+	max-width: none;
+	margin: 0;
+	border-radius: 14px;
+	box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.snscs-mylevel {
+	margin: 0 0 12px;
+}
+
+body.snscs-portal-body .snscs-mylevel p {
+	display: flex;
+	gap: 6px;
+	align-items: baseline;
+	margin: 0 0 4px;
+	font-size: 13px;
+}
+
+body.snscs-portal-body .snscs-mylevel p strong {
+	color: #1B27B0;
+}
+
+body.snscs-portal-body .snscs-mylevel p span {
+	margin-left: auto;
+	color: #6b7280;
+	font-size: 11px;
+}
+
+.snscs-mylevel__bar {
+	overflow: hidden;
+	height: 6px;
+	border-radius: 999px;
+	background: #e8ebf3;
+}
+
+.snscs-mylevel__bar span {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #2020D2, #45E39C);
+}
+
+body.snscs-portal-body .snscs-mypage__up {
+	font-size: 12px;
+	line-height: 1.5;
+}
