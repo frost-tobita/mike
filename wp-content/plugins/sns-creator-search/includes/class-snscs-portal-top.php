@@ -467,7 +467,7 @@ class SNSCS_Portal_Top {
 		$brand = SNSCS_Brand::on() && '' !== SNSCS_Brand::tagline() ? '<p class="snscs-pt-hero__brand"><img src="' . esc_url( SNSCS_Brand::url( 'follofind-icon.svg' ) ) . '" alt="" width="22" height="22">' . esc_html( SNSCS_Brand::NAME . '｜' . SNSCS_Brand::tagline() ) . '</p>' : '';
 		return '<section class="snscs-pt-hero' . ( $total >= 300 ? ' snscs-pt-hero--compact' : '' ) . '">' . $brand . '<p class="snscs-pt-hero__title">' . esc_html( $title ) . '</p>'
 			. ( '' !== $text ? '<p class="snscs-pt-hero__text">' . esc_html( $text ) . '</p>' : '' )
-			. '<p class="snscs-pt-hero__btns"><a class="snscs-pt-hero__btn" href="' . esc_url( snscs_search_url() ) . '">発信者を探す</a><a class="snscs-pt-hero__btn snscs-pt-hero__btn--sub" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a></p>'
+			. '<p class="snscs-pt-hero__btns"><a class="snscs-pt-hero__btn" href="' . esc_url( snscs_search_url() ) . '">発信者を探す</a><a class="snscs-pt-hero__btn snscs-pt-hero__btn--sub" href="' . esc_url( snscs_portal_url() ) . '">無料で登録する</a></p>'
 			. $stats . '</section>';
 	}
 
@@ -520,7 +520,7 @@ class SNSCS_Portal_Top {
 			. '<div class="snscs-pt-founders__body"><p class="snscs-pt-founders__tag">' . esc_html( sprintf( '創設メンバー募集中 ・ 先着%s人', number_format_i18n( $limit ) ) ) . '</p>'
 			. '<p class="snscs-pt-founders__title">いま登録して掲載されると、<span>' . esc_html( $top ) . '<b>「' . esc_html( SNSCS_Founder::name( $now ) ) . '」</b>メダル</span></p>'
 			. '<p class="snscs-pt-founders__left">' . esc_html( SNSCS_Founder::name( $now ) ) . ' 残り<strong>' . esc_html( number_format_i18n( $left ) ) . '</strong>枠 <span>（Nº ' . esc_html( SNSCS_Founder::serial( $next ) . '〜' . SNSCS_Founder::serial( $range[1] ) ) . '）</span></p></div>'
-			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載して受け取る</a></div>'
+			. '<a class="snscs-pt-founders__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で登録して受け取る</a></div>'
 			. '<div class="snscs-pt-founders__tiers">' . $rows . '</div>'
 			. '<p class="snscs-pt-founders__first"><em>FIRST 10 ★</em> ' . esc_html( $first ) . '</p></section>';
 	}
@@ -603,7 +603,7 @@ class SNSCS_Portal_Top {
 	private static function guide() {
 		$steps = array(
 			'reader'  => array( '読者の方', array( array( '探す', 'ジャンルやSNSから、好きな発信者を探します。' ), array( 'フォロー', '無料のメンバー登録で、気になる発信者をフォロー。' ), array( '新着が届く', '新しい記事や話題を、お知らせで受け取れます。' ) ), SNSCS_Hub::page_url( 'member' ) ? SNSCS_Hub::page_url( 'member' ) : snscs_search_url(), '無料でメンバー登録' ),
-			'creator' => array( '発信者の方', array( array( '登録', 'SNSアカウントを入れて、無料で掲載を申し込みます。' ), array( 'FolloLink', 'SNSのプロフィールに貼るリンクまとめを作ります。' ), array( '相談が届く', '企業からのお仕事の相談や、新しいファンが増えます。' ) ), snscs_portal_url(), '無料で掲載する' ),
+			'creator' => array( '発信者の方', array( array( '登録', 'SNSアカウントを入れて、無料で登録を申し込みます。' ), array( 'FolloLink', 'SNSのプロフィールに貼るリンクまとめを作ります。' ), array( '相談が届く', '企業からのお仕事の相談や、新しいファンが増えます。' ) ), snscs_portal_url(), '無料で登録する' ),
 		);
 		$html = '<div class="snscs-pt-guide">';
 		$i    = 0;
@@ -825,12 +825,12 @@ class SNSCS_Portal_Top {
 			$ad   = SNSCS_Ads::render( 'side_member' );
 			$out .= '' !== $ad ? $ad : self::creator_picks();
 		} else {
-			$points = array( 'SNSアカウントを無料で掲載', 'SNSに貼れる「FolloLink」', '企業からお仕事の相談が届く' );
+			$points = array( 'SNSアカウントを無料で登録', 'SNSに貼れる「FolloLink」', '企業からお仕事の相談が届く' );
 			$body   = '<p class="snscs-pt-cta__lead">見つけてもらえる場所を、無料で</p><ul class="snscs-pt-cta__points">';
 			foreach ( $points as $point ) {
 				$body .= '<li>' . self::CHECK . '<span>' . esc_html( $point ) . '</span></li>';
 			}
-			$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で掲載する</a>';
+			$body .= '</ul><a class="snscs-pt-cta__btn" href="' . esc_url( snscs_portal_url() ) . '">無料で登録する</a>';
 			if ( SNSCS_Hub::page_url( 'mylink' ) ) {
 				$body .= '<a class="snscs-pt-sublink" href="' . esc_url( SNSCS_Hub::page_url( 'mylink' ) ) . '">FolloLinkについて詳しく</a>';
 			}

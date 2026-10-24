@@ -158,10 +158,10 @@ class SNSCS_Biolink {
 	}
 
 	/**
-	 * 見せるためのアドレス（ブランドの表記）: FolloFind/@名前。実際に開くアドレスは url()。
+	 * 見せるためのアドレス（ブランドの表記）: FolloFind.com/@名前。実際に開くアドレスは url()。
 	 */
 	public static function display_address( $creator_id ) {
-		return 'FolloFind/@' . self::name_for( $creator_id );
+		return 'FolloFind.com/@' . self::name_for( $creator_id );
 	}
 
 	public static function url( $creator_id ) {

@@ -215,8 +215,8 @@ class SNSCS_Invites {
 		$settings = SNSCS_Scores::settings();
 		$link     = self::join_url( $creator_id );
 		$site     = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$message  = sprintf( "SNSで発信している人を探せる「%s」に掲載されています。発信者は無料で掲載できて、記事も書けます。よかったら一緒に参加しませんか？\n%s", $site, $link );
-		$share    = sprintf( '「%s」にメンバーとして掲載されています。発信者は無料で掲載できます。', $site );
+		$message  = sprintf( "SNSで発信している人を探せる「%s」に掲載されています。発信者は無料で登録できて、記事も書けます。よかったら一緒に参加しませんか？\n%s", $site, $link );
+		$share    = sprintf( '「%s」にメンバーとして掲載されています。発信者は無料で登録できます。', $site );
 		$tiers    = $standing && ! empty( $standing['tiers'] ) ? $standing['tiers'] : array_fill( 0, (int) $settings['tiers'], 0 );
 		?>
 		<section class="snscs-panel snscs-invite" id="snscs-invite">

@@ -297,8 +297,8 @@ PROMPT;
 			</div>
 			<?php if ( ! snscs_is_creator_user() ) : ?>
 				<aside class="snscs-column-cta">
-					<p class="snscs-column-cta__text">プロフィールを整えたら、<?php echo esc_html( get_bloginfo( 'name' ) ); ?>に無料で掲載しませんか？ジャンルや地域から探している人に見つけてもらえ、企業からのお仕事の相談も届きます。</p>
-					<a class="snscs-button snscs-button--primary" href="<?php echo esc_url( snscs_portal_url() ); ?>">無料で掲載する</a>
+					<p class="snscs-column-cta__text">プロフィールを整えたら、<?php echo esc_html( get_bloginfo( 'name' ) ); ?>に無料で登録しませんか？ジャンルや地域から探している人に見つけてもらえ、企業からのお仕事の相談も届きます。</p>
+					<a class="snscs-button snscs-button--primary" href="<?php echo esc_url( snscs_portal_url() ); ?>">無料で登録する</a>
 				</aside>
 			<?php endif; ?>
 			<?php echo SNSCS_Columns::render( 'プロフィールと運用のコラム', array( 'sns' => array( $r['platform'] ), 'count' => 3 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- エスケープ済みのHTML。 ?>

@@ -8,7 +8,7 @@
  * いちばん見栄えのする数字を大きく出し（フォロワーの増加 → 閲覧 → 順位 …）、ほかを最大4つ並べた
  * 縦長の画像（1080×1350。Instagram・X・Threads 向け）を作る。数字が0のものは出さない。
  * シェア用のページ（/snscs-report/発信者ID-年月-署名/）は、画像が SNS のカードに出るよう OGP を付け、
- * 「この発信者のページを見る」（紹介リンク）と「あなたも無料で掲載」（この発信者の招待リンク）を置く。
+ * 「この発信者のページを見る」（紹介リンク）と「あなたも無料で登録」（この発信者の招待リンク）を置く。
  * URLの署名がないと見られない（他人の数字を勝手に見られないように）。
  * 作ったら、数字のある発信者にお知らせ（サイト内・メール・スマホ通知）を送る。
  * 推移の記録が無い発信者のため、毎月1日に全員のフォロワー数を記録しておく（翌月から増減が出る）。
@@ -501,7 +501,7 @@ class SNSCS_Report {
 		}
 
 		// 下: サイトの案内。
-		$text( wp_parse_url( home_url(), PHP_URL_HOST ) . ' で発信者を探す・無料で掲載', 28, 0, $ht - 50, $white, 960, true );
+		$text( wp_parse_url( home_url(), PHP_URL_HOST ) . ' で発信者を探す・無料で登録', 28, 0, $ht - 50, $white, 960, true );
 		return $image;
 	}
 
@@ -582,7 +582,7 @@ body{margin:0;background:linear-gradient(180deg,#1e3a8a,#5a2ab2);min-height:100v
 <main class="r">
 <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $name . 'さんの' . self::month_label( $month ) . 'の成長レポート' ); ?>" width="1080" height="1350">
 <a class="p" href="<?php echo esc_url( SNSCS_Referrals::link_for( $creator_id ) ); ?>"><?php echo esc_html( $name ); ?>さんのページを見る</a>
-<a class="s" href="<?php echo esc_url( SNSCS_Invites::join_url( $creator_id ) ); ?>">あなたも無料で掲載して、毎月レポートを受け取る</a>
+<a class="s" href="<?php echo esc_url( SNSCS_Invites::join_url( $creator_id ) ); ?>">あなたも無料で登録して、毎月レポートを受け取る</a>
 <p><?php echo esc_html( $site ); ?>は、SNSの発信者を探せるサイトです。掲載中の発信者には、毎月この成長レポートが届きます。</p>
 </main>
 </body>
