@@ -176,27 +176,65 @@ class SNSCS_App {
 		$path = (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '', PHP_URL_PATH );
 		$home = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
 		if ( $home . '/.well-known/assetlinks.json' === $path ) {
-			$s = self::settings();
-			if ( '' === $s['android_pkg'] || '' === $s['android_sha256'] ) {
+			$json = self::assetlinks_json();
+			if ( '' === $json ) {
 				return;
 			}
 			header( 'Content-Type: application/json' );
 			header( 'Access-Control-Allow-Origin: *' );
-			echo wp_json_encode(
-				array(
-					array(
-						'relation' => array( 'delegate_permission/common.handle_all_urls' ),
-						'target'   => array(
-							'namespace'                => 'android_app',
-							'package_name'             => $s['android_pkg'],
-							'sha256_cert_fingerprints' => array_values( array_filter( array_map( 'trim', explode( ',', $s['android_sha256'] ) ) ) ),
-						),
-					),
-				),
-				JSON_UNESCAPED_SLASHES
-			);
+			echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON。
 			exit;
 		}
+	}
+
+	/**
+	 * assetlinks.json の中身（パッケージ名と指紋が無ければ空）。
+	 */
+	public static function assetlinks_json() {
+		$s = self::settings();
+		if ( '' === $s['android_pkg'] || '' === $s['android_sha256'] ) {
+			return '';
+		}
+		return (string) wp_json_encode(
+			array(
+				array(
+					'relation' => array( 'delegate_permission/common.handle_all_urls' ),
+					'target'   => array(
+						'namespace'                => 'android_app',
+						'package_name'             => $s['android_pkg'],
+						'sha256_cert_fingerprints' => array_values( array_filter( array_map( 'trim', explode( ',', $s['android_sha256'] ) ) ) ),
+					),
+				),
+			),
+			JSON_UNESCAPED_SLASHES
+		);
+	}
+
+	/**
+	 * サイトの直下に .well-known/assetlinks.json のファイルを書き出す。
+	 * パーマリンクが「基本」のときや、サーバーが .well-known をプラグインまで通さないときでも、ファイルなら必ず開ける。
+	 *
+	 * @return string 'ok' | 'fail' | 'removed' | ''
+	 */
+	public static function write_assetlinks() {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$dir  = trailingslashit( get_home_path() ) . '.well-known';
+		$file = $dir . '/assetlinks.json';
+		$json = self::assetlinks_json();
+		if ( '' === $json ) {
+			// 自分で書いたファイルだけ消す。
+			if ( get_option( 'snscs_assetlinks_written' ) && is_file( $file ) ) {
+				wp_delete_file( $file );
+				delete_option( 'snscs_assetlinks_written' );
+				return 'removed';
+			}
+			return '';
+		}
+		if ( ! wp_mkdir_p( $dir ) || false === file_put_contents( $file, $json ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			return 'fail';
+		}
+		update_option( 'snscs_assetlinks_written', 1, false );
+		return 'ok';
 	}
 
 	/**
@@ -465,7 +503,8 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 			),
 			false
 		);
-		wp_safe_redirect( admin_url( 'edit.php?post_type=' . SNSCS_Post_Types::POST_TYPE . '&page=' . self::ADMIN_PAGE . '&saved=1' ) );
+		$file = self::write_assetlinks();
+		wp_safe_redirect( admin_url( 'edit.php?post_type=' . SNSCS_Post_Types::POST_TYPE . '&page=' . self::ADMIN_PAGE . '&saved=1' . ( $file ? '&file=' . $file : '' ) ) );
 		exit;
 	}
 
@@ -482,6 +521,12 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 			<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 			<?php if ( ! empty( $_GET['saved'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>保存しました。</p></div>
+			<?php endif; ?>
+			<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php if ( isset( $_GET['file'] ) && 'ok' === $_GET['file'] ) : ?>
+				<div class="notice notice-success is-dismissible"><p>サイトの直下に <code>.well-known/assetlinks.json</code> のファイルを作りました。下の「確かめる」のリンクを開いて、文字が表示されればOKです。</p></div>
+			<?php elseif ( isset( $_GET['file'] ) && 'fail' === $_GET['file'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+				<div class="notice notice-warning"><p><code>.well-known/assetlinks.json</code> のファイルを作れませんでした（サーバーの書き込みの許可がありません）。下の「確かめる」のリンクが開ければそのままでOKです。開けない場合は、サーバーのファイルマネージャーで、サイトの直下に <code>.well-known</code> というフォルダを作り、その中に <code>assetlinks.json</code> というファイルを置いて、下の中身を貼り付けてください。</p><textarea readonly rows="4" style="width:100%;font-family:monospace"><?php echo esc_textarea( self::assetlinks_json() ); ?></textarea></div>
 			<?php endif; ?>
 			<p>このサイトは、スマホのホーム画面に追加して<strong>アプリとして使えます</strong>（PWA）。アプリストアを通さずに、サイトから直接インストールできます。</p>
 			<?php if ( ! $https ) : ?>
@@ -504,7 +549,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 						<p>アプリストアに載せたいときは、<a href="https://www.pwabuilder.com/" target="_blank" rel="noopener">PWABuilder</a>（Microsoft の無料ツール）にサイトのURLを入れると、Google Play に出せるアプリの形（Trusted Web Activity）を作れます。そのときに表示される「パッケージ名」と「署名の指紋（SHA-256）」を入れてください。アプリを開いたときにブラウザのバーが出なくなります。</p>
 						<table class="form-table" role="presentation">
 							<tr><th scope="row"><label for="app-pkg">パッケージ名</label></th><td><input id="app-pkg" type="text" name="android_pkg" value="<?php echo esc_attr( $s['android_pkg'] ); ?>" placeholder="com.example.follofind" class="regular-text"></td></tr>
-							<tr><th scope="row"><label for="app-sha">署名の指紋（SHA-256）</label></th><td><input id="app-sha" type="text" name="android_sha256" value="<?php echo esc_attr( $s['android_sha256'] ); ?>" placeholder="AB:CD:…（32組）" class="large-text code"><p class="description">複数あるときはカンマ区切り。保存すると <code><?php echo esc_html( $links ); ?></code> で確認用のファイルを出します。</p></td></tr>
+							<tr><th scope="row"><label for="app-sha">署名の指紋（SHA-256）</label></th><td><input id="app-sha" type="text" name="android_sha256" value="<?php echo esc_attr( $s['android_sha256'] ); ?>" placeholder="AB:CD:…（32組）" class="large-text code"><p class="description">複数あるときはカンマ区切り。保存すると、サイトの直下に確認用のファイル <code><?php echo esc_html( $links ); ?></code> を作ります。<?php if ( '' !== self::assetlinks_json() ) : ?> <a href="<?php echo esc_url( $links ); ?>" target="_blank" rel="noopener">確かめる</a><?php endif; ?></p></td></tr>
 						</table>
 						<?php submit_button( '保存' ); ?>
 					</form>

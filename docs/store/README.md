@@ -67,7 +67,8 @@ ZIP の中身:
    - 「パッケージ名」に package_name の値
    - 「署名の指紋（SHA-256）」に長い値
    を貼って保存
-4. ブラウザで `https://あなたのサイト/.well-known/assetlinks.json` を開き、文字が表示されればOK
+4. 保存すると、サイトの直下に `.well-known/assetlinks.json` のファイルが自動で作られます（1.26.2〜）。画面の「確かめる」を押して（または `https://follofind.com/.well-known/assetlinks.json` を開いて）、文字が表示されればOK
+   - 「ファイルを作れませんでした」と出たときは、画面に出る中身を、サーバーのファイルマネージャーで `.well-known/assetlinks.json` として置く
 
 > この2つの値は「鍵」そのものではないので、このチャットに貼っても大丈夫です。確認を手伝えます。
 

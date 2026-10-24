@@ -60,16 +60,34 @@
 		me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4.2 4.4-6.3 8-6.3s6.8 2.1 8 6.3z"/>',
 	};
 
+	// ページを見分ける形（パーマリンクが「基本」= ?page_id=17 の形でも、ページごとに見分ける）。
+	function key( u ) {
+		var url;
+		try {
+			url = new URL( u, location.href );
+		} catch ( e ) {
+			return { path: '', id: '' };
+		}
+		var id = [ 'page_id', 'p', 'pagename', 'post_type' ].map( function ( k ) {
+			return url.searchParams.get( k ) ? k + '=' + url.searchParams.get( k ) : '';
+		} ).filter( Boolean ).join( '&' );
+		return { path: url.pathname.replace( /\/$/, '' ), id: id, inbox: 'inbox' === url.searchParams.get( 'tab' ) };
+	}
+
 	function current( tab ) {
-		var here = location.href.split( '#' )[ 0 ].replace( /[?&]snscs_app=1/, '' );
-		var url = tab.url.split( '#' )[ 0 ];
+		var here = key( location.href );
+		var url = key( tab.url );
 		if ( 'home' === tab.key ) {
-			return here.replace( /\?$/, '' ) === url || here === url + '?';
+			return here.path === url.path && here.id === url.id && ! here.inbox;
 		}
 		if ( 'inbox' === tab.key ) {
-			return /[?&]tab=inbox/.test( here ) && 0 === here.indexOf( url.split( '?' )[ 0 ] );
+			return here.inbox && here.path === url.path && here.id === url.id;
 		}
-		return 0 === here.indexOf( url.split( '?' )[ 0 ] ) && ! /[?&]tab=inbox/.test( here );
+		if ( url.id ) {
+			return here.id === url.id && ! here.inbox;
+		}
+		// 「/stories/」の下のページも、そのタブにする。
+		return '' !== url.path && 0 === ( here.path + '/' ).indexOf( url.path + '/' ) && ! here.inbox;
 	}
 
 	function tabbar() {

@@ -135,6 +135,18 @@ class SNSCS_Hub {
 	 * ------------------------------------------------------------------ */
 
 	/**
+	 * ページを見分けるための形: パスと、ページを決めるクエリ（page_id など）。
+	 */
+	public static function url_key( $url ) {
+		$parts = wp_parse_url( (string) $url );
+		$query = array();
+		wp_parse_str( (string) ( $parts['query'] ?? '' ), $query );
+		$keep = array_intersect_key( $query, array_flip( array( 'page_id', 'p', 'pagename', 'post_type' ) ) );
+		ksort( $keep );
+		return untrailingslashit( (string) ( $parts['path'] ?? '' ) ) . ( $keep ? '?' . http_build_query( $keep ) : '' );
+	}
+
+	/**
 	 * 検索・ランキング・特集・ツール・お気に入りへのリンク。いまいるページは強調する。
 	 */
 	public static function quick_nav() {
@@ -152,10 +164,11 @@ class SNSCS_Hub {
 			return '';
 		}
 		wp_enqueue_style( 'snscs' );
-		$current = isset( $_SERVER['REQUEST_URI'] ) ? untrailingslashit( (string) wp_parse_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// パーマリンクが「基本」（?page_id=17 の形）でも、ページごとに見分ける（どのURLも「/」なので、パスだけで比べると全部が「いまのページ」になる）。
+		$current = isset( $_SERVER['REQUEST_URI'] ) ? self::url_key( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$html    = '<nav class="snscs-quicknav" aria-label="サイト内ナビ"><ul>';
 		foreach ( $links as $key => $link ) {
-			$here  = untrailingslashit( (string) wp_parse_url( $link[0], PHP_URL_PATH ) ) === $current;
+			$here  = self::url_key( $link[0] ) === $current;
 			$html .= sprintf(
 				'<li><a class="snscs-quicknav__link snscs-quicknav__link--%s" href="%s"%s>%s</a></li>',
 				esc_attr( $key ),
